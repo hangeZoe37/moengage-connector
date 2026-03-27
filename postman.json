@@ -1,0 +1,143 @@
+{
+  "info": {
+    "name": "MoEngage Connector API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "bearer_token",
+      "value": "YOUR_BEARER_TOKEN",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "MoEngage Inbound Send",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearer_token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"messages\": [\n    {\n      \"callback_data\": \"sample-callback-data\",\n      \"to\": \"1234567890\",\n      \"content\": \"Hello world\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/integrations/moengage/rcs/send",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "integrations",
+            "moengage",
+            "rcs",
+            "send"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "SPARC DLR Webhook",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"messageId\": \"msg-123\",\n  \"status\": \"DELIVERED\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/sparc/dlr",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "sparc",
+            "dlr"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "SPARC Interaction Webhook",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"messageId\": \"msg-123\",\n  \"interactionType\": \"REPLY\",\n  \"payload\": \"User clicked Yes\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/sparc/interaction",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "sparc",
+            "interaction"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
