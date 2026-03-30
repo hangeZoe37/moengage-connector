@@ -1,0 +1,498 @@
+POST
+
+/backend/api/v2/rcs/sendmessage
+
+Send RCS Message
+
+Send RCS messages using API-based messages. This endpoint supports Plain Text, Rich Text, Rich Card, and Rich Card Carousel messages.
+
+Messages can be sent using templates with support for:
+
+Variables
+
+Suggestions
+
+Media (image / carousel)
+
+Delivery report callbacks (DLR)
+
+Parameters
+
+Try it out
+
+No parameters
+
+Request body
+
+application/json
+
+Examples: Plain TextRich Text with Suggestions & VariablesRich CardRich Card Carousel
+
+Example Value
+
+Schema
+
+{
+
+  "messages": [
+
+    {
+
+      "template_name": "testtempl1103",
+
+      "ttl": "300s",
+
+      "addresses": [
+
+        {
+
+          "assistant_id": "68a2f70eec220d7409d8139c",
+
+          "mobile_number": "919390977728"
+
+        }
+
+      ]
+
+    }
+
+  ],
+
+  "dlr_url": [
+
+    {
+
+      "url": "https://example.com/"
+
+    }
+
+  ]
+
+}
+
+Responses
+
+Code
+
+Description
+
+Links
+
+200
+
+Successfull
+
+Media type
+
+application/json
+
+Controls Accept header.
+
+Example Value
+
+{
+
+  "status_code": 200,
+
+  "message": "Successful",
+
+  "submission_id": "e3f95e63-6f74-4520-b382-5e5abb762480",
+
+  "success": [
+
+    {
+
+      "seq_id": "seq-sample"
+
+    }
+
+  ],
+
+  "failed": [
+
+    {
+
+      "seq_id": "91939097772*",
+
+      "error": "invalid templateId"
+
+    }
+
+  ]
+
+}
+
+No links
+
+400
+
+Bad request / Invalid payload
+
+No links
+
+401
+
+Unauthorized / Invalid credentials
+
+No links
+
+500
+
+Internal server error
+
+
+
+POST
+
+/backend/api/v2/rcs/sendmessage
+
+Send RCS Message
+
+Send RCS messages using API-based messages. This endpoint supports Plain Text, Rich Text, Rich Card, and Rich Card Carousel messages.
+
+Messages can be sent using templates with support for:
+
+Variables
+
+Suggestions
+
+Media (image / carousel)
+
+Delivery report callbacks (DLR)
+
+Parameters
+
+Try it out
+
+No parameters
+
+Request body
+
+application/json
+
+Examples: Plain TextRich Text with Suggestions & VariablesRich CardRich Card Carousel
+
+Example Value
+
+Schema
+
+{
+
+  "messages": [
+
+    {
+
+      "template_name": "test1232",
+
+      "ttl": "300s",
+
+      "addresses": [
+
+        {
+
+          "seq_id": "sample id",
+
+          "assistant_id": "68a2f70eec220d7409d8139c",
+
+          "mobile_number": "919390977728",
+
+          "variables": [
+
+            {
+
+              "name": "{{1}}",
+
+              "value": "var1"
+
+            },
+
+            {
+
+              "name": "{{2}}",
+
+              "value": "var2"
+
+            }
+
+          ]
+
+        }
+
+      ]
+
+    }
+
+  ],
+
+  "dlr_url": [
+
+    {
+
+      "url": "https://example.com/"
+
+    }
+
+  ]
+
+}
+
+Responses
+
+Code
+
+Description
+
+Links
+
+200
+
+Successfull
+
+Media type
+
+application/json
+
+Controls Accept header.
+
+Example Value
+
+{
+
+  "status_code": 200,
+
+  "message": "Successful",
+
+  "submission_id": "e3f95e63-6f74-4520-b382-5e5abb762480",
+
+  "success": [
+
+    {
+
+      "seq_id": "seq-sample"
+
+    }
+
+  ],
+
+  "failed": [
+
+    {
+
+      "seq_id": "91939097772*",
+
+      "error": "invalid templateId"
+
+    }
+
+  ]
+
+}
+
+No links
+
+400
+
+Bad request / Invalid payload
+
+No links
+
+401
+
+Unauthorized / Invalid credentials
+
+No links
+
+500
+
+Internal server error
+
+
+
+
+
+POST
+
+/backend/api/v2/rcs/sendmessage
+
+Send RCS Message
+
+Send RCS messages using API-based messages. This endpoint supports Plain Text, Rich Text, Rich Card, and Rich Card Carousel messages.
+
+Messages can be sent using templates with support for:
+
+Variables
+
+Suggestions
+
+Media (image / carousel)
+
+Delivery report callbacks (DLR)
+
+Parameters
+
+Try it out
+
+No parameters
+
+Request body
+
+application/json
+
+Examples: Plain TextRich Text with Suggestions & VariablesRich CardRich Card Carousel
+
+Example Value
+
+Schema
+
+{
+
+  "messages": [
+
+    {
+
+      "message_id": "sample-id",
+
+      "template_name": "templateName",
+
+      "ttl": "300s",
+
+      "addresses": [
+
+        {
+
+          "seq_id": "seq-sample",
+
+          "assistant_id": "677baf920f6d1f157306740b",
+
+          "mobile_number": "919390977728",
+
+          "variables": {
+
+            "card_title_variables": [
+
+              {
+
+                "name": "{{1}}",
+
+                "value": "var2"
+
+              }
+
+            ],
+
+            "card_variables": [
+
+              {
+
+                "name": "{{1}}",
+
+                "value": "channel"
+
+              },
+
+              {
+
+                "name": "{{2}}",
+
+                "value": "source"
+
+              }
+
+            ]
+
+          }
+
+        }
+
+      ]
+
+    }
+
+  ],
+
+  "dlr_url": [
+
+    {
+
+      "url": "https://example.com/"
+
+    }
+
+  ]
+
+}
+
+Responses
+
+Code
+
+Description
+
+Links
+
+200
+
+Successfull
+
+Media type
+
+application/json
+
+Controls Accept header.
+
+Example Value
+
+{
+
+  "status_code": 200,
+
+  "message": "Successful",
+
+  "submission_id": "e3f95e63-6f74-4520-b382-5e5abb762480",
+
+  "success": [
+
+    {
+
+      "seq_id": "seq-sample"
+
+    }
+
+  ],
+
+  "failed": [
+
+    {
+
+      "seq_id": "91939097772*",
+
+      "error": "invalid templateId"
+
+    }
+
+  ]
+
+}
+
+No links
+
+400
+
+Bad request / Invalid payload
+
+No links
+
+401
+
+Unauthorized / Invalid credentials
+
+No links
+
+500
+
+Internal server error
+
+
+
+
+

@@ -8,27 +8,42 @@
 
 /**
  * Maps raw SPARC status strings to MoEngage status enums.
- * TODO: Verify these exact strings with the SPARC team before production.
+ * These are the exact eventType values SPARC uses in its DLR callbacks.
  */
 const STATUS_MAP = Object.freeze({
-  'sent':                'RCS_SENT',
-  'rcs_sent':            'RCS_SENT',
-  'delivered':           'RCS_DELIVERED',
-  'rcs_delivered':       'RCS_DELIVERED',
-  'read':                'RCS_READ',
-  'rcs_read':            'RCS_READ',
-  'failed':              'RCS_DELIVERY_FAILED',
-  'rcs_failed':          'RCS_DELIVERY_FAILED',
-  'rcs_delivery_failed': 'RCS_DELIVERY_FAILED',
-  'undelivered':         'RCS_DELIVERY_FAILED',
-  'sms_sent':            'SMS_SENT',
-  'sms_delivered':       'SMS_DELIVERED',
-  'sms_failed':          'SMS_DELIVERY_FAILED',
-  'sms_delivery_failed': 'SMS_DELIVERY_FAILED',
+  // ── SPARC canonical event types ──────────────────────────────────────────
+  'SEND_MESSAGE_SUCCESS':   'RCS_SENT',
+  'SEND_MESSAGE_FAILURE':   'RCS_DELIVERY_FAILED',
+  'MESSAGE_DELIVERED':      'RCS_DELIVERED',
+  'MESSAGE_READ':           'RCS_READ',
+  'MESSAGE_DELIVERY_FAILED':'RCS_DELIVERY_FAILED',
+
+  // ── SMS fallback events from SPARC ────────────────────────────────────────
+  'SMS_SENT':               'SMS_SENT',
+  'SMS_DELIVERED':          'SMS_DELIVERED',
+  'SMS_DELIVERY_FAILED':    'SMS_DELIVERY_FAILED',
+  'SMS_FAILED':             'SMS_DELIVERY_FAILED',
+
+  // ── Lowercase aliases (legacy / safety) ───────────────────────────────────
+  'sent':                   'RCS_SENT',
+  'delivered':              'RCS_DELIVERED',
+  'read':                   'RCS_READ',
+  'failed':                 'RCS_DELIVERY_FAILED',
+  'sms_sent':               'SMS_SENT',
+  'sms_delivered':          'SMS_DELIVERED',
+  'sms_failed':             'SMS_DELIVERY_FAILED',
 });
 
-/** MoEngage expects error_message field ONLY for FAILED statuses */
-const FAILED_STATUSES = new Set(['RCS_DELIVERY_FAILED', 'SMS_DELIVERY_FAILED']);
+/**
+ * MoEngage expects error_message field ONLY for FAILED statuses.
+ * Also includes SMS_SENT_FAILED so error_message is captured there too.
+ */
+const FAILED_STATUSES = new Set([
+  'RCS_DELIVERY_FAILED',
+  'RCS_SENT_FAILED',
+  'SMS_DELIVERY_FAILED',
+  'SMS_SENT_FAILED',
+]);
 
 /**
  * Maps a SPARC DLR event to MoEngage callback format.
@@ -36,20 +51,32 @@ const FAILED_STATUSES = new Set(['RCS_DELIVERY_FAILED', 'SMS_DELIVERY_FAILED']);
  * @returns {object} MoEngage-formatted status callback payload
  */
 function mapDlrEvent(sparcEvent) {
-  // TODO: Confirm exact field names with SPARC team (seq_id vs message_id vs ref_id)
-  const sparcStatus = (sparcEvent.status || '').toLowerCase();
+  const eventRoot = sparcEvent.eventData || sparcEvent;
+  const entity = eventRoot.entity || {};
+
+  const sparcStatus = (entity.eventType || '').toUpperCase();
   const moeStatus = STATUS_MAP[sparcStatus] || 'UNKNOWN';
-  const callbackData = sparcEvent.seq_id || sparcEvent.callback_data || sparcEvent.ref_id;
+  
+  // SeqId is often at root of sparcEvent, check both root and child just in case
+  const callbackData = sparcEvent.seqId || sparcEvent.seq_id || eventRoot.seqId;
+
+  // Convert SPARC ISO 8601 (e.g. 2026-03-28T15:21...) to MoEngage Epoch Seconds
+  let timestampSeconds = Math.floor(Date.now() / 1000);
+  if (entity.sendTime) {
+    timestampSeconds = Math.floor(new Date(entity.sendTime).getTime() / 1000);
+    // Fallback if Invalid Date
+    if (isNaN(timestampSeconds)) timestampSeconds = Math.floor(Date.now() / 1000);
+  }
 
   const statusItem = {
     status: moeStatus,
     callback_data: callbackData,
-    timestamp: String(sparcEvent.timestamp || Math.floor(Date.now() / 1000)),
+    timestamp: String(timestampSeconds),
   };
 
   // Only include error_message for failed statuses
-  if (FAILED_STATUSES.has(moeStatus) && sparcEvent.error_message) {
-    statusItem.error_message = sparcEvent.error_message;
+  if (FAILED_STATUSES.has(moeStatus) && entity.error && entity.error.message) {
+    statusItem.error_message = entity.error.message;
   }
 
   return {
@@ -72,7 +99,7 @@ function isFailedStatus(moeStatus) {
  * @returns {string}
  */
 function translateStatus(sparcStatus) {
-  return STATUS_MAP[(sparcStatus || '').toLowerCase()] || 'UNKNOWN';
+  return STATUS_MAP[(sparcStatus || '').toUpperCase()] || 'UNKNOWN';
 }
 
 module.exports = {

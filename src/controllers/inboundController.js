@@ -26,7 +26,7 @@ async function processMessages(messages, workspace) {
         workspace_id: workspace.workspace_id,
         destination: message.destination,
         bot_id: message.rcs.bot_id,
-        template_id: message.rcs.template_id || null,
+        template_name: message.rcs.template_id || message.rcs.template_name || null,
         message_type: message.content.type,
         fallback_order: message.fallback_order || ['rcs'],
         raw_payload: message,

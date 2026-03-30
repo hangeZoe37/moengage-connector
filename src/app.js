@@ -35,6 +35,16 @@ app.use('/sparc', sparcInteractionRoutes);
 // Health check
 app.use('/', healthRoutes);
 
+// --- Local Mock Endpoint for Testing MoEngage DLRs ---
+app.post('/test/moengage-dlr', (req, res) => {
+  const logger = require('./config/logger');
+  logger.info('SUCCESS!! Received perfectly formatted MoEngage DLR Locally:', { payload: req.body });
+  console.log('\n================ MOENGAGE DLR PAYLOAD RECEIVED ================');
+  console.dir(req.body, { depth: null, colors: true });
+  console.log('===============================================================\n');
+  res.status(200).json({ status: 'success', message: 'Mock MoEngage DLR Received' });
+});
+
 // --- 404 Handler ---
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });

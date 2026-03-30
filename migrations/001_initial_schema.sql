@@ -28,11 +28,18 @@ CREATE TABLE IF NOT EXISTS message_logs (
   workspace_id     VARCHAR(100),            -- which client sent this
   destination      VARCHAR(20),             -- phone number E.164
   bot_id           VARCHAR(100),            -- SPARC assistant_id
-  template_id      VARCHAR(100),            -- null for international users
-  message_type     ENUM('TEXT','CARD','MEDIA','CAROUSEL'),
+  template_name    VARCHAR(100),            -- null for international users
+  message_type     ENUM('TEXT','CARD','MEDIA'),              -- CAROUSEL not yet supported by MoEngage
   fallback_order   JSON,                    -- e.g. ["rcs","sms"]
   sparc_message_id VARCHAR(100),            -- message_id we sent to SPARC
-  status           ENUM('QUEUED','RCS_SENT','RCS_FAILED','SMS_SENT','SMS_FAILED','DONE') DEFAULT 'QUEUED',
+  status           ENUM(
+                     'QUEUED',
+                     'RCS_SENT','RCS_SENT_FAILED',
+                     'RCS_DELIVERED','RCS_DELIVERY_FAILED','RCS_READ',
+                     'SMS_SENT','SMS_SENT_FAILED',
+                     'SMS_DELIVERED','SMS_DELIVERY_FAILED',
+                     'DONE'
+                   ) DEFAULT 'QUEUED',
   raw_payload      JSON,                    -- full MoEngage payload (debug only)
   created_at       TIMESTAMP DEFAULT NOW(),
   updated_at       TIMESTAMP DEFAULT NOW() ON UPDATE NOW(),

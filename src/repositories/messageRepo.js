@@ -18,7 +18,7 @@ async function create(params) {
     workspace_id,
     destination,
     bot_id,
-    template_id,
+    template_name,
     message_type,
     fallback_order,
     sparc_message_id,
@@ -27,7 +27,7 @@ async function create(params) {
 
   const result = await query(
     `INSERT INTO message_logs 
-      (callback_data, workspace_id, destination, bot_id, template_id, 
+      (callback_data, workspace_id, destination, bot_id, template_name, 
        message_type, fallback_order, sparc_message_id, status, raw_payload)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'QUEUED', ?)`,
     [
@@ -35,7 +35,7 @@ async function create(params) {
       workspace_id,
       destination,
       bot_id,
-      template_id || null,
+      template_name || null,
       message_type,
       JSON.stringify(fallback_order || ['rcs']),
       sparc_message_id || null,

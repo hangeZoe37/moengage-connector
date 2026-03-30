@@ -1,0 +1,298 @@
+	Sample Payload
+
+The following is a sample payload for sending RCS messages:
+
+{
+
+	 "messages":[
+
+	          {
+
+	        "destination": "phone number", // sent in E.164 format
+
+	        "callback data": CALLBACK__DATA, // string to be sent back in callback
+
+	        "fallback_order": ["RCS","SMS"]
+
+	        "rcs": {
+
+	            "bot_id": "bot id entered" // Agent id registered for RCS messages
+
+	            "template_name": "template id", // Optional string for Indian templates
+
+	            "message_content": MESSAGE_CONTENT
+
+	           }
+
+	        "sms": {
+
+	            "sender": "sender id of fallback"
+
+	            "message": "Message text", // resolved message
+
+	            "template_name": "template id" // Optional string for Indian templates 
+
+	            }
+
+	         },
+
+	           {
+
+	             ...
+
+	           }
+
+	       ]
+
+	  }
+
+Message Content for Text
+
+	{
+
+	   "type": "TEXT",
+
+	   "data": {
+
+	        "text": "Text message to be sent",
+
+	        "parameters": { // Template parameters object
+
+	                 "param_1": "value_1",
+
+	                  ...
+
+	                }
+
+	             },
+
+	   "suggestions": [SUGGESTION_1, SUGGESTION_2...] //Optional suggestions array of objects 
+
+	 }
+
+Message Content for Card
+
+	{
+
+	   "type": "CARD",
+
+	      "data": {
+
+	          "media": {
+
+	               "media _url": "media_url",
+
+	               "content_type": "content type"
+
+	               },
+
+	            "title": "Title message", // resolved message
+
+	            "description": "Description of the card", // resolved message
+
+	            "orientation": "HORIZONTAL | VERTICAL",
+
+	            "height": "SHORT | MEDIUM", // comes only in case of VERTICAL
+
+	            "alignment": "LEFT | RIGHT", // comes only in case of HORIZONTAL
+
+	            "parameters": { // Template parameters object
+
+	                   "param_1": "value_1",
+
+	                   ...
+
+	                 }
+
+	              },
+
+	              "suggestions": [SUGGESTION_1, SUGGESTION_2 ...] //Optional suggestions array of objects
+
+	 }   
+
+Message Content for Media
+
+	{
+
+	   "type": "MEDIA",
+
+	   "data": {
+
+	      "media_url": "media_url",
+
+	      "content_type": "content type" //optional
+
+	       },
+
+	   "suggestions": SUGGESTIONS //Optional suggestions object
+
+	}
+
+Suggestions
+
+Following are the types of suggestion JSON objects:
+
+Reply
+
+	{
+
+	   "type": "REPLY",
+
+	   "text": "Suggestion text",
+
+	   "postback_data": "postback data string"
+
+	}
+
+Open URL
+
+	{
+
+	   "type": "OPEN_URL",
+
+	   "text": "Suggestion text",
+
+	   "postback_data": "postback data string",
+
+	   "url": "url"
+
+	}
+
+Dial Phone
+
+
+
+{
+
+
+
+"type": "DIAL_PHONE",
+
+
+
+"text": "Suggestion text",
+
+
+
+"postback_data": "postback data string",
+
+
+
+"phone": "phone number",
+
+
+
+} 
+
+Show Location
+
+
+
+{
+
+
+
+"type": "SHOW_LOCATION",
+
+
+
+"text": "Suggestion text",
+
+
+
+"postback_data": "postback data string",
+
+
+
+"latitude": "latitude",
+
+
+
+"longitude": "longitude",
+
+
+
+"label": "label for location" //optional
+
+
+
+}
+
+Query Location
+
+{
+
+   "type": "QUERY_LOCATION",
+
+   "text": "Suggestion text",
+
+   "postback_data": "postback data string"
+
+   "query": "query for location"
+
+}
+
+
+
+Share Location
+
+
+
+{
+
+
+
+"type": "REQUEST_LOCATION",
+
+
+
+"text": "Suggestion text",
+
+
+
+"postback_data": "postback data string"
+
+
+
+}
+
+Create Calendar Event
+
+
+
+{
+
+
+
+"type": "CREATE_CAL_EVENT",
+
+
+
+"text": "Suggestion text",
+
+
+
+"postback_data": "postback data string",
+
+
+
+"start_time": "event start time",
+
+
+
+"end_time": "event end time",
+
+
+
+"title": "event title",
+
+
+
+"description": "event description", //optional
+
+
+
+} 
+
+
+

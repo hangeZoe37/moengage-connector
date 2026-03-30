@@ -1,0 +1,13 @@
+# SPARC DLR Webhook Payload Parsing
+
+- [x] Update `src/mappers/dlrMapper.js`
+  - [x] Maps exact SPARC statuses (`SEND_MESSAGE_SUCCESS`, etc.)
+  - [x] `mapDlrEvent` handles nested `eventType`
+  - [x] `mapDlrEvent` parses `sendTime` string to epoch
+  - [x] Extracts error message safely
+- [x] Update `src/controllers/dlrController.js`
+  - [x] Update extracting logic for `sparcStatus` & `callbackData`
+  - [x] Pass valid timestamp to DB
+- [x] Update `tests/mappers/dlrMapper.test.js`
+  - [x] Update mocked events to match exact user dumps
+- [x] Run test suite & verify

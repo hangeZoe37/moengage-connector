@@ -1,6 +1,7 @@
 {
   "info": {
-    "name": "MoEngage Connector API",
+    "name": "MoEngage SPARC Connector",
+    "description": "Postman collection for testing the MoEngage-SPARC RCS Connector.\n\nFollowing MoEngage Official Onboarding Documentation for RCS Providers.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -11,133 +12,190 @@
     },
     {
       "key": "bearer_token",
-      "value": "YOUR_BEARER_TOKEN",
+      "value": "YOUR_BEARER_TOKEN_HERE",
       "type": "string"
     }
   ],
   "item": [
     {
-      "name": "Health Check",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/health",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "health"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "MoEngage Inbound Send",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{bearer_token}}",
-            "type": "text"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "type": "text"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"messages\": [\n    {\n      \"callback_data\": \"sample-callback-data\",\n      \"to\": \"1234567890\",\n      \"content\": \"Hello world\"\n    }\n  ]\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
+      "name": "1. Inbound Send (MoEngage -> Connector)",
+      "item": [
+        {
+          "name": "TEXT Message (with parameters)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authentication", "value": "Bearer {{bearer_token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n \"messages\":[\n    {\n      \"destination\": \"+918512839790\",\n      \"callback_data\": \"cb_text_001\",\n      \"fallback_order\": [\"RCS\",\"SMS\"],\n      \"rcs\": {\n          \"bot_id\": \"test_bot_id\",\n          \"template_id\": \"welcome_text_01\",\n          \"message_content\": {\n                     \"type\": \"TEXT\",\n                     \"data\": {\n                        \"text\": \"Welcome John to MoEngage!\",\n                        \"parameters\": {\n                           \"name\": \"John\",\n                           \"company\": \"Moengage\"\n                        }\n                     }\n          }\n      }\n    }\n ]\n}"
+            },
+            "url": { "raw": "{{base_url}}/integrations/moengage/rcs/send", "host": [ "{{base_url}}" ], "path": [ "integrations", "moengage", "rcs", "send" ] }
           }
         },
-        "url": {
-          "raw": "{{base_url}}/integrations/moengage/rcs/send",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "integrations",
-            "moengage",
-            "rcs",
-            "send"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "SPARC DLR Webhook",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "type": "text"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"messageId\": \"msg-123\",\n  \"status\": \"DELIVERED\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
+        {
+          "name": "CARD Message (Vertical/Indian Format)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authentication", "value": "Bearer {{bearer_token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n \"messages\":[\n    {\n      \"destination\": \"+918512839790\",\n      \"callback_data\": \"cb_card_001\",\n      \"fallback_order\": [\"RCS\"],\n      \"rcs\": {\n          \"bot_id\": \"test_bot_id\",\n          \"template_id\": \"card_template_01\",\n          \"message_content\": {\n                     \"type\": \"CARD\",\n                     \"data\": {\n                        \"media\": {\n                           \"media_url\": \"https://img.freepik.com/free-photo/vibrant-colors-nature-close-up-generative-ai_188544-9121.jpg\",\n                           \"content_type\": \"IMAGE\"\n                        },\n                        \"title\": \"Welcome John to Moengage\",\n                        \"description\": \"John is happily welcomed to Moengage team\",\n                        \"orientation\": \"VERTICAL\",\n                        \"height\": \"MEDIUM\",\n                        \"parameters\": {\n                           \"name\": \"John\",\n                           \"team\": \"Product\"\n                        }\n                     },\n                     \"suggestions\": [\n                        {\n                           \"type\": \"REPLY\",\n                           \"text\": \"STOP Messaging\",\n                           \"postback_data\": \"STOP\"\n                        }\n                     ]\n          }\n      }\n    }\n ]\n}"
+            },
+            "url": { "raw": "{{base_url}}/integrations/moengage/rcs/send", "host": [ "{{base_url}}" ], "path": [ "integrations", "moengage", "rcs", "send" ] }
           }
         },
-        "url": {
-          "raw": "{{base_url}}/sparc/dlr",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "sparc",
-            "dlr"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "SPARC Interaction Webhook",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "type": "text"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"messageId\": \"msg-123\",\n  \"interactionType\": \"REPLY\",\n  \"payload\": \"User clicked Yes\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
+        {
+          "name": "MEDIA Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authentication", "value": "Bearer {{bearer_token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n \"messages\":[\n    {\n      \"destination\": \"+918512839790\",\n      \"callback_data\": \"cb_media_001\",\n      \"fallback_order\": [\"RCS\"],\n      \"rcs\": {\n          \"bot_id\": \"test_bot_id\",\n          \"template_id\": \"media_template_01\",\n          \"message_content\": {\n                     \"type\": \"MEDIA\",\n                     \"data\": {\n                        \"media_url\": \"https://www.w3schools.com/html/mov_bbb.mp4\",\n                        \"content_type\": \"VIDEO\"\n                     }\n          }\n      }\n    }\n ]\n}"
+            },
+            "url": { "raw": "{{base_url}}/integrations/moengage/rcs/send", "host": [ "{{base_url}}" ], "path": [ "integrations", "moengage", "rcs", "send" ] }
           }
         },
-        "url": {
-          "raw": "{{base_url}}/sparc/interaction",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "sparc",
-            "interaction"
+        {
+          "name": "Suggestion Types",
+          "item": [
+            {
+              "name": "OPEN_URL Suggestion",
+              "request": {
+                "method": "POST",
+                "header": [ { "key": "Authentication", "value": "Bearer {{bearer_token}}", "type": "text" } ],
+                "body": { "mode": "raw", "raw": "{\n \"messages\":[ {\n  \"destination\": \"+918512839790\",\n  \"callback_data\": \"cb_suggest_url\",\n  \"rcs\": {\n   \"bot_id\": \"bot1\", \"template_id\": \"t1\",\n   \"message_content\": {\n    \"type\": \"TEXT\", \"data\": { \"text\": \"Check our site\" },\n    \"suggestions\": [ {\n     \"type\": \"OPEN_URL\", \"text\": \"Visit Site\", \"postback_data\": \"visit_site\", \"url\": \"https://moengage.com\"\n    } ]\n   }\n  }\n } ]\n}" },
+                "url": { "raw": "{{base_url}}/integrations/moengage/rcs/send", "host": [ "{{base_url}}" ], "path": [ "integrations", "moengage", "rcs", "send" ] }
+              }
+            },
+            {
+              "name": "DIAL_PHONE Suggestion",
+              "request": {
+                "method": "POST",
+                "header": [ { "key": "Authentication", "value": "Bearer {{bearer_token}}", "type": "text" } ],
+                "body": { "mode": "raw", "raw": "{\n \"messages\":[ {\n  \"destination\": \"+918512839790\",\n  \"callback_data\": \"cb_suggest_dial\",\n  \"rcs\": {\n   \"bot_id\": \"bot1\", \"template_id\": \"t1\",\n   \"message_content\": {\n    \"type\": \"TEXT\", \"data\": { \"text\": \"Call Support\" },\n    \"suggestions\": [ {\n     \"type\": \"DIAL_PHONE\", \"text\": \"Call Now\", \"postback_data\": \"call_support\", \"phone\": \"+910000000000\"\n    } ]\n   }\n  }\n } ]\n}" },
+                "url": { "raw": "{{base_url}}/integrations/moengage/rcs/send", "host": [ "{{base_url}}" ], "path": [ "integrations", "moengage", "rcs", "send" ] }
+              }
+            },
+            {
+              "name": "SHOW_LOCATION Suggestion",
+              "request": {
+                "method": "POST",
+                "header": [ { "key": "Authentication", "value": "Bearer {{bearer_token}}", "type": "text" } ],
+                "body": { "mode": "raw", "raw": "{\n \"messages\":[ {\n  \"destination\": \"+918512839790\",\n  \"callback_data\": \"cb_suggest_loc\",\n  \"rcs\": {\n   \"bot_id\": \"bot1\", \"template_id\": \"t1\",\n   \"message_content\": {\n    \"type\": \"TEXT\", \"data\": { \"text\": \"Store Location\" },\n    \"suggestions\": [ {\n     \"type\": \"SHOW_LOCATION\", \"text\": \"Find Us\", \"postback_data\": \"store_loc\", \"latitude\": \"12.9716\", \"longitude\": \"77.5946\", \"label\": \"MoEngage Bangalore\"\n    } ]\n   }\n  }\n } ]\n}" },
+                "url": { "raw": "{{base_url}}/integrations/moengage/rcs/send", "host": [ "{{base_url}}" ], "path": [ "integrations", "moengage", "rcs", "send" ] }
+              }
+            },
+            {
+              "name": "CREATE_CAL_EVENT Suggestion",
+              "request": {
+                "method": "POST",
+                "header": [ { "key": "Authentication", "value": "Bearer {{bearer_token}}", "type": "text" } ],
+                "body": { "mode": "raw", "raw": "{\n \"messages\":[ {\n  \"destination\": \"+918512839790\",\n  \"callback_data\": \"cb_suggest_cal\",\n  \"rcs\": {\n   \"bot_id\": \"bot1\", \"template_id\": \"t1\",\n   \"message_content\": {\n    \"type\": \"TEXT\", \"data\": { \"text\": \"Book Meeting\" },\n    \"suggestions\": [ {\n     \"type\": \"CREATE_CAL_EVENT\", \"text\": \"Add to Calendar\", \"postback_data\": \"add_cal\", \"start_time\": \"2026-04-30T10:00:00Z\", \"end_time\": \"2026-04-30T11:00:00Z\", \"title\": \"Sales Call\", \"description\": \"Demo of MoEngage RCS Connector\"\n    } ]\n   }\n  }\n } ]\n}" },
+                "url": { "raw": "{{base_url}}/integrations/moengage/rcs/send", "host": [ "{{base_url}}" ], "path": [ "integrations", "moengage", "rcs", "send" ] }
+              }
+            }
           ]
+        },
+        {
+          "name": "Bulk Send (Multi-message)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Authentication", "value": "Bearer {{bearer_token}}", "type": "text" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n \"messages\":[\n    {\n      \"destination\": \"+918512839790\",\n      \"callback_data\": \"bulk_01_userA\",\n      \"rcs\": {\n          \"bot_id\": \"botA\",\n          \"template_id\": \"welcome\",\n          \"message_content\": { \"type\": \"TEXT\", \"data\": { \"text\": \"Msg A\" } }\n      }\n    },\n    {\n      \"destination\": \"+918512839791\",\n      \"callback_data\": \"bulk_01_userB\",\n      \"rcs\": {\n          \"bot_id\": \"botB\",\n          \"template_id\": \"welcome\",\n          \"message_content\": { \"type\": \"TEXT\", \"data\": { \"text\": \"Msg B\" } }\n      }\n    }\n ]\n}"
+            },
+            "url": { "raw": "{{base_url}}/integrations/moengage/rcs/send", "host": [ "{{base_url}}" ], "path": [ "integrations", "moengage", "rcs", "send" ] }
+          }
         }
-      },
-      "response": []
+      ]
+    },
+    {
+      "name": "2. Webhooks (SPARC -> Connector)",
+      "item": [
+        {
+          "name": "DLR: MESSAGE_DELIVERED",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json", "type": "text" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventData\": {\n    \"userPhoneNumber\": \"+918512839790\",\n    \"botId\": \"677baf920f6d1f157306740b\",\n    \"entityType\": \"USER_EVENT\",\n    \"entity\": {\n      \"eventType\": \"MESSAGE_DELIVERED\",\n      \"messageId\": \"af695c66-deec-41b1-bb84-fb053a5e82ac\",\n      \"sendTime\": \"2026-03-28T15:21:39.260922Z\",\n      \"senderPhoneNumber\": \"+918512839790\",\n      \"eventId\": \"Mxo3hetei5T-yhKNx4gidsvw\"\n    }\n  },\n  \"submissionId\": \"fc6a24fc-7554-4e6e-b489-a113eb021d33\",\n  \"messageId\": \"7b98499e-b83b-4edb-8a9e-e4f70df39612\",\n  \"seqId\": \"cb_text_001\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/sparc/dlr", "host": [ "{{base_url}}" ], "path": [ "sparc", "dlr" ] }
+          }
+        },
+        {
+          "name": "DLR: SEND_MESSAGE_SUCCESS",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json", "type": "text" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventData\": {\n    \"userPhoneNumber\": \"+918512839790\",\n    \"botId\": \"677baf920f6d1f157306740b\",\n    \"entityType\": \"STATUS_EVENT\",\n    \"entity\": {\n      \"eventType\": \"SEND_MESSAGE_SUCCESS\",\n      \"messageId\": \"af695c66-deec-41b1-bb84-fb053a5e82ac\",\n      \"sendTime\": \"2026-03-28T20:51:36.7317619+05:30\",\n      \"senderPhoneNumber\": \"+918512839790\",\n      \"eventId\": \"5c8da709-9303-4f92-8025-4e1fbaffe52a\"\n    }\n  },\n  \"submissionId\": \"fc6a24fc-7554-4e6e-b489-a113eb021d33\",\n  \"messageId\": \"7b98499e-b83b-4edb-8a9e-e4f70df39612\",\n  \"seqId\": \"cb_text_001\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/sparc/dlr", "host": [ "{{base_url}}" ], "path": [ "sparc", "dlr" ] }
+          }
+        },
+        {
+          "name": "DLR: SEND_MESSAGE_FAILURE",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json", "type": "text" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userPhoneNumber\": \"+918686747505\",\n  \"botId\": \"677baf920f6d1f157306740b\",\n  \"entityType\": \"STATUS_EVENT\",\n  \"entity\": {\n    \"eventType\": \"SEND_MESSAGE_FAILURE\",\n    \"error\": {\n      \"code\": \"not_found\",\n      \"errCode\": 5,\n      \"message\": \"User Not Found\"\n    },\n    \"messageId\": \"06e9ae24-9fc6-43ab-ba7a-036f82a91ce7\",\n    \"sendTime\": \"2026-03-28T00:03:21.3328038+05:30\",\n    \"senderPhoneNumber\": \"+918686747505\",\n    \"eventId\": \"9e6c0e2a-4556-4699-801e-fe273867452f\"\n  },\n  \"seqId\": \"cb_text_001\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/sparc/dlr", "host": [ "{{base_url}}" ], "path": [ "sparc", "dlr" ] }
+          }
+        },
+        {
+          "name": "DLR: MESSAGE_READ",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json", "type": "text" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userPhoneNumber\": \"+918686747505\",\n  \"botId\": \"677baf920f6d1f157306740b\",\n  \"entityType\": \"USER_EVENT\",\n  \"entity\": {\n    \"eventType\": \"MESSAGE_READ\",\n    \"messageId\": \"e77d46a9-0be6-4865-aa7b-e5f8721b8a6b\",\n    \"sendTime\": \"2026-03-27T18:32:30.038144Z\",\n    \"senderPhoneNumber\": \"+918686747505\",\n    \"eventId\": \"Mx2AByR=LiR0aH5Ni00ULdAw\"\n  },\n  \"submissionId\": \"ad7cee8f-387e-47c1-87e4-3ccfdd104b11\",\n  \"messageId\": \"1b3072d4-ec43-4268-acec-7ffe463f2d00\",\n  \"seqId\": \"cb_text_001\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/sparc/dlr", "host": [ "{{base_url}}" ], "path": [ "sparc", "dlr" ] }
+          }
+        },
+        {
+          "name": "Interaction: Suggestion Click",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json", "type": "text" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messageId\": \"af695c66-deec-41b1-bb84-fb053a5e82ac\",\n  \"interactionType\": \"REPLY\",\n  \"payload\": \"STOP\",\n  \"seqId\": \"cb_card_001\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/sparc/interaction", "host": [ "{{base_url}}" ], "path": [ "sparc", "interaction" ] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/health", "host": [ "{{base_url}}" ], "path": [ "health" ] }
+          }
+        }
+      ]
     }
   ]
 }

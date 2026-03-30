@@ -66,9 +66,10 @@ We follow a strict layered architecture to prevent spaghetti code.
 To successfully bridge MoEngage to SPARC, our mappers enforce the following strict entity translations from the MoEngage webhook payload:
 
 1. **`assistant_id` (RCS Bot):** MoEngage sends this as `message.rcs.bot_id`. We map this to SPARC's `assistant_id` for RCS delivery.
-2. **`dltContentId` (SMS Template):** For India DLT compliance, SPARC SMS requires a `dltContentId`. We pull this from `message.sms.template_id`. (There is also an optional `dltPrincipalEntityId` which can be sent in the XML API, but for JSON we rely on `dltContentId`).
-3. **Deep Content Nesting:** MoEngage does NOT put message content at the root. The content is deeply buried in `message.rcs.message_content.data`. Our `validatePayload.js` and `inboundMapper.js` are specifically built to dig into this nested object to extract `title`, `description`, etc.
-4. **`seq_id` (Reconciliation Key):** MoEngage sends a 200-character max `callback_data` string. We pass this exactly as-is into SPARC's `seq_id` field. When SPARC fires a DLR webhook back to us, we use their `seq_id` to tell MoEngage exactly which message was delivered.
+2. **`dltContentId` (SMS Template):** For India DLT compliance, SPARC SMS requires a `dltContentId`. We pull this from `message.sms.template_name`. (There is also an optional `dltPrincipalEntityId` which can be sent in the XML API, but for JSON we rely on `dltContentId`).
+3. **Deep Content Nesting:** MoEngage does NOT put message content at the root. The content is deeply buried in `message.rcs.message_content`. Our `validatePayload.js` extracts this to `message.content`. Furthermore, all sub-fields exist inside `message.content.data` (e.g., `message.content.data.text`, `message.content.data.parameters`, `message.content.data.title`). Our `inboundMapper.js` expects this structure.
+4. **SPARC Variables Format:** SPARC requires variables formatted as Arrays or nested Objects (`{{1}}`). For Text, we parse `content.data.parameters` into an Array of `name/value` objects. For Cards, we map `title`, `description`, and `parameters` into `card_title_variables` and `card_variables` inside the variables object block.
+5. **`seq_id` (Reconciliation Key):** MoEngage sends a string like `callback_data`. We pass this exactly as-is into SPARC's `seq_id` field. When SPARC fires a DLR webhook back to us, we use their `seq_id` to tell MoEngage exactly which message was delivered.
 
 ---
 

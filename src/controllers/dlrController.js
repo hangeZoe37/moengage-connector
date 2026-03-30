@@ -20,9 +20,11 @@ const logger = require('../config/logger');
  * @param {object} sparcEvent - Raw DLR event payload from SPARC
  */
 async function handleDlrEvent(sparcEvent) {
-  // TODO: Confirm exact field name with SPARC team (seq_id vs message_id vs ref_id)
-  const callbackData = sparcEvent.seq_id || sparcEvent.callback_data || sparcEvent.ref_id;
-  const sparcStatus = sparcEvent.status;
+  const eventRoot = sparcEvent.eventData || sparcEvent;
+  const entity = eventRoot.entity || {};
+
+  const callbackData = sparcEvent.seqId || sparcEvent.seq_id || eventRoot.seqId;
+  const sparcStatus = (entity.eventType || '').toUpperCase();
   const moeStatus = translateStatus(sparcStatus);
 
   logger.info('Processing DLR event', {
@@ -32,12 +34,18 @@ async function handleDlrEvent(sparcEvent) {
   });
 
   // Save DLR event to DB
+  let eventTimestamp = null;
+  if (entity.sendTime) {
+    const parsed = Math.floor(new Date(entity.sendTime).getTime() / 1000);
+    if (!isNaN(parsed)) eventTimestamp = parsed;
+  }
+
   const dlrResult = await dlrRepo.create({
     callback_data: callbackData,
     sparc_status: sparcStatus,
     moe_status: moeStatus,
-    error_message: sparcEvent.error_message || null,
-    event_timestamp: sparcEvent.timestamp || null,
+    error_message: entity.error?.message || null,
+    event_timestamp: eventTimestamp,
   });
 
   // Look up the original message to find the workspace

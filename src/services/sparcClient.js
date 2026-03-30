@@ -85,7 +85,7 @@ async function sendSMS(workspace, smsData, destination, assistantId) {
     messages: [
       {
         sender: smsData.sender,
-        template_id: smsData.template_id || null,
+        template_name: smsData.template_name || null,
         message: smsData.message,
         destination: destination.replace('+', ''),
         assistant_id: assistantId,

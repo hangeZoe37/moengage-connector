@@ -17,7 +17,9 @@
 const sparcClient = require('./sparcClient');
 const callbackDispatcher = require('./callbackDispatcher');
 const { mapMessageToSparc } = require('../mappers/inboundMapper');
-const { mapDlrEvent } = require('../mappers/dlrMapper');
+// mapDlrEvent is for SPARC-sourced DLR callbacks only.
+// For immediate confirmations (sent/failed) we build the MoEngage payload directly.
+const { FAILED_STATUSES } = require('../mappers/dlrMapper');
 const messageRepo = require('../repositories/messageRepo');
 const { CHANNELS, MESSAGE_STATUSES } = require('../config/constants');
 const { env } = require('../config/env');
@@ -30,8 +32,13 @@ const logger = require('../config/logger');
  * @param {object} workspace - Workspace row from DB
  */
 async function processMessage(message, workspace) {
-  const { callback_data, destination, rcs, sms } = message;
-  const fallbackOrder = message.fallback_order || [CHANNELS.RCS];
+  const callback_data = message.callback_data;
+  const destination = message.destination;
+  const rcs = message.rcs;
+  const sms = message.sms;
+  
+  const rawOrder = message.fallback_order || [CHANNELS.RCS];
+  const fallbackOrder = rawOrder.map(channel => String(channel).toLowerCase());
   const dlrUrl = workspace.moe_dlr_url || env.MOENGAGE_DLR_URL;
 
   const includesRcs = fallbackOrder.includes(CHANNELS.RCS);
@@ -47,12 +54,8 @@ async function processMessage(message, workspace) {
       const messageId = sparcPayload.messages[0].message_id;
       await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.RCS_SENT, messageId);
 
-      // Fire RCS_SENT callback to MoEngage
-      const sentPayload = mapDlrEvent({
-        status: 'rcs_sent',
-        seq_id: callback_data,
-        timestamp: Math.floor(Date.now() / 1000),
-      });
+      // Fire RCS_SENT callback to MoEngage immediately
+      const sentPayload = buildMoeStatusPayload(MESSAGE_STATUSES.RCS_SENT, callback_data);
       await callbackDispatcher.dispatchStatus(dlrUrl, sentPayload, callback_data);
 
       logger.info('RCS message sent successfully, waiting for DLR', {
@@ -68,16 +71,15 @@ async function processMessage(message, workspace) {
         hasSmsInFallback: includesSms,
       });
 
-      // Update status to RCS_FAILED
-      await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.RCS_FAILED);
+      // Update status to RCS_SENT_FAILED
+      await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.RCS_SENT_FAILED);
 
-      // Fire RCS_DELIVERY_FAILED callback
-      const failedPayload = mapDlrEvent({
-        status: 'rcs_failed',
-        seq_id: callback_data,
-        timestamp: Math.floor(Date.now() / 1000),
-        error_message: rcsError.message,
-      });
+      // Fire RCS_DELIVERY_FAILED callback  
+      const failedPayload = buildMoeStatusPayload(
+        MESSAGE_STATUSES.RCS_DELIVERY_FAILED,
+        callback_data,
+        rcsError.message
+      );
       await callbackDispatcher.dispatchStatus(dlrUrl, failedPayload, callback_data);
 
       // --- Attempt SMS fallback ---
@@ -114,11 +116,7 @@ async function attemptSms(message, workspace, dlrUrl) {
 
     await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.SMS_SENT);
 
-    const smsPayload = mapDlrEvent({
-      status: 'sms_sent',
-      seq_id: callback_data,
-      timestamp: Math.floor(Date.now() / 1000),
-    });
+    const smsPayload = buildMoeStatusPayload(MESSAGE_STATUSES.SMS_SENT, callback_data);
     await callbackDispatcher.dispatchStatus(dlrUrl, smsPayload, callback_data);
 
     logger.info('SMS fallback sent successfully', { callbackData: callback_data });
@@ -128,16 +126,36 @@ async function attemptSms(message, workspace, dlrUrl) {
       error: smsError.message,
     });
 
-    await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.SMS_FAILED);
+    await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.SMS_SENT_FAILED);
 
-    const smsFailPayload = mapDlrEvent({
-      status: 'sms_failed',
-      seq_id: callback_data,
-      timestamp: Math.floor(Date.now() / 1000),
-      error_message: smsError.message,
-    });
+    const smsFailPayload = buildMoeStatusPayload(
+      MESSAGE_STATUSES.SMS_DELIVERY_FAILED,
+      callback_data,
+      smsError.message
+    );
     await callbackDispatcher.dispatchStatus(dlrUrl, smsFailPayload, callback_data);
   }
 }
 
-module.exports = { processMessage, attemptSms };
+/**
+ * Build a MoEngage-format status callback payload directly.
+ * Used for immediate "sent" / "failed" confirmations — NOT for SPARC DLR events.
+ *
+ * @param {string} moeStatus  - One of MESSAGE_STATUSES
+ * @param {string} callbackData
+ * @param {string} [errorMessage]  - Required for failed statuses
+ * @returns {{ statuses: Array }}
+ */
+function buildMoeStatusPayload(moeStatus, callbackData, errorMessage) {
+  const item = {
+    status: moeStatus,
+    callback_data: callbackData,
+    timestamp: String(Math.floor(Date.now() / 1000)),
+  };
+  if (errorMessage && FAILED_STATUSES.has(moeStatus)) {
+    item.error_message = errorMessage;
+  }
+  return { statuses: [item] };
+}
+
+module.exports = { processMessage, attemptSms, buildMoeStatusPayload };
