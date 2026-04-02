@@ -331,22 +331,27 @@ function buildNonTemplatedContent(content) {
       };
     }
 
-    case MESSAGE_TYPES.MEDIA:
+    case MESSAGE_TYPES.MEDIA: {
+      const mediaContent = {
+        cardMedia: {
+          mediaHeight: 'TALL',
+          contentInfo: {
+            fileUrl: data?.media_url || data?.media?.media_url || ''
+          }
+        }
+      };
+      if (mappedSuggestions.length > 0) {
+        mediaContent.suggestions = mappedSuggestions;
+      }
       return {
         richCardDetails: {
           standalone: {
             cardOrientation: 'VERTICAL',
-            content: {
-              cardMedia: {
-                mediaHeight: 'TALL',
-                contentInfo: {
-                  fileUrl: data?.media_url || data?.media?.media_url || ''
-                }
-              }
-            }
+            content: mediaContent
           }
         }
       };
+    }
 
     default:
       // If we are passed an already formatted SPARC custom content, just pass it through
@@ -356,6 +361,7 @@ function buildNonTemplatedContent(content) {
       return {};
   }
 }
+
 
 /**
  * Build the full SPARC addresses block for a single message.
