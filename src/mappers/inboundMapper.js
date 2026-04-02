@@ -398,7 +398,7 @@ function mapMessageToSparc(message, dlrWebhookUrl) {
 
   const sparcMessage = {
     message_id: generateMessageId(),
-    ttl: "300s",
+    ttl: "300s", // Updated to match SPARC example "300s" instead of int 300
     addresses: [buildAddress(message, isTemplated)],
   };
 
