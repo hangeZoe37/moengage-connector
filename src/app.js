@@ -11,8 +11,8 @@ const rateLimiter = require('./middleware/rateLimiter');
 
 // Route imports
 const inboundRoutes = require('./routes/inbound');
-const sparcDlrRoutes = require('./routes/sparcDlr');
-const sparcInteractionRoutes = require('./routes/sparcInteraction');
+const sparcWebhookRoutes = require('./routes/sparcWebhook');
+const dashboardRoutes = require('./routes/dashboard');
 const healthRoutes = require('./routes/health');
 
 const app = express();
@@ -29,19 +29,22 @@ app.use(rateLimiter);
 app.use('/integrations/moengage/rcs', inboundRoutes);
 
 // SPARC webhooks (NO Bearer auth — protected by Nginx IP allowlist)
-app.use('/sparc', sparcDlrRoutes);
-app.use('/sparc', sparcInteractionRoutes);
+app.use('/sparc', sparcWebhookRoutes);
+
+// Dashboard API (Basic Auth applied at route level)
+app.use('/api/dashboard', dashboardRoutes);
 
 // Health check
 app.use('/', healthRoutes);
 
-// --- Local Mock Endpoint for Testing MoEngage DLRs ---
+// --- Temporary Mock Endpoint for Testing MoEngage DLR Delivery ---
+// TODO: Delete this once the real MoEngage webhook environment is ready.
 app.post('/test/moengage-dlr', (req, res) => {
   const logger = require('./config/logger');
-  logger.info('SUCCESS!! Received perfectly formatted MoEngage DLR Locally:', { payload: req.body });
-  console.log('\n================ MOENGAGE DLR PAYLOAD RECEIVED ================');
+  logger.info('SUCCESS!! Received format for MoEngage DLR locally:', { payload: req.body });
+  console.log('\n================ MOENGAGE DLR PAYLOAD DISPATCHED ================');
   console.dir(req.body, { depth: null, colors: true });
-  console.log('===============================================================\n');
+  console.log('=================================================================\n');
   res.status(200).json({ status: 'success', message: 'Mock MoEngage DLR Received' });
 });
 

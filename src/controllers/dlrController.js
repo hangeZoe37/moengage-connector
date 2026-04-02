@@ -9,7 +9,7 @@
 const { mapDlrEvent, translateStatus } = require('../mappers/dlrMapper');
 const dlrRepo = require('../repositories/dlrRepo');
 const messageRepo = require('../repositories/messageRepo');
-const workspaceRepo = require('../repositories/workspaceRepo');
+// ;
 const callbackDispatcher = require('../services/callbackDispatcher');
 const { env } = require('../config/env');
 const logger = require('../config/logger');
@@ -48,7 +48,7 @@ async function handleDlrEvent(sparcEvent) {
     event_timestamp: eventTimestamp,
   });
 
-  // Look up the original message to find the workspace
+  // Look up the original message to find the client_id
   const message = await messageRepo.findByCallbackData(callbackData);
 
   if (!message) {
@@ -59,9 +59,11 @@ async function handleDlrEvent(sparcEvent) {
   // Update message status
   await messageRepo.updateStatus(callbackData, moeStatus);
 
-  // Get workspace to find the DLR URL
-  const workspace = await workspaceRepo.findById(message.workspace_id);
-  const dlrUrl = workspace?.moe_dlr_url || env.MOENGAGE_DLR_URL;
+  // Get client info if needed (DLR URL is now global)
+  
+  
+  // Temp override: always use .env MOENGAGE_DLR_URL for mock testing
+  const dlrUrl = env.MOENGAGE_DLR_URL;
 
   // Map to MoEngage format and dispatch
   const moePayload = mapDlrEvent(sparcEvent);
@@ -70,6 +72,14 @@ async function handleDlrEvent(sparcEvent) {
   if (dispatched) {
     await dlrRepo.markDispatched(dlrResult.insertId);
   }
+
+  // Notify dashboard of status update
+  const { notifyUpdate } = require('../services/dashboardService');
+  notifyUpdate('message', {
+    ...message,
+    status: moeStatus,
+    updated_at: new Date().toISOString()
+  });
 }
 
 module.exports = { handleDlrEvent };

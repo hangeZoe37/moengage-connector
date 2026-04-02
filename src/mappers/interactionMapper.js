@@ -20,7 +20,7 @@ function mapInteractionEvent(sparcEvent) {
       {
         type: 'SUGGESTION_CLICKED',
         callback_data: callbackData,
-        timestamp: String(sparcEvent.timestamp || Math.floor(Date.now() / 1000)),
+        timestamp: String(Math.floor(sparcEvent.timestamp || Date.now() / 1000)),
         data: {
           text: sparcEvent.suggestion_text || sparcEvent.text || '',
           postback_data: sparcEvent.postback_data || sparcEvent.postback || '',

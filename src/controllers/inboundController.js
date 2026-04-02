@@ -15,15 +15,15 @@ const logger = require('../config/logger');
  * Called AFTER res.json() has been sent (via setImmediate).
  *
  * @param {Array<object>} messages - Array of message items from MoEngage payload
- * @param {object} workspace - Workspace row from DB
+ * @param {object} client - Client row from DB
  */
-async function processMessages(messages, workspace) {
+async function processMessages(messages, client) {
   for (const message of messages) {
     try {
       // Log message to DB
       await messageRepo.create({
         callback_data: message.callback_data,
-        workspace_id: workspace.workspace_id,
+        client_id: client.id,
         destination: message.destination,
         bot_id: message.rcs.bot_id,
         template_name: message.rcs.template_id || message.rcs.template_name || null,
@@ -33,11 +33,22 @@ async function processMessages(messages, workspace) {
       });
 
       // Process through fallback engine (RCS → SMS)
-      await fallbackEngine.processMessage(message, workspace);
+      await fallbackEngine.processMessage(message, client);
+
+      // Notify dashboard of new message
+      const { notifyUpdate } = require('../services/dashboardService');
+      notifyUpdate('message', {
+        callback_data: message.callback_data,
+        destination: message.destination,
+        message_type: message.content.type,
+        status: 'QUEUED',
+        client_name: client.name,
+        created_at: new Date().toISOString()
+      });
     } catch (error) {
       logger.error('Failed to process message', {
         callbackData: message.callback_data,
-        workspaceId: workspace.workspace_id,
+        client_id: client.id,
         error: error.message,
         stack: error.stack,
       });

@@ -1,0 +1,52 @@
+{
+  "test1": {
+    "error": {
+      "status_code": 400,
+      "message": [
+        "messages.0.Exactly one of template_name or content must be provided (not both, not none)"
+      ],
+      "timestamp": "2026-04-01T05:53:15.734Z",
+      "path": "/backend/api/v2/rcs/sendmessage"
+    }
+  },
+  "test2": {
+    "error": {
+      "status_code": 400,
+      "message": [
+        "messages.0.Exactly one of template_name or content must be provided (not both, not none)"
+      ],
+      "timestamp": "2026-04-01T05:53:15.751Z",
+      "path": "/backend/api/v2/rcs/sendmessage"
+    }
+  },
+  "test3": {
+    "status": 200,
+    "data": {
+      "status_code": 200,
+      "message": "Successfull",
+      "submission_id": "daeb7b73-9f23-4e5b-a219-727e82652f1d",
+      "success": [],
+      "failed": [
+        {
+          "seq_id": "919990927990",
+          "error": "Invalid template name"
+        }
+      ]
+    }
+  },
+  "test4": {
+    "status": 200,
+    "data": {
+      "status_code": 200,
+      "message": "Successfull",
+      "submission_id": "fad87c20-ffa5-407b-ae0c-7238b01a6922",
+      "success": [],
+      "failed": [
+        {
+          "seq_id": "919990927990",
+          "error": "Invalid template name"
+        }
+      ]
+    }
+  }
+}

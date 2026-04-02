@@ -256,21 +256,128 @@ function buildAddressProperties(content) {
 }
 
 /**
+ * Map MoEngage generic content to SPARC payload content schema (Custom Format)
+ *
+ * @param {object} content - MoEngage message content
+ * @returns {object} SPARC custom proprietary content block
+ */
+function mapCustomSuggestions(suggestions) {
+  if (!suggestions || !Array.isArray(suggestions)) return [];
+  return suggestions.map((s) => {
+    switch (s.type) {
+      case 'REPLY':
+        return { reply: { plainText: s.text, postBack: { data: s.postback_data || 'unknown' } } };
+      case 'OPEN_URL':
+        return { action: { plainText: s.text, postBack: { data: s.postback_data || 'unknown' }, openUrl: { url: s.url } } };
+      case 'DIAL_PHONE':
+        return { action: { plainText: s.text, postBack: { data: s.postback_data || 'unknown' }, dialerAction: { phoneNumber: s.phone } } };
+      case 'SHOW_LOCATION':
+        return { action: { plainText: s.text, postBack: { data: s.postback_data || 'unknown' }, showLocation: { coordinates: { latitude: Number(s.latitude), longitude: Number(s.longitude) }, label: s.label || '' } } };
+      case 'QUERY_LOCATION':
+        return { action: { plainText: s.text, postBack: { data: s.postback_data || 'unknown' }, showLocation: { query: s.query } } };
+      case 'REQUEST_LOCATION':
+        return { action: { plainText: s.text, postBack: { data: s.postback_data || 'unknown' }, shareLocationAction: {} } };
+      case 'CREATE_CAL_EVENT':
+        return { action: { plainText: s.text, postBack: { data: s.postback_data || 'unknown' }, createCalendarEvent: { startTime: s.start_time, endTime: s.end_time, title: s.title, description: s.description || '' } } };
+      default:
+        return { reply: { plainText: s.text || 'Action', postBack: { data: s.postback_data || 'unknown' } } };
+    }
+  });
+}
+
+function buildNonTemplatedContent(content) {
+  const { type, data, suggestions } = content;
+  
+  // MoEngage docs specify suggestions as an optional array, but sometimes it is an object
+  // (e.g., in some Indian user payloads). Safely handle both cases here.
+  const suggestionsArray = Array.isArray(suggestions) 
+    ? suggestions 
+    : (suggestions ? [suggestions] : []);
+    
+  // RCS Standard Limits: 4 suggestions per card, 11 for plain text. Exceeding this causes rejection.
+  const limit = type === MESSAGE_TYPES.CARD ? 4 : 11;
+  const mappedSuggestions = suggestionsArray.length > 0 ? mapCustomSuggestions(suggestionsArray).slice(0, limit) : [];
+
+  switch (type) {
+    case MESSAGE_TYPES.TEXT:
+      return {
+        plainText: data?.text || '',
+        ...(mappedSuggestions.length > 0 && { suggestions: mappedSuggestions })
+      };
+
+    case MESSAGE_TYPES.CARD: {
+      const cardContent = {
+        cardTitle: data?.title || '',
+        cardDescription: data?.description || '',
+      };
+      if (data?.media?.media_url) {
+        cardContent.cardMedia = {
+          mediaHeight: data?.height || 'TALL',
+          contentInfo: {
+            fileUrl: data.media.media_url
+          }
+        };
+      }
+      if (mappedSuggestions.length > 0) {
+        cardContent.suggestions = mappedSuggestions;
+      }
+      return {
+        richCardDetails: {
+          standalone: {
+            cardOrientation: data?.orientation || 'VERTICAL',
+            content: cardContent
+          }
+        }
+      };
+    }
+
+    case MESSAGE_TYPES.MEDIA:
+      return {
+        richCardDetails: {
+          standalone: {
+            cardOrientation: 'VERTICAL',
+            content: {
+              cardMedia: {
+                mediaHeight: 'TALL',
+                contentInfo: {
+                  fileUrl: data?.media_url || data?.media?.media_url || ''
+                }
+              }
+            }
+          }
+        }
+      };
+
+    default:
+      // If we are passed an already formatted SPARC custom content, just pass it through
+      if (content.richCardDetails || content.textMessage || content.plainText) {
+         return content;
+      }
+      return {};
+  }
+}
+
+/**
  * Build the full SPARC addresses block for a single message.
- * Includes variables at the address level.
+ * Includes variables at the address level if templated.
  *
  * @param {object} message - Single MoEngage message
+ * @param {boolean} isTemplated - Whether the message uses a template
  * @returns {object} Single SPARC address entry
  */
-function buildAddress(message) {
-  const { destination, callback_data, content, rcs } = message;
+function buildAddress(message, isTemplated) {
+  const { destination, callback_data, rcs } = message;
+  const content = rcs?.message_content || message.content;
 
   const address = {
     seq_id: callback_data, // The reconciliation key
     assistant_id: rcs.bot_id,
     mobile_number: destination.replace('+', ''), // SPARC typically requires no '+'
-    ...buildAddressProperties(content)
   };
+
+  if (isTemplated) {
+    Object.assign(address, buildAddressProperties(content));
+  }
 
   return address;
 }
@@ -282,17 +389,28 @@ function buildAddress(message) {
  * @returns {object} SPARC-formatted payload
  */
 function mapMessageToSparc(message, dlrWebhookUrl) {
-  const { content, rcs } = message;
+  const { rcs } = message;
+  const content = rcs?.message_content || message.content;
+
+  // Use nullish coalescing to safely check for template IDs
+  const templateName = rcs?.template_id ?? rcs?.template_name ?? null;
+  const isTemplated = Boolean(templateName) && templateName !== 'null' && templateName !== 'undefined';
+
+  const sparcMessage = {
+    message_id: generateMessageId(),
+    ttl: "300s",
+    addresses: [buildAddress(message, isTemplated)],
+  };
+
+  if (isTemplated) {
+    sparcMessage.template_name = templateName;
+  } else {
+    // International / Ad-hoc: SPARC requires 'content' key instead of 'template_name'
+    sparcMessage.content = buildNonTemplatedContent(content);
+  }
 
   return {
-    messages: [
-      {
-        message_id: generateMessageId(),
-        template_name: rcs.template_id || rcs.template_name || `moe_${content.type.toLowerCase()}`,
-        ttl: "300s", // Updated to match SPARC example "300s" instead of int 300
-        addresses: [buildAddress(message)],
-      },
-    ],
+    messages: [sparcMessage],
     dlr_url: [{ url: dlrWebhookUrl }],
   };
 }
@@ -304,7 +422,7 @@ function mapMessageToSparc(message, dlrWebhookUrl) {
  * @returns {Array<object>} Array of SPARC-formatted payloads
  */
 function mapInboundPayload(moEngagePayload, dlrWebhookUrl) {
-  return moEngagePayload.messages.map((message) =>
+  return (moEngagePayload.messages || []).map((message) =>
     mapMessageToSparc(message, dlrWebhookUrl)
   );
 }
@@ -316,4 +434,5 @@ module.exports = {
   buildSparcVariables,
   buildSparcCardVariables,
   generateMessageId,
+  buildNonTemplatedContent,
 };

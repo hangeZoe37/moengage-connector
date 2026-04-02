@@ -23,9 +23,10 @@ function requestLogger(req, res, next) {
       userAgent: req.get('user-agent'),
     };
 
-    // Attach workspaceId if available (set by bearerAuth middleware)
-    if (req.workspace) {
-      logData.workspaceId = req.workspace.workspace_id;
+    // Attach clientId if available (set by bearerAuth middleware)
+    if (req.client) {
+      logData.clientId = req.client.id;
+      logData.workspaceId = req.client.workspaceId;
     }
 
     if (res.statusCode >= 500) {

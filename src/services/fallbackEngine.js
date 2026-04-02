@@ -29,9 +29,9 @@ const logger = require('../config/logger');
  * Process a single message through the fallback engine.
  *
  * @param {object} message - Single message from MoEngage payload
- * @param {object} workspace - Workspace row from DB
+ * @param {object} client - Client row from DB
  */
-async function processMessage(message, workspace) {
+async function processMessage(message, client) {
   const callback_data = message.callback_data;
   const destination = message.destination;
   const rcs = message.rcs;
@@ -39,7 +39,10 @@ async function processMessage(message, workspace) {
   
   const rawOrder = message.fallback_order || [CHANNELS.RCS];
   const fallbackOrder = rawOrder.map(channel => String(channel).toLowerCase());
-  const dlrUrl = workspace.moe_dlr_url || env.MOENGAGE_DLR_URL;
+  
+  // Temp override: always use .env MOENGAGE_DLR_URL for mock testing
+  // so we skip the webhook.site URL configured in the local database.
+  const dlrUrl = env.MOENGAGE_DLR_URL; // env.MOENGAGE_DLR_URL;
 
   const includesRcs = fallbackOrder.includes(CHANNELS.RCS);
   const includesSms = fallbackOrder.includes(CHANNELS.SMS);
@@ -47,20 +50,30 @@ async function processMessage(message, workspace) {
   if (includesRcs) {
     // --- Try RCS first ---
     try {
-      const sparcPayload = mapMessageToSparc(message, env.SPARC_DLR_WEBHOOK_URL);
-      const sparcResponse = await sparcClient.sendRCS(workspace, sparcPayload);
+      const sparcPayload = mapMessageToSparc(message, env.SPARC_WEBHOOK_URL);
+      const sparcResponse = await sparcClient.sendRCS(client, sparcPayload);
+
+      // Check if SPARC API returned native failure inside 200 OK
+      if (sparcResponse && Array.isArray(sparcResponse.failed) && sparcResponse.failed.length > 0) {
+        const nativeError = sparcResponse.failed[0].error || 'Native SPARC validation error';
+        throw new Error(`SPARC API rejected message instantly: ${nativeError}`);
+      }
 
       // Update message status to RCS_SENT
       const messageId = sparcPayload.messages[0].message_id;
-      await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.RCS_SENT, messageId);
+      const submissionId = sparcResponse.submission_id; // Capture API batch tracker
+
+      await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.RCS_SENT, submissionId || messageId);
 
       // Fire RCS_SENT callback to MoEngage immediately
-      const sentPayload = buildMoeStatusPayload(MESSAGE_STATUSES.RCS_SENT, callback_data);
-      await callbackDispatcher.dispatchStatus(dlrUrl, sentPayload, callback_data);
+      // DEACTIVATED for manual testing per user request to avoid "hardcoded" confusion
+      // const sentPayload = buildMoeStatusPayload(MESSAGE_STATUSES.RCS_SENT, callback_data);
+      // await callbackDispatcher.dispatchStatus(dlrUrl, sentPayload, callback_data);
 
       logger.info('RCS message sent successfully, waiting for DLR', {
         callbackData: callback_data,
         messageId,
+        submissionId
       });
 
       return; // Success — DLR events will arrive later via /sparc/dlr
@@ -83,20 +96,20 @@ async function processMessage(message, workspace) {
       await callbackDispatcher.dispatchStatus(dlrUrl, failedPayload, callback_data);
 
       // --- Attempt SMS fallback ---
-      if (includesSms && sms) {
-        await attemptSms(message, workspace, dlrUrl);
-      }
+      // if (includesSms && sms) {
+      //   await attemptSms(message, client, dlrUrl);
+      // }
       return;
     }
   }
 
   // --- SMS only path (no RCS in fallback_order) ---
-  if (includesSms && sms) {
-    await attemptSms(message, workspace, dlrUrl);
-    return;
-  }
+  // if (includesSms && sms) {
+  //   await attemptSms(message, client, dlrUrl);
+  //   return;
+  // }
 
-  logger.warn('No valid channel in fallback_order', {
+  logger.warn('No valid channel in fallback_order (or SMS is disabled)', {
     callbackData: callback_data,
     fallbackOrder,
   });
@@ -105,14 +118,16 @@ async function processMessage(message, workspace) {
 /**
  * Attempt to send an SMS message via SPARC.
  * @param {object} message - MoEngage message
- * @param {object} workspace - Workspace row
+ * @param {object} client - Client row
  * @param {string} dlrUrl - MoEngage DLR callback URL
  */
-async function attemptSms(message, workspace, dlrUrl) {
+async function attemptSms(message, client, dlrUrl) {
+  // SMS Logic disabled temporarily as per requirement
+  /*
   const { callback_data, destination, rcs, sms } = message;
 
   try {
-    await sparcClient.sendSMS(workspace, sms, destination, rcs.bot_id);
+    await sparcClient.sendSMS(client, sms, destination, rcs.bot_id);
 
     await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.SMS_SENT);
 
@@ -135,6 +150,7 @@ async function attemptSms(message, workspace, dlrUrl) {
     );
     await callbackDispatcher.dispatchStatus(dlrUrl, smsFailPayload, callback_data);
   }
+  */
 }
 
 /**

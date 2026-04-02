@@ -2,23 +2,24 @@
 
 /**
  * src/middleware/bearerAuth.js
- * Token → workspace lookup → attaches req.workspace.
- * Reads from DB on every request (no restart needed for new workspaces).
+ * Token → client lookup → attaches req.client.
+ * Reads from DB on every request (no restart needed for new clients).
  */
 
-const workspaceRepo = require('../repositories/workspaceRepo');
+const clientRepo = require('../repositories/clientRepo');
 const logger = require('../config/logger');
 
 async function bearerAuth(req, res, next) {
   try {
-    const authHeader = req.headers['authorization'] || req.headers['authentication'];
+    const authHeader = req.headers['authentication'] || req.headers['authorization'];
+    const headerName = req.headers['authentication'] ? 'Authentication' : 'Authorization';
 
     if (!authHeader) {
-      logger.warn('Auth failure: missing Authorization header', {
+      logger.warn(`Auth failure: missing ${headerName} header`, {
         ip: req.ip,
         path: req.path,
       });
-      return res.status(401).json({ error: 'Missing Authorization header' });
+      return res.status(401).json({ error: `Missing ${headerName} header` });
     }
 
     const parts = authHeader.split(' ');
@@ -33,9 +34,9 @@ async function bearerAuth(req, res, next) {
 
     const token = parts[1];
 
-    const workspace = await workspaceRepo.findByToken(token);
+    const client = await clientRepo.findByToken(token);
 
-    if (!workspace) {
+    if (!client) {
       logger.warn('Auth failure: unknown token', {
         ip: req.ip,
         path: req.path,
@@ -44,16 +45,16 @@ async function bearerAuth(req, res, next) {
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
 
-    if (!workspace.is_active) {
-      logger.warn('Auth failure: workspace disabled', {
-        workspaceId: workspace.workspace_id,
+    if (!client.is_active) {
+      logger.warn('Auth failure: client disabled', {
+        clientId: client.id,
         ip: req.ip,
       });
-      return res.status(403).json({ error: 'Workspace is disabled' });
+      return res.status(403).json({ error: 'Client is disabled' });
     }
 
     // Attach workspace to request for downstream use
-    req.workspace = workspace;
+    req.client = client;
 
     next();
   } catch (error) {

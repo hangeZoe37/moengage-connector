@@ -2,7 +2,7 @@
 
 /**
  * server.js — ENTRY POINT ONLY
- * Imports app, calls listen(). Nothing else.
+ * Imports app, calls listen().
  */
 
 require('dotenv').config();

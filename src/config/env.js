@@ -9,8 +9,7 @@ const requiredVars = [
   'PORT',
   'NODE_ENV',
   'SPARC_API_BASE_URL',
-  'SPARC_DLR_WEBHOOK_URL',
-  'SPARC_INTERACTION_WEBHOOK_URL',
+  'SPARC_WEBHOOK_URL',
   'DB_HOST',
   'DB_PORT',
   'DB_NAME',
@@ -53,8 +52,7 @@ function validateEnv() {
     SPARC_SERVICE_ACCOUNT: process.env.SPARC_SERVICE_ACCOUNT,
     SPARC_API_PASSWORD: process.env.SPARC_API_PASSWORD,
 
-    SPARC_DLR_WEBHOOK_URL: process.env.SPARC_DLR_WEBHOOK_URL,
-    SPARC_INTERACTION_WEBHOOK_URL: process.env.SPARC_INTERACTION_WEBHOOK_URL,
+    SPARC_WEBHOOK_URL: process.env.SPARC_WEBHOOK_URL,
 
     MOENGAGE_DLR_URL: process.env.MOENGAGE_DLR_URL,
 
@@ -69,6 +67,8 @@ function validateEnv() {
 
     RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10),
     RATE_LIMIT_MAX: parseInt(process.env.RATE_LIMIT_MAX, 10),
+    
+    DASHBOARD_PASSWORD: process.env.DASHBOARD_PASSWORD,
   };
 }
 
