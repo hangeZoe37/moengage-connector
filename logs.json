@@ -1,0 +1,346 @@
+[
+  {
+    "id": 15,
+    "callback_data": "cb_card_001",
+    "workspace_id": "test_workspace_01",
+    "destination": "+919990927990",
+    "bot_id": "677baf920f6d1f157306740b",
+    "template_name": null,
+    "message_type": "CARD",
+    "fallback_order": [
+      "RCS"
+    ],
+    "sparc_message_id": "moe_1775021688775_6vm4465x",
+    "status": "RCS_SENT",
+    "raw_payload": {
+      "rcs": {
+        "bot_id": "677baf920f6d1f157306740b",
+        "message_content": {
+          "data": {
+            "media": {
+              "media_url": "https://images.weserv.nl/?url=wowbouquet.com/images/2025/02/dahlia-scaled.webp&output=jpg",
+              "content_type": "IMAGE"
+            },
+            "title": "Welcome GRACE to Moengage",
+            "height": "MEDIUM",
+            "parameters": {
+              "name": "GRACE",
+              "team": "Product"
+            },
+            "description": "GRACE is happily welcomed to Moengage team",
+            "orientation": "VERTICAL"
+          },
+          "type": "CARD",
+          "suggestions": [
+            {
+              "text": "STOP Messaging",
+              "type": "REPLY",
+              "postback_data": "STOP"
+            }
+          ]
+        }
+      },
+      "content": {
+        "data": {
+          "media": {
+            "media_url": "https://images.weserv.nl/?url=wowbouquet.com/images/2025/02/dahlia-scaled.webp&output=jpg",
+            "content_type": "IMAGE"
+          },
+          "title": "Welcome GRACE to Moengage",
+          "height": "MEDIUM",
+          "parameters": {
+            "name": "GRACE",
+            "team": "Product"
+          },
+          "description": "GRACE is happily welcomed to Moengage team",
+          "orientation": "VERTICAL"
+        },
+        "type": "CARD",
+        "suggestions": [
+          {
+            "text": "STOP Messaging",
+            "type": "REPLY",
+            "postback_data": "STOP"
+          }
+        ]
+      },
+      "destination": "+919990927990",
+      "callback_data": "cb_card_001",
+      "fallback_order": [
+        "RCS"
+      ]
+    },
+    "created_at": "2026-04-01T05:34:48.000Z",
+    "updated_at": "2026-04-01T05:34:48.000Z"
+  },
+  {
+    "id": 14,
+    "callback_data": "cb_card_001",
+    "workspace_id": "test_workspace_01",
+    "destination": "+919990927990",
+    "bot_id": "t677baf920f6d1f157306740b",
+    "template_name": null,
+    "message_type": "CARD",
+    "fallback_order": [
+      "RCS"
+    ],
+    "sparc_message_id": "moe_1775021688775_6vm4465x",
+    "status": "RCS_SENT",
+    "raw_payload": {
+      "rcs": {
+        "bot_id": "t677baf920f6d1f157306740b",
+        "message_content": {
+          "data": {
+            "media": {
+              "media_url": "https://images.weserv.nl/?url=wowbouquet.com/images/2025/02/dahlia-scaled.webp&output=jpg",
+              "content_type": "IMAGE"
+            },
+            "title": "Welcome GRACE to Moengage",
+            "height": "MEDIUM",
+            "parameters": {
+              "name": "GRACE",
+              "team": "Product"
+            },
+            "description": "GRACE is happily welcomed to Moengage team",
+            "orientation": "VERTICAL"
+          },
+          "type": "CARD",
+          "suggestions": [
+            {
+              "text": "STOP Messaging",
+              "type": "REPLY",
+              "postback_data": "STOP"
+            }
+          ]
+        }
+      },
+      "content": {
+        "data": {
+          "media": {
+            "media_url": "https://images.weserv.nl/?url=wowbouquet.com/images/2025/02/dahlia-scaled.webp&output=jpg",
+            "content_type": "IMAGE"
+          },
+          "title": "Welcome GRACE to Moengage",
+          "height": "MEDIUM",
+          "parameters": {
+            "name": "GRACE",
+            "team": "Product"
+          },
+          "description": "GRACE is happily welcomed to Moengage team",
+          "orientation": "VERTICAL"
+        },
+        "type": "CARD",
+        "suggestions": [
+          {
+            "text": "STOP Messaging",
+            "type": "REPLY",
+            "postback_data": "STOP"
+          }
+        ]
+      },
+      "destination": "+919990927990",
+      "callback_data": "cb_card_001",
+      "fallback_order": [
+        "RCS"
+      ]
+    },
+    "created_at": "2026-04-01T05:34:21.000Z",
+    "updated_at": "2026-04-01T05:34:48.000Z"
+  },
+  {
+    "id": 13,
+    "callback_data": "cb_card_001",
+    "workspace_id": "test_workspace_01",
+    "destination": "+919990927990",
+    "bot_id": "test_bot_id",
+    "template_name": null,
+    "message_type": "CARD",
+    "fallback_order": [
+      "RCS"
+    ],
+    "sparc_message_id": "moe_1775021688775_6vm4465x",
+    "status": "RCS_SENT",
+    "raw_payload": {
+      "rcs": {
+        "bot_id": "test_bot_id",
+        "message_content": {
+          "data": {
+            "media": {
+              "media_url": "https://images.weserv.nl/?url=wowbouquet.com/images/2025/02/dahlia-scaled.webp&output=jpg",
+              "content_type": "IMAGE"
+            },
+            "title": "Welcome GRACE to Moengage",
+            "height": "MEDIUM",
+            "parameters": {
+              "name": "GRACE",
+              "team": "Product"
+            },
+            "description": "GRACE is happily welcomed to Moengage team",
+            "orientation": "VERTICAL"
+          },
+          "type": "CARD",
+          "suggestions": [
+            {
+              "text": "STOP Messaging",
+              "type": "REPLY",
+              "postback_data": "STOP"
+            }
+          ]
+        }
+      },
+      "content": {
+        "data": {
+          "media": {
+            "media_url": "https://images.weserv.nl/?url=wowbouquet.com/images/2025/02/dahlia-scaled.webp&output=jpg",
+            "content_type": "IMAGE"
+          },
+          "title": "Welcome GRACE to Moengage",
+          "height": "MEDIUM",
+          "parameters": {
+            "name": "GRACE",
+            "team": "Product"
+          },
+          "description": "GRACE is happily welcomed to Moengage team",
+          "orientation": "VERTICAL"
+        },
+        "type": "CARD",
+        "suggestions": [
+          {
+            "text": "STOP Messaging",
+            "type": "REPLY",
+            "postback_data": "STOP"
+          }
+        ]
+      },
+      "destination": "+919990927990",
+      "callback_data": "cb_card_001",
+      "fallback_order": [
+        "RCS"
+      ]
+    },
+    "created_at": "2026-04-01T05:33:27.000Z",
+    "updated_at": "2026-04-01T05:34:48.000Z"
+  },
+  {
+    "id": 12,
+    "callback_data": "cb_text_001",
+    "workspace_id": "test_workspace_01",
+    "destination": "+919990927990",
+    "bot_id": "677baf920f6d1f157306740b",
+    "template_name": "account_handle",
+    "message_type": "TEXT",
+    "fallback_order": [
+      "RCS"
+    ],
+    "sparc_message_id": "moe_1775020949441_n3n3c0eg",
+    "status": "RCS_SENT",
+    "raw_payload": {
+      "rcs": {
+        "bot_id": "677baf920f6d1f157306740b",
+        "template_id": "account_handle",
+        "message_content": {
+          "data": {
+            "text": "Welcome Grace to MoEngage!",
+            "parameters": {
+              "name": "Grace",
+              "company": "Moengage"
+            }
+          },
+          "type": "TEXT"
+        }
+      },
+      "content": {
+        "data": {
+          "text": "Welcome Grace to MoEngage!",
+          "parameters": {
+            "name": "Grace",
+            "company": "Moengage"
+          }
+        },
+        "type": "TEXT"
+      },
+      "destination": "+919990927990",
+      "callback_data": "cb_text_001",
+      "fallback_order": [
+        "RCS"
+      ]
+    },
+    "created_at": "2026-04-01T05:22:29.000Z",
+    "updated_at": "2026-04-01T05:22:29.000Z"
+  },
+  {
+    "id": 11,
+    "callback_data": "cb_card_001",
+    "workspace_id": "test_workspace_01",
+    "destination": "+919990927990",
+    "bot_id": "test_bot_id",
+    "template_name": "card_template_01",
+    "message_type": "CARD",
+    "fallback_order": [
+      "RCS"
+    ],
+    "sparc_message_id": "moe_1775021688775_6vm4465x",
+    "status": "RCS_SENT",
+    "raw_payload": {
+      "rcs": {
+        "bot_id": "test_bot_id",
+        "template_id": "card_template_01",
+        "message_content": {
+          "data": {
+            "media": {
+              "media_url": "https://img.freepik.com/free-photo/vibrant-colors-nature-close-up-generative-ai_188544-9121.jpg",
+              "content_type": "IMAGE"
+            },
+            "title": "Welcome John to Moengage",
+            "height": "MEDIUM",
+            "parameters": {
+              "name": "John",
+              "team": "Product"
+            },
+            "description": "John is happily welcomed to Moengage team",
+            "orientation": "VERTICAL"
+          },
+          "type": "CARD",
+          "suggestions": [
+            {
+              "text": "STOP Messaging",
+              "type": "REPLY",
+              "postback_data": "STOP"
+            }
+          ]
+        }
+      },
+      "content": {
+        "data": {
+          "media": {
+            "media_url": "https://img.freepik.com/free-photo/vibrant-colors-nature-close-up-generative-ai_188544-9121.jpg",
+            "content_type": "IMAGE"
+          },
+          "title": "Welcome John to Moengage",
+          "height": "MEDIUM",
+          "parameters": {
+            "name": "John",
+            "team": "Product"
+          },
+          "description": "John is happily welcomed to Moengage team",
+          "orientation": "VERTICAL"
+        },
+        "type": "CARD",
+        "suggestions": [
+          {
+            "text": "STOP Messaging",
+            "type": "REPLY",
+            "postback_data": "STOP"
+          }
+        ]
+      },
+      "destination": "+919990927990",
+      "callback_data": "cb_card_001",
+      "fallback_order": [
+        "RCS"
+      ]
+    },
+    "created_at": "2026-04-01T05:20:53.000Z",
+    "updated_at": "2026-04-01T05:34:48.000Z"
+  }
+]
