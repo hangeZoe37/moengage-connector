@@ -398,7 +398,8 @@ function mapMessageToSparc(message, dlrWebhookUrl) {
   const { rcs } = message;
   const content = rcs?.message_content || message.content;
 
-  const templateName = rcs.template_id || rcs.template_name;
+  // Use nullish coalescing to safely check for template IDs
+  const templateName = rcs?.template_id ?? rcs?.template_name ?? null;
   const isTemplated = Boolean(templateName) && templateName !== 'null' && templateName !== 'undefined';
 
   const sparcMessage = {
@@ -410,6 +411,7 @@ function mapMessageToSparc(message, dlrWebhookUrl) {
   if (isTemplated) {
     sparcMessage.template_name = templateName;
   } else {
+    // International / Ad-hoc: SPARC requires 'content' key instead of 'template_name'
     sparcMessage.content = buildNonTemplatedContent(content);
   }
 
@@ -426,7 +428,7 @@ function mapMessageToSparc(message, dlrWebhookUrl) {
  * @returns {Array<object>} Array of SPARC-formatted payloads
  */
 function mapInboundPayload(moEngagePayload, dlrWebhookUrl) {
-  return moEngagePayload.messages.map((message) =>
+  return (moEngagePayload.messages || []).map((message) =>
     mapMessageToSparc(message, dlrWebhookUrl)
   );
 }

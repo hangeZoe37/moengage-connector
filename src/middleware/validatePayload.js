@@ -39,18 +39,24 @@ const textDataSchema = z.object({
   parameters: z.record(z.string(), z.any()).optional(),
 });
 
+// Accept either an array of suggestions or a single suggestion object
+const suggestionsSchemaRoot = z.union([
+  z.array(suggestionSchema),
+  suggestionSchema.transform(val => [val])
+]).optional();
+
 const textContentSchema = z.object({
   type: z.literal('TEXT'),
   data: textDataSchema,
-  suggestions: z.array(suggestionSchema).optional(),
+  suggestions: suggestionsSchemaRoot,
 });
 
 const cardDataSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
-  orientation: z.enum(['HORIZONTAL', 'VERTICAL']).optional(),
-  alignment: z.enum(['LEFT', 'RIGHT', 'CENTER']).optional(),
-  height: z.enum(['SHORT', 'MEDIUM', 'TALL']).optional(),
+  orientation: z.enum(['HORIZONTAL', 'VERTICAL']).or(z.literal('')).optional(),
+  alignment: z.enum(['LEFT', 'RIGHT', 'CENTER']).or(z.literal('')).optional(),
+  height: z.enum(['SHORT', 'MEDIUM', 'TALL']).or(z.literal('')).optional(),
   media: mediaSchema.optional(),
   parameters: z.record(z.string(), z.any()).optional(),
 });
@@ -58,7 +64,7 @@ const cardDataSchema = z.object({
 const cardContentSchema = z.object({
   type: z.literal('CARD'),
   data: cardDataSchema,
-  suggestions: z.array(suggestionSchema).optional(),
+  suggestions: suggestionsSchemaRoot,
 });
 
 const mediaDataSchema = z.object({
@@ -69,7 +75,7 @@ const mediaDataSchema = z.object({
 const mediaContentSchema = z.object({
   type: z.literal('MEDIA'),
   data: mediaDataSchema,
-  suggestions: z.array(suggestionSchema).optional(), // Can also be just an object based on docs, but we'll accept array
+  suggestions: suggestionsSchemaRoot,
 });
 
 const contentSchema = z.discriminatedUnion('type', [
@@ -81,16 +87,16 @@ const contentSchema = z.discriminatedUnion('type', [
 // --- RCS channel schema ---
 const rcsChannelSchema = z.object({
   bot_id: z.string(),
-  template_id: z.string().optional(), // Reverting from template_name to template_id to match MoEngage docs
-  template_name: z.string().optional(), // Keep template_name as an alias/fallback
+  template_id: z.string().nullish(), // Accept strict null for International users
+  template_name: z.string().nullish(), 
   message_content: contentSchema, 
 });
 
 // --- SMS fallback schema ---
 const smsChannelSchema = z.object({
   sender: z.string().optional(),
-  template_id: z.string().optional(),
-  template_name: z.string().optional(),
+  template_id: z.string().nullish(),
+  template_name: z.string().nullish(),
   message: z.string().optional(),
 }).optional();
 
@@ -122,7 +128,7 @@ function validatePayload(req, res, next) {
 
     logger.warn('Payload validation failed', {
       errors,
-      workspaceId: req.workspace?.workspace_id,
+      clientId: req.client?.id,
     });
 
     return res.status(400).json({

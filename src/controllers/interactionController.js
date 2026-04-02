@@ -9,7 +9,7 @@
 const { mapInteractionEvent } = require('../mappers/interactionMapper');
 const suggestionRepo = require('../repositories/suggestionRepo');
 const messageRepo = require('../repositories/messageRepo');
-const workspaceRepo = require('../repositories/workspaceRepo');
+// ;
 const callbackDispatcher = require('../services/callbackDispatcher');
 const { env } = require('../config/env');
 const logger = require('../config/logger');
@@ -28,15 +28,22 @@ async function handleInteraction(sparcEvent) {
     text: sparcEvent.suggestion_text || sparcEvent.text,
   });
 
+  // Normalize ISO 8601 string to Unix timestamp (integer)
+  let timestampSeconds = Math.floor(Date.now() / 1000);
+  if (sparcEvent.timestamp) {
+    const parsed = Math.floor(new Date(sparcEvent.timestamp).getTime() / 1000);
+    if (!isNaN(parsed)) timestampSeconds = parsed;
+  }
+
   // Save suggestion event to DB
   const result = await suggestionRepo.create({
     callback_data: callbackData,
     suggestion_text: sparcEvent.suggestion_text || sparcEvent.text,
     postback_data: sparcEvent.postback_data || sparcEvent.postback,
-    event_timestamp: sparcEvent.timestamp || null,
+    event_timestamp: timestampSeconds,
   });
 
-  // Look up original message for workspace
+  // Look up original message for client info
   const message = await messageRepo.findByCallbackData(callbackData);
 
   if (!message) {
@@ -45,8 +52,8 @@ async function handleInteraction(sparcEvent) {
   }
 
   // Get workspace DLR URL
-  const workspace = await workspaceRepo.findById(message.workspace_id);
-  const dlrUrl = workspace?.moe_dlr_url || env.MOENGAGE_DLR_URL;
+  
+  const dlrUrl = env.MOENGAGE_DLR_URL;
 
   // Map to MoEngage format and dispatch
   const moePayload = mapInteractionEvent(sparcEvent);
@@ -55,6 +62,15 @@ async function handleInteraction(sparcEvent) {
   if (dispatched) {
     await suggestionRepo.markDispatched(result.insertId);
   }
+
+  // Notify dashboard of interaction
+  const { notifyUpdate } = require('../services/dashboardService');
+  notifyUpdate('suggestion', {
+    callback_data: callbackData,
+    suggestion_text: sparcEvent.suggestion_text || sparcEvent.text,
+    client_name: message.client_name || 'Unknown',
+    timestamp: new Date().toISOString()
+  });
 }
 
 module.exports = { handleInteraction };

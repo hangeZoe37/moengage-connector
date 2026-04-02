@@ -5,7 +5,7 @@
  * Unit tests for bearer token authentication middleware.
  */
 
-jest.mock('../../src/repositories/workspaceRepo');
+jest.mock('../../src/repositories/clientRepo');
 jest.mock('../../src/config/logger', () => ({
   info: jest.fn(),
   warn: jest.fn(),
@@ -14,7 +14,7 @@ jest.mock('../../src/config/logger', () => ({
 }));
 
 const bearerAuth = require('../../src/middleware/bearerAuth');
-const workspaceRepo = require('../../src/repositories/workspaceRepo');
+const clientRepo = require('../../src/repositories/clientRepo');
 
 describe('bearerAuth middleware', () => {
   let req, res, next;
@@ -54,7 +54,7 @@ describe('bearerAuth middleware', () => {
 
   it('should return 401 when token is not found in DB', async () => {
     req.headers['authorization'] = 'Bearer unknown_token';
-    workspaceRepo.findByToken.mockResolvedValue(null);
+    clientRepo.findByToken.mockResolvedValue(null);
 
     await bearerAuth(req, res, next);
 
@@ -62,10 +62,11 @@ describe('bearerAuth middleware', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it('should return 403 when workspace is disabled', async () => {
+  it('should return 403 when client is disabled', async () => {
     req.headers['authorization'] = 'Bearer valid_token';
-    workspaceRepo.findByToken.mockResolvedValue({
-      workspace_id: 'ws_1',
+    clientRepo.findByToken.mockResolvedValue({
+      id: 1,
+      client_name: 'test_client',
       is_active: 0,
     });
 
@@ -75,39 +76,41 @@ describe('bearerAuth middleware', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it('should call next() and attach workspace when token is valid', async () => {
-    const workspace = {
-      workspace_id: 'ws_1',
+  it('should call next() and attach client when token is valid', async () => {
+    const client = {
+      id: 1,
+      client_name: 'test_client',
       bearer_token: 'valid_token',
       is_active: 1,
     };
     req.headers['authorization'] = 'Bearer valid_token';
-    workspaceRepo.findByToken.mockResolvedValue(workspace);
+    clientRepo.findByToken.mockResolvedValue(client);
 
     await bearerAuth(req, res, next);
 
     expect(next).toHaveBeenCalledTimes(1);
-    expect(req.workspace).toEqual(workspace);
+    expect(req.client).toEqual(client);
   });
 
   it('should also accept Authentication header (MoEngage uses it)', async () => {
-    const workspace = {
-      workspace_id: 'ws_2',
+    const client = {
+      id: 2,
+      client_name: 'alt_client',
       bearer_token: 'alt_token',
       is_active: 1,
     };
     req.headers['authentication'] = 'Bearer alt_token';
-    workspaceRepo.findByToken.mockResolvedValue(workspace);
+    clientRepo.findByToken.mockResolvedValue(client);
 
     await bearerAuth(req, res, next);
 
     expect(next).toHaveBeenCalledTimes(1);
-    expect(req.workspace).toEqual(workspace);
+    expect(req.client).toEqual(client);
   });
 
   it('should return 500 on unexpected errors', async () => {
     req.headers['authorization'] = 'Bearer some_token';
-    workspaceRepo.findByToken.mockRejectedValue(new Error('DB connection failed'));
+    clientRepo.findByToken.mockRejectedValue(new Error('DB connection failed'));
 
     await bearerAuth(req, res, next);
 

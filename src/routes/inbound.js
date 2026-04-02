@@ -19,32 +19,29 @@ const router = Router();
 
 router.post('/send', bearerAuth, validatePayload, async (req, res) => {
   const { messages } = req.body;
-  const workspace = req.workspace;
+  const client = req.client;
 
   logger.info('Inbound request received', {
-    workspaceId: workspace.workspace_id,
+    clientId: client.id,
     messageCount: messages.length,
   });
 
   // Step 1: Build response items synchronously (fast)
-  const responseItems = messages.map((msg) => ({
+  const responseArray = messages.map((msg) => ({
+    status: 'SUCCESS',
     callback_data: msg.callback_data,
-    status: 'QUEUED',
   }));
 
   // Step 2: Send response FIRST — must happen within 5 seconds
-  res.json({
-    success: true,
-    messages: responseItems,
-  });
+  res.json(responseArray);
 
   // Step 3: Process AFTER response is sent
   setImmediate(async () => {
     try {
-      await inboundController.processMessages(messages, workspace);
+      await inboundController.processMessages(messages, client);
     } catch (error) {
       logger.error('Background message processing failed', {
-        workspaceId: workspace.workspace_id,
+        clientId: client.id,
         error: error.message,
         stack: error.stack,
       });
