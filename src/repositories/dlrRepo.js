@@ -53,4 +53,47 @@ async function findByCallbackData(callbackData) {
   );
 }
 
-module.exports = { create, markDispatched, findByCallbackData };
+/**
+ * Get recent DLR events across all messages, paginated.
+ * @param {number} limit
+ * @param {number} offset
+ * @param {number|null} clientId
+ * @returns {Promise<Array>}
+ */
+async function getRecent(limit = 50, offset = 0, clientId = null) {
+  let sql = `
+    SELECT d.*, m.destination, m.message_type, c.client_name
+    FROM dlr_events d
+    LEFT JOIN message_logs m ON d.callback_data = m.callback_data
+    LEFT JOIN clients c ON m.client_id = c.id
+  `;
+  const params = [];
+  if (clientId) {
+    sql += ` WHERE m.client_id = ? `;
+    params.push(clientId);
+  }
+  sql += ` ORDER BY d.created_at DESC LIMIT ${Number(limit)} OFFSET ${Number(offset)} `;
+  return query(sql, params);
+}
+
+/**
+ * Count total DLR events.
+ * @param {number|null} clientId
+ * @returns {Promise<number>}
+ */
+async function countEvents(clientId = null) {
+  let sql = `
+    SELECT COUNT(d.id) as total 
+    FROM dlr_events d
+    LEFT JOIN message_logs m ON d.callback_data = m.callback_data
+  `;
+  const params = [];
+  if (clientId) {
+    sql += ` WHERE m.client_id = ? `;
+    params.push(clientId);
+  }
+  const rows = await query(sql, params);
+  return rows[0]?.total || 0;
+}
+
+module.exports = { create, markDispatched, findByCallbackData, getRecent, countEvents };

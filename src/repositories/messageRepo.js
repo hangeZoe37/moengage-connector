@@ -78,6 +78,21 @@ async function findByCallbackData(callbackData) {
 }
 
 /**
+ * Find a message by its numeric DB id.
+ * @param {number} id
+ * @returns {Promise<object|null>}
+ */
+async function findById(id) {
+  const rows = await query(
+    `SELECT m.*, c.client_name FROM message_logs m
+     LEFT JOIN clients c ON m.client_id = c.id
+     WHERE m.id = ? LIMIT 1`,
+    [id]
+  );
+  return rows.length > 0 ? rows[0] : null;
+}
+
+/**
  * Get aggregated statistics grouped by status.
  */
 async function getStats() {
@@ -97,14 +112,22 @@ async function getStats() {
 /**
  * Get recent logs for the dashboard table.
  */
-async function getRecentLogs(limit = 50, offset = 0) {
-  return query(`
-    SELECT m.*, c.name as client_name 
+async function getRecentLogs(limit = 50, offset = 0, clientId = null) {
+  let sql = `
+    SELECT m.*, c.client_name 
     FROM message_logs m
     LEFT JOIN clients c ON m.client_id = c.id
-    ORDER BY m.created_at DESC 
-    LIMIT ? OFFSET ?
-  `, [limit, offset]);
+  `;
+  const params = [];
+
+  if (clientId) {
+    sql += ` WHERE m.client_id = ? `;
+    params.push(clientId);
+  }
+
+  sql += ` ORDER BY m.created_at DESC LIMIT ${Number(limit)} OFFSET ${Number(offset)} `;
+
+  return query(sql, params);
 }
 
 /**
@@ -123,11 +146,49 @@ async function getTimelineStats() {
   `);
 }
 
+/**
+ * Get RCS vs SMS channel breakdown counts.
+ */
+async function getChannelStats() {
+  const rows = await query(`
+    SELECT 
+      CASE 
+        WHEN status LIKE 'SMS_%' THEN 'SMS'
+        ELSE 'RCS'
+      END AS channel,
+      COUNT(*) AS count
+    FROM message_logs
+    GROUP BY channel
+  `);
+  const result = { RCS: 0, SMS: 0 };
+  for (const row of rows) {
+    result[row.channel] = Number(row.count);
+  }
+  return result;
+}
+
+/**
+ * Count total messages (optionally filtered by clientId).
+ */
+async function countMessages(clientId = null) {
+  let sql = 'SELECT COUNT(*) as total FROM message_logs';
+  const params = [];
+  if (clientId) {
+    sql += ' WHERE client_id = ?';
+    params.push(clientId);
+  }
+  const rows = await query(sql, params);
+  return rows[0]?.total || 0;
+}
+
 module.exports = { 
   create, 
   updateStatus, 
-  findByCallbackData, 
+  findByCallbackData,
+  findById,
   getStats, 
-  getRecentLogs, 
-  getTimelineStats 
+  getRecentLogs,
+  getTimelineStats,
+  getChannelStats,
+  countMessages,
 };

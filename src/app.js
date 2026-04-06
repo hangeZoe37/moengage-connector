@@ -37,17 +37,6 @@ app.use('/api/dashboard', dashboardRoutes);
 // Health check
 app.use('/', healthRoutes);
 
-// --- Temporary Mock Endpoint for Testing MoEngage DLR Delivery ---
-// TODO: Delete this once the real MoEngage webhook environment is ready.
-app.post('/test/moengage-dlr', (req, res) => {
-  const logger = require('./config/logger');
-  logger.info('SUCCESS!! Received format for MoEngage DLR locally:', { payload: req.body });
-  console.log('\n================ MOENGAGE DLR PAYLOAD DISPATCHED ================');
-  console.dir(req.body, { depth: null, colors: true });
-  console.log('=================================================================\n');
-  res.status(200).json({ status: 'success', message: 'Mock MoEngage DLR Received' });
-});
-
 // --- 404 Handler ---
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });

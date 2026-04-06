@@ -121,7 +121,9 @@ async function processMessage(message, client) {
       // --- Attempt SMS fallback if configured ---
       if (includesSms && sms) {
         logger.info('Attempting SMS fallback after RCS failure', { callbackData: callback_data });
-        await attemptSms(message, client, dlrUrl);
+        // assistantId: prefer rcs.bot_id from the message, fall back to client's stored assistant id
+        const assistantId = message.rcs?.bot_id || client.rcs_assistant_id || null;
+        await attemptSms(message, client, dlrUrl, assistantId);
       }
       return; // RCS path handled (success or failure) — stop here
     }
@@ -130,7 +132,8 @@ async function processMessage(message, client) {
   // --- SMS only path (no RCS in fallback_order: ["SMS"]) ---
   if (includesSms && sms) {
     logger.info('SMS-only path triggered', { callbackData: callback_data });
-    await attemptSms(message, client, dlrUrl);
+    const assistantId = message.rcs?.bot_id || client.rcs_assistant_id || null;
+    await attemptSms(message, client, dlrUrl, assistantId);
     return;
   }
 
@@ -145,12 +148,25 @@ async function processMessage(message, client) {
  * @param {object} message - MoEngage message
  * @param {object} client - Client row
  * @param {string} dlrUrl - MoEngage DLR callback URL
+ * @param {string|null} [assistantId] - SPARC assistant/bot ID (required by SPARC SMS API)
  */
-async function attemptSms(message, client, dlrUrl) {
+async function attemptSms(message, client, dlrUrl, assistantId = null) {
   const { callback_data, destination, sms } = message;
 
+  // Resolve assistantId: caller may pass it, else fall back to client record
+  const resolvedAssistantId = assistantId || client.rcs_assistant_id || null;
+
+  if (!resolvedAssistantId) {
+    logger.warn('SMS fallback attempted with no assistantId — SPARC may reject', { callback_data });
+  }
+
   try {
-    const smsResponse = await sparcClient.sendSMS(client, sms, destination);
+    const smsResponse = await sparcClient.sendSMS(
+      client,
+      sms,
+      destination,
+      resolvedAssistantId
+    );
 
     logger.info('SMS fallback sent successfully', {
       callbackData: callback_data,

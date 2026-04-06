@@ -21,13 +21,23 @@ async function processMessages(messages, client) {
   for (const message of messages) {
     try {
       // Log message to DB
+      // Safe-read message_type: MoEngage can send it as message.content.type
+      // OR nested under message.rcs.message_content.type
+      const messageType =
+        message.rcs?.message_content?.type ||
+        message.content?.type ||
+        'UNKNOWN';
+
+      // Safe-read bot_id — may come from rcs.bot_id
+      const botId = message.rcs?.bot_id || null;
+
       await messageRepo.create({
         callback_data: message.callback_data,
         client_id: client.id,
         destination: message.destination,
-        bot_id: message.rcs.bot_id,
-        template_name: message.rcs.template_id || message.rcs.template_name || null,
-        message_type: message.content.type,
+        bot_id: botId,
+        template_name: message.rcs?.template_id || message.rcs?.template_name || null,
+        message_type: messageType,
         fallback_order: message.fallback_order || ['rcs'],
         raw_payload: message,
       });

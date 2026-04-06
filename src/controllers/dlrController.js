@@ -106,7 +106,9 @@ async function handleDlrEvent(sparcEvent) {
         if (client) {
           // Re-hydrate full message object that attemptSms() expects
           const fullMessage = { ...rawPayload, callback_data: callbackData };
-          await attemptSms(fullMessage, client, dlrUrl);
+          // Resolve assistantId from the original payload's rcs block or client record
+          const assistantId = rawPayload?.rcs?.bot_id || client.rcs_assistant_id || null;
+          await attemptSms(fullMessage, client, dlrUrl, assistantId);
         } else {
           logger.warn('Could not find client for SMS fallback', {
             callbackData,
