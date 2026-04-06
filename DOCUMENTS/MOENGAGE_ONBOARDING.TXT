@@ -1,0 +1,583 @@
+Onboard Yourself as a Native RCS Service Provider
+Follow the process below if you want to become an RCS provider in MoEngage:
+
+Complete the implementation and development of your internal messaging infrastructure to match the payload formats for the MoEngage request and Callbacks using the formats shared in the respective sections.
+After implementation, MoEngage will provide a staging environment with the RCS module enabled. To access this environment, contact the MoEngage Partnership Team.
+Configure your API and callback integration within the MoEngage staging environment. You must then execute and validate the specific test scenarios provided by MoEngage to ensure message delivery and status reporting function correctly.
+Share a user guide covering aspects like configuring your connector in MoEngage and callbacks in your platform.
+Share the results of the test case execution with MoEngage.
+After sharing the results of the test case execution and the user guide:
+The MoEngage engineering team (QA) reviews the test case execution and validates the integration.
+The MoEngage documentation team reviews the user guide.
+After the quality checks are performed, MoEngage lists you as one of the native RCS providers in MoEngage and publishes the user guide as the partner guide of MoEngage.
+Message Payload Details
+This section details the message payload in the request that MoEngage sends to your API.
+
+API Endpoint/URL
+This is the API endpoint or API URL of the RCS partner to whom MoEngage sends the message payload. The RCS partner must provide this URL.
+
+Sample Request Headers
+You must share information about the headers to be added to the request, such as the API Key, Workspace ID, and Authorization. For example, if the authentication to be used is Bearer Authentication, MoEngage will add the same in the authorization header in the request, as shown in the following sample:
+
+Sample Header
+Light
+
+Dark
+content_copy
+Copy Code
+--header 'Authentication: Bearer <client auth token to be used by vendor>' \
+Request Body
+This is the request that MoEngage sends to your API.
+
+Search here...
+Key	Optional/Required	Data type	Description
+messages	Required	Array	An array of objects having messages to be sent, which can be a bulk or a single object. The maximum limit is 50 characters.
+destination	Required	String	The field denotes the phone number to which the RCS message is sent. Ensure that this is in E.164 format.
+callback_data	Required	String	String to be reverted to MoEngage in every callback. This helps with reconciliation.
+fallback_order	Required	String	
+In the case of RCS only, this is sent as [”rcs”].
+In the case of RCS with SMS as fallback, this is sent as [“rcs“,“sms“].
+rcs	Required	Object	This field denotes the object containing the RCS message and contains keys specific to RCS and the type of RCS message. For more information, refer to rcs.
+sms	Optional 	Object	This field denotes the details of the SMS message. For more information, refer to sms.
+Note: Only present if fallback as SMS is selected by the client.
+rcs
+Search here...
+Key	Optional/Required	Data type	Description
+rcs["bot_id"]	Required	String	This field denotes the agent ID registered for sending the RCS message.
+rcs["template_id"]	Optional	String	This field is present only for messages sent to an Indian mobile number.
+rcs["message_content"]	Required	Object	This field denotes the entire RCS template content.
+sms
+Search here...
+Key	Optional/Required	Data type	Description
+sms["sender"]	Required	String	This field denotes the registered sender of the SMS.
+sms["template_id"]	Optional	String	This field is present only for messages sent to an Indian mobile number.
+sms["message"]	Required	String	This field denotes the entire SMS content.
+Sample Payload
+The following is a sample payload for sending RCS messages:
+
+JSON
+Light
+
+Dark
+content_copy
+Copy Code
+{
+ "messages":[
+          {
+        "destination": "phone number", // sent in E.164 format
+        "callback data": CALLBACK__DATA, // string to be sent back in callback
+        "fallback_order": ["RCS","SMS"]
+        "rcs": {
+            "bot_id": "bot id entered" // Agent id registered for RCS messages
+            "template_id": "template id", // Optional string for Indian templates
+            "message_content": MESSAGE_CONTENT
+           }
+        "sms": {
+            "sender": "sender id of fallback"
+            "message": "Message text", // resolved message
+            "template_id": "template id" // Optional string for Indian templates 
+            }
+         },
+           {
+             ...
+           }
+       ]
+  }
+Sample Payload for Indian Users 
+The following is a sample payload for sending RCS messages to users in India:
+
+JSON
+Light
+
+Dark
+content_copy
+Copy Code
+{
+ "messages":[
+       {
+      "destination": "+9191986468797",
+      "callback_data": "1235_Moe123_0602947568495588_22455667qwrt888qq9",
+      "fallback_order": ["RCS","SMS"],
+      "rcs": {
+          "bot_id": "AjyAJTVPcvlFzpMR",
+          "template_id": "Onboarding_1",
+          "message_content": {
+                     "type": "CARD",
+                     "data": {
+                     "media": {
+                          "media_url":                           "https://cdn.openart.ai/uploads/image_MZNLY6Kp_1732684235696_raw.jpg",
+                           "content_type": "IMAGE"
+              },
+                    "title": "Welcome John to Moengage",
+                    "description": "John is happily welcomed to Moengage and will be a crucial part of
+the Product team",
+                    "orientation": "HORIZONTAL",
+                    "height": "",
+                    "alignment": "LEFT",
+                    "parameters": {
+                       "name": "John",
+                       "company": "Moengage",
+                       "teamname": "Product"
+                   }
+                },
+         "suggestions": {
+                  "type": "REPLY",
+                  "text": "STOP Messaging",
+                  "postback_data": "STOP"
+                   }
+               }
+             },
+  "sms": {
+  "message": "Hi John, Welcome to Moengage as you dont have RCS you get SMS",
+  "template_id": "Onboarding_SMS_1",
+  "sender": "Sender_2,
+       }
+   },
+{
+ ...Other messages..
+    }
+ ]
+}
+Sample Payload for International Users
+The following is a sample payload for sending RCS messages to international users:
+
+JSON
+Light
+
+Dark
+content_copy
+Copy Code
+{
+  "messages": [
+    {
+       "destination": "+919137470627",
+       "callback_data": "1235_Moe123_060222455677788_22455667qwrt888qq9",
+        "fallback_order": ["RCS","SMS"],
+             "rcs": {
+              bot_id": "AjyAJKFTbdlFzpMR",
+              "template_id": null,
+               "message_content": {
+                   "type": "CARD",
+                    "data": {
+                      "media": {
+                        "media_url": "https://cdn.openart.ai/uploads/image_MZNLY6Kp_1732684235696_raw.jpg",
+                        "content_type": "IMAGE"},
+                        "title": "Welcome John to Moengage",
+                        "description": "John is happily welcomed to Moengage and will be a crucial part of
+the Product team",
+                        "orientation": "HORIZONTAL",
+                        "height": "",
+                        "alignment": "LEFT",
+                        "parameters": {
+                                       "name": "John",
+                                       "company": "Moengage",
+                                       "team_name": "Product"                          }
+                     },
+                        "suggestions": {
+                                   "type": "REPLY",
+                                   "text": "STOP Messaging",
+                                   "postback_data": "STOP"
+                        }
+                    }
+                  },
+                 "sms": {
+                     "message": "Hi John, Welcome to Moengage as you dont have RCS you get SMS",
+                     "template_id": null,
+                     "sender": "Sender_2",
+                 }
+           },
+      {
+      ...Other messages..
+       }
+     ]
+} 
+Limitations
+This is a bulk API that supports a message limit of 50 user messages.
+For vendors that do not support bulk sending, MoEngage sends only one user message in the messages array.
+The default timeout is 5 seconds. Make sure your infrastructure accepts and responds within 5 seconds.
+Message Content for Text
+JSON
+Light
+
+Dark
+content_copy
+Copy Code
+{
+   "type": "TEXT",
+   "data": {
+        "text": "Text message to be sent",
+        "parameters": { // Template parameters object
+                 "param_1": "value_1",
+                  ...
+                }
+             },
+   "suggestions": [SUGGESTION_1, SUGGESTION_2...] //Optional suggestions array of objects 
+ }
+Search here...
+Key	Optional/Required	Data Type	Description
+type	Required	String	
+This field denotes the type of templates. Supported values are:
+
+TEXT
+CARD
+MEDIA
+data["text"]	Required	String	
+This field denotes the resolved text. This is for vendors who do not support dynamic parameters. They can use this to do string matches.
+
+data["parameters"]	Required	String	This field contains all the dynamic parts of the message for vendors who do not use resolved text. They can use dynamic parameters.
+suggestions	Optional	Array	This field contains suggestions like reply, calendar event, etc.
+Message Content for Card
+JSON
+Light
+
+Dark
+content_copy
+Copy Code
+{
+   "type": "CARD",
+      "data": {
+          "media": {
+               "media _url": "media_url",
+               "content_type": "content type"
+               },
+            "title": "Title message", // resolved message
+            "description": "Description of the card", // resolved message
+            "orientation": "HORIZONTAL | VERTICAL",
+            "height": "SHORT | MEDIUM", // comes only in case of VERTICAL
+            "alignment": "LEFT | RIGHT", // comes only in case of HORIZONTAL
+            "parameters": { // Template parameters object
+                   "param_1": "value_1",
+                   ...
+                 }
+              },
+              "suggestions": [SUGGESTION_1, SUGGESTION_2 ...] //Optional suggestions array of objects
+ }   
+Search here...
+Key	Optional/Required	Data Type	Description
+media["media_url"]	Required	Object	
+This field denotes the type of templates. Supported values are:
+
+TEXT
+CARD
+media["content_type"]	Required	String	
+This field denotes the content type of the media. Supported values are:
+
+PDF
+VIDEO
+IMAGE
+title	Required	String	This field denotes the resolved title. This is for vendors who do not support dynamic parameters can use this to do a string match.
+description	Optional	Array	This field denotes the resolved description. This is for vendors who do not support dynamic parameters. They can use this to do a string match.
+orientation	Required	String	
+This field denotes the media orientation. Supported values are:
+
+HORIZONTAL
+VERTICAL 
+height	Optional 	String	
+This field denotes the media height. Supported values are:
+
+SHORT
+MEDIUM
+Note: This field is optional only in case of vertical orientation.
+
+alignment	Optional	String 	
+This field denotes the media alignment. Supported values are:
+
+LEFT
+RIGHT
+Note: This field is optional only in case of horizontal orientation.
+
+Message Content for Media 
+JSON
+Light
+
+Dark
+content_copy
+Copy Code
+{
+   "type": "MEDIA",
+   "data": {
+      "media_url": "media_url",
+      "content_type": "content type" //optional
+       },
+   "suggestions": SUGGESTIONS //Optional suggestions object
+}
+Suggestions
+Following are the types of suggestion JSON objects:
+
+Reply
+JSON
+Light
+
+Dark
+content_copy
+Copy Code
+{
+   "type": "REPLY",
+   "text": "Suggestion text",
+   "postback_data": "postback data string"
+}
+Search here...
+Key	Optional/Required	Data Type	Description
+type	Required	String	
+This field denotes the type of suggestions. Supported values are: 
+
+OPEN_URL
+DIAL_PHONE
+SHOW_LOCATION
+QUERY_LOCATION
+REQUEST_LOCATION
+CREATE_CAL_EVENT
+text	Required	String	This field denotes the text to be shown as a reply.
+postback_data	Required	String	This field denotes the text to be sent back to MoEngage for reconciliation.
+Open URL
+JSON
+Light
+
+Dark
+content_copy
+Copy Code
+{
+   "type": "OPEN_URL",
+   "text": "Suggestion text",
+   "postback_data": "postback data string",
+   "url": "url"
+}
+Search here...
+Key	Optional/Required	Data Type	Description
+url	Required	String	This field denotes the URL specified for redirection.
+Dial Phone
+JSON
+Light
+
+Dark
+content_copy
+Copy Code
+{
+   "type": "DIAL_PHONE",
+   "text": "Suggestion text",
+   "postback_data": "postback data string",
+   "phone": "phone number",
+}    
+Search here...
+Key	Optional/Required	Data Type	Description
+phone	Required	String	This field denotes the phone number for dial phone suggestions.
+Show Location
+JSON
+Light
+
+Dark
+content_copy
+Copy Code
+{
+   "type": "SHOW_LOCATION",
+   "text": "Suggestion text",
+   "postback_data": "postback data string",
+   "latitude": "latitude",
+   "longitude": "longitude",
+   "label": "label for location" //optional
+}
+Search here...
+Key	Optional/Required	Data Type	Description
+latitude	Required	String	This field denotes the latitude of the location.
+longitude	Required	String	This field denotes the longitude of the location.
+label	Optional	String	This field denotes the label text for the location.
+Query Location
+JSON
+Light
+
+Dark
+content_copy
+Copy Code
+{
+   "type": "QUERY_LOCATION",
+   "text": "Suggestion text",
+   "postback_data": "postback data string"
+   "query": "query for location"
+}
+Search here...
+Key	Optional/Required	Data Type	Description
+query	Required	String	This field denotes the location query.
+Share Location
+JSON
+Light
+
+Dark
+content_copy
+Copy Code
+{
+   "type": "REQUEST_LOCATION",
+   "text": "Suggestion text",
+   "postback_data": "postback data string"
+}
+Create Calendar Event
+JSON
+Light
+
+Dark
+content_copy
+Copy Code
+{
+   "type": "CREATE_CAL_EVENT",
+   "text": "Suggestion text",
+   "postback_data": "postback data string",
+   "start_time": "event start time",
+   "end_time": "event end time",
+   "title": "event title",
+   "description": "event description", //optional
+ }  
+ 
+
+Search here...
+Key	Optional/Required	Data Type	Description
+start_time	Required	String	This field denotes the start time of the calendar event in the timestamp format.
+end_time	Required	String	This field denotes the end time of the calendar event in the timestamp format.
+title	Required	String	This field denotes the title of the calendar event.
+description	Optional	String	This field denotes the description of the calendar event.
+Callback Data
+MoEngage sets the value to this string while sending the request. Ensure to return this string in the callbacks. The string can be of a maximum of 200 characters and alphanumeric with “_” as a separation character. For example,
+
+JSON
+Light
+
+Dark
+content_copy
+Copy Code
+"messageId_appId_cId_timestamp"
+Callback URL
+The callback URL is generated for every partner in the following format:
+
+Sample Callback URL
+Light
+
+Dark
+content_copy
+Copy Code
+https://api-0x.moengage.com/rcs/dlr/<vendor_name>
+The 'X' in the API Endpoint URL refers to the MoEngage Data Center (DC). MoEngage maintains different data centers for different clients. You can find your DC number (value of X) and replace the value of 'X' in the URL by referring to the DC and API endpoint mapping here.
+Note: You can copy this Callback URL while configuring the sender from Settings > Channels > SMS/RCS > Sender configuration of the MoEngage dashboard.
+
+Header
+Note that you can pass any custom arguments for authentication in headers.
+
+JSON
+Light
+
+Dark
+content_copy
+Copy Code
+Content-Type: application/json // Default header
+Authentication: {{auth}} // Any custom headers
+...
+Sample cURL Request
+cURL
+Light
+
+Dark
+content_copy
+Copy Code
+ 
+curl --location '<api_url provided by the vendor>' \
+--header 'Content-Type: application/json' \
+--header 'Authentication: Bearer <client auth token to be used by vendor>' \
+--data '<payload>'
+Response Codes
+Search here...
+Status Code	Request State	Description
+200	Success or Failure	This response is returned when the request is processed successfully or when the request fails.
+4XX	Client errors	This response is returned when a client error occurs.
+5XX	Unknown errors	This response is returned when the system runs into an unexpected error.
+Sample Response
+200
+4XX
+5XX
+Light
+
+Dark
+content_copy
+Copy Code
+[{
+"status": "SUCCESS | FAILURE",
+"message": "ERROR_DESCRIPTON", // Required when status is FAILURE,
+"callback_data": CALLBACK_DATA // For every message we have a seperate callbackdata we will need}, // this in same format for all messages in bulk send api
+{
+...
+}
+]      
+Search here...
+Key	Required	Data Type	Description
+status	Required	String	
+This field denotes the status of the request and indicates whether the message was sent successfully or not. It is present only in the case of a 2xx response. Supported values are:
+
+Success
+Failure
+message	Optional	String	This field contains the description of errors when there are 4xx and 5xx errors.
+Types of Callback
+There are two types of callback:
+
+Message status callback
+RCS suggestions interaction callback
+Message Status Callback
+JSON
+Light
+
+Dark
+content_copy
+Copy Code
+{
+"statuses": [
+{
+   "status": "RCS_SENT | RCS_DELIVERED | SMS_SENT | SMS_DELIVERED | RCS_READ | RCS_DELIVERY_FAILED | SMS_DELIVERY_FAILED",
+   "callback_data": CALLBACK_DATA,
+   "timestamp": "event timestamp epoch",
+   "error_message": "User readable error message" // Required for FAILED status
+},
+... // Supports multiple status callbacks in a single request
+]
+}
+The following table displays the callback status and its description:
+
+Search here...
+Status	Description
+RCS_SENT	This status denotes that the vendor has attempted to send an RCS message to the end user.
+SMS_SENT	This status denotes that the vendor has attempted to send an SMS message to the end user.
+RCS_SENT_FAILED	This status denotes that an RCS message that is to be sent has failed. This contains all the rejected messages or messages for which the vendor failed to send.
+SMS_SENT_FAILED	This status denotes that an SMS message that is to be sent has failed due to mobile number validation or other validations at the vendor's end.
+RCS_DELIVERED	This status denotes that an RCS message has been delivered successfully. If the SMS fallback is not included, the SMS message is not attempted.
+SMS_DELIVERED	This status denotes that an RCS delivery failed, and the failover SMS is delivered successfully.
+RCS_READ	This status denotes that the end user has successfully received and read the RCS message. This event is triggered exclusively following an RCS_DELIVERED status and is not applicable to SMS_DELIVERED events.
+RCS_DELIVERY_FAILED	This status denotes that an RCS delivery has failed.
+SMS_DELIVERY_FAILED	This status denotes that an SMS delivery has failed.
+ 
+
+Search here...
+Key	Required	Data Type	Description
+status	Required	String	This field denotes the callback status.
+callback_data	Required	String	This field denotes the callback data.
+timestamp	Required	String	This field denotes the timestamp in epoch format.
+error_message	Optional	String	This field denotes an error description.
+Note: This field is required in case of error messages.
+RCS Suggestions Interaction Callback
+JSON
+Light
+
+Dark
+content_copy
+Copy Code
+{
+   "events": [
+    {"type": "SUGGESTION_CLICKED",
+    "callback_data": CALLBACK_DATA,
+    "timestamp": "event timestamp epoch",
+    "data": {
+       "text": "Suggestion text",
+       "postback_data": "postback_data" // sent in message
+}
+},
+ ... // Supports multiple events in a single request
+]
+}
+Limitation of Callbacks
+Callbacks have the following limitations :
+
+Callbacks can be sent as a single message or a bulk batch with a maximum of 50 messages.
+Callbacks can have a maximum timeout of 5 seconds at the vendor’s end. If the MoEngage infrastructure doesn't respond in 5 seconds, retry a maximum of three times.

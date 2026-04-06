@@ -1,0 +1,300 @@
+API Documentation & API Description Guide
+This document gives an overview of the characteristics and common features of the API.
+HTTP API Method
+1. Overview
+This technical document is intended for developers who wish to use the HTTP API for
+sending messages and describes the various programming methods and commands used by
+developers when using this API.
+The HTTP API is the most popular API, because there are many ways to utilize it for message
+sending and it can be used for low or high-volume messaging. As HTTP is a means for relaying
+information, the HTTP API can be used with practically any web-service application. This is
+particularly useful for high-volume message sending.
+2. Introduction
+This is one of the simpler server-based forms of communication to our gateway. It can be
+used either in the form of a HTTP POST, or as a URL (GET). We recommend POST for larger data
+transfer, due to the size limitations of GET. Communication to our API can be done via HTTP on port
+80. All calls to the API must be URL-encoded. The parameter names are case-sensitive. Batch
+messaging is catered for in a variety of ways.
+3. Getting Started
+The following basic information will help you get started with using the HTTP interface. The
+message text should be URL Encoded. The message Encoded (also known as percent encoding) string
+of UTF-8 characters.
+For more information on URL encoding, please see this:
+http://www.w3schools.com/tags/ref_urlencode.asp.
+Let us see an example: -
+Original text:
+Hi Amar!
+Happy Diwali to you
+Regards,
+Encoded text:
+Hi%20Amar%21%0AHappy%20Diwali%20to%20you%0ARegards%2C
+API Documentation & API Description Guide
+4. Basic commands
+To send a message, the system will firstly need to authenticate you as a valid user. The
+preferred method of authentication is using username and password.
+All other commands are then made up of three segments: authentication, the basic message
+components (message content and recipients) and the additional message parameters. In the
+examples below, we will include the authentication and basic message components. The additional
+message parameters will be included only where they are relevant.
+Basic Command Structure: URL Call Authentication Message Parameters
+https://domainname/fe/api/v1/send?username=username&password=APIpassword&un
+icode=true/false&from=sendercli&to=torecipient&text=message&dltContentId=DL
+TtemplateID
+5. Sending Message
+User can send a text message using the API. To send a message to a mobile number using
+API, the following will be the request using HTTP GET or POST. The parameters can be sent in any
+order.
+URL Syntax
+URL Parameters
+https://domainname/fe/api/v1/send?username=username&password=APIpassword&un
+icode=true/false&from=sendercli&to=torecipient&text=message&dltContentId=DL
+TtemplateID
+Parameter Value Required? Description
+Username Username YES Your username
+Password API Password YES Your password.
+Unicode true/ false YES
+Unicode value to be true in case of vernacular
+message or in any regional language, in case of
+English content it should be false.
+From 6 Alpha/Numerical characters YES A Sender ID to appear on the recipient’s
+mobile (Cannot contain any special characters).
+To Recipient number with or without
+country code (91 for India) YES Recipient mobile number with or without
+country code eg:919876543210
+Text Text message YES Message to recipient’s mobile (URL Encoded)
+DLTContent ID Approved Content id (length of 4-19) YES
+Content Template ID: - This ID is assigned to a
+message template when the same is registered
+with DLT.
+DLT
+TelemarketerID Numeric TMID of length 12-19 Optional Optional Parameter
+DLT PEID (Principal
+Entity ID)
+Approved PEID (Numeric DLT
+Principal Entity Id of length 12-19) Optional
+Principal Entity ID: - This is corresponding to the
+Header (Sender ID), For every Sender_ID registered
+in the DLT system
+corelationId Combination of alphanumeric and
+symbols Optional corelationId id client system generated message
+identification number
+API Documentation & API Description Guide
+6. HTTP API Request & Response Details:
+1. Single Recipient Request: -
+https://domainname/fe/api/v1/send?username=username&password=APIpassword&un
+icode=true/false&from=sendercli&to=torecipient&text=message&dltContentId=DL
+TtemplateID
+2. Multiple Recipient Request: - (Up to 100 msisdn)
+https://domainname/fe/api/v1/multiSend?username=username&password=APIpasswo
+rd&unicode=true/false&from=sendercli&to=torecipient1, torecipient2,
+torecipient3&text=message&dltContentId=DLTtemplateID
+When the request is successful, the following response will be displayed.
+{"transactionId":205538399,"state":"SUBMIT_ACCEPTED","statusCode":200,"desc
+ription":"Message accepted successfully","pdu":1}
+We suggest you store the response text as it may be required to retrieve status / delivery report in
+future using message id.
+Other responses in case of an error:
+Response Description Reason
+"statusCode":2051
+“Sender [xxxxxx]
+doesn’t exist”. When the API request contains nonregistered SENDER ID on User
+Panel
+"statusCode":2070 Authentication failure Invalid Username/Password/Account expired
+"statusCode":2054
+Invalid Msisdn
+[xxxxxxxxx] [IN] When the MSISDN is not in 10- or 12-digits length (with IN country
+code 91)
+"statusCode":6001 Insufficient Balance! Zero Credit
+"statusCode":7001 DLT_Content_ID not
+found DLT Content ID missing in API request
+7: Call Back API Format & Parameter Details for Real Time Delivery Report:
+Client must provide call back API (GET) in below format to configure at the backend, real time
+delivery reports shall be pushed through the API.
+http://{clienturl
+path}?txid={transactionId}&to={recpient}&from={sender}&description={descrip
+tion}&pdu={totalPdu}&text={message}&deliverystatus={status}&deliverydt={don
+eDate}
+API Documentation & API Description Guide
+Call Back API Parameters Description:
+Json Method API
+curl -k -X POST \
+https://domainname/fe/api/v1/message \
+-H 'accept: application/json' \
+-H 'authorization: Basic dGV4dC50cmFucy5wYXNzd29yZA== ' \
+-H 'cache-control: no-cache' \
+-H 'content-type: application/json' \
+-d '{"extra":{"dltContentId": "ContentID"},
+ "message": {
+ "recipient": "9999999999",
+ "text": "Hello world!"
+},
+ "sender": "TEST",
+"unicode": false
+}'
+API Documentation & API Description Guide
+Flash SMS Using Json Method API
+curl -k -X POST \
+https://domainname/fe/api/v1/message \
+-H 'accept: application/json' \
+-H 'authorization: Basic dGV4dC50cmFucy5wYXNzd29yZA== ' \
+-H 'cache-control: no-cache' \
+-H 'content-type: application/json' \
+-d '{"extra":{"dltContentId": "ContentID", "message.is.flash":true},
+ "message": {
+ "recipient": "9999999999",
+ "text": "Hello world!"
+},
+ "sender": "TEST",
+"unicode": false
+}'
+Parameter Value Required? Description
+Username API username YES Your API username
+Type Transaction Type YES Your Transaction Type trans/pro
+Password API password YES Your API password.
+Recipient
+msisdn
+Recipient number
+with country code
+(91 for India)
+YES Recipient mobile number with or without country code
+eg:919876543210
+Text Text message YES Message to Recipient mobile
+Sender 6 alpha characters YES A Sender ID to appear on the recipient mobile (Cannot
+contain any special characters).
+Unicode True/false YES False for English message & true for Unicode messages
+DLTContent ID Approved Content
+id (length of 4-19) YES Content Template ID: - This ID is assigned to a message
+template when the same is registered with DLT.
+Sample Request: -
+curl -k -u test.trans:password -H 'Content-Type:application/json' -H
+'Accept:application/json' -d '{ "extra":{"dltContentId":
+"ContentID"},"message":{"recipient":"919999999999","text":"HI"},"sender":"T
+EST","unicode":false}' https://domain/fe/api/v1/message
+Response: -
+{"transactionId":3341573,"state":"SUBMIT_ACCEPTED","description":"Message
+accepted successfully","pdu":1}
+XML Method API
+API Documentation & API Description Guide
+1. One2One Request & Response Details:
+Below XML API used for one message to one recipient or multiple message / recipient pairs i.e., 1000
+distinct messages / recipients’ pairs in a single call
+Sample Request: -
+curl -X POST --header 'Content-Type: application/xml' --header 'Accept: application/xml' -d '<?xml
+version="1.0"?>
+<OneToOnePush>
+<credentials>
+<password>test</password>
+<user>test.trans</user>
+</credentials>
+<from>SENDER</from>
+<shortMessages>
+<message>Test Message1</message>
+<recipient>9999999999</recipient>
+<corelationId>1</corelationId>
+<dltPrincipalEntityId>222222222</dltPrincipalEntityId>
+<dltContentId>1234</dltContentId>
+</shortMessages>
+<shortMessages>
+<message>Test Message2</message>
+<recipient>9999999999</recipient>
+<corelationId>2</corelationId>
+<dltPrincipalEntityId>222222222</dltPrincipalEntityId>
+<dltContentId>1234</dltContentId>
+</shortMessages>
+<unicode>true</unicode>
+</OneToOnePush> ' 'https://domainname/fe/api/v1/one2One' -ki
+Response Request: -
+<PushResponse>
+ <submitResponses>
+ <submitResponses>
+ <transactionId>205666556</transactionId>
+ <state>SUBMIT_ACCEPTED</state>
+ <description>Message accepted successfully</description>
+ <pdu>1</pdu>
+ <corelationId>1</corelationId>
+ </submitResponses>
+ <submitResponses>
+ <transactionId>205666557</transactionId>
+ <state>SUBMIT_ACCEPTED</state>
+ <description>Message accepted successfully</description>
+API Documentation & API Description Guide
+ <pdu>1</pdu>
+ <corelationId>2</corelationId>
+ </submitResponses>
+ </submitResponses>
+</PushResponse>
+2. One2One Request & Response Details:
+Below XML API is used for one message to Multiple recipients
+Sample Request: -
+curl -X POST --header 'Content-Type: application/xml' --header 'Accept: application/xml' -d '<?xml
+version="1.0"?>
+<OneToManyPush>
+ <credentials>
+ <password>test</password>
+ <user>test.trans</user>
+ </credentials>
+ <from>SENDER</from>
+ <messageText>Test Message</messageText>
+ <options>
+ <dltPrincipalEntityId>222222222</dltPrincipalEntityId>
+ <dltContentId>12345</dltContentId>
+ </options>
+ <recpients>
+ <corelationId>1</corelationId>
+ <mobile>999999999</mobile>
+ </recpients>
+ <recpients>
+ <corelationId>2</corelationId>
+ <mobile>9999999999</mobile>
+ </recpients>
+ <unicode>true</unicode>
+</OneToManyPush>' 'https://domainname/fe/api/v1/one2Many' -ki
+Response Request: -
+<PushResponse>
+ <submitResponses>
+ <submitResponses>
+ <transactionId>457307</transactionId>
+ <state>SUBMIT_ACCEPTED</state>
+ <description>Message accepted successfully</description>
+ <pdu>1</pdu>
+ <corelationId>1</corelationId>
+ </submitResponses>
+ <submitResponses>
+ <transactionId>457308</transactionId>
+ <state>SUBMIT_ACCEPTED</state>
+ <description>Message accepted successfully</description>
+ <pdu>1</pdu>
+API Documentation & API Description Guide
+ <corelationId>2</corelationId>
+ </submitResponses>
+ </submitResponses>
+</PushResponse>
+Please find the below description of the parameters.
+1. Password
+ <password>password</password>
+ User API Password.
+2. Username
+<user>username</user>
+Username that register on panel and For Promotional user name use the test.pro and for
+transactional messages use test.trans
+3. Sender ID
+ <from>SENDER</from>
+Sender ID (DLT Register Header Name) from which message needs to be originated. It should
+Alphabet or Numeric of 6 characters only.
+4. Message Text
+<message>This is test message</message>
+This is the message text which will be delivered to the end user.
+5. Mobile Number
+ <recipient>9999999990</recipient>
+ <recipient>9999999991</recipient>
+ <recipient>9999999992</recipient>
+Enter the mobile number on which the content to be delivered. In case of multiple mobile numbers
+enter mobile numbers in new row same as the sample request.
+6. DLT Content ID
+<dltContentId>12345</dltContentId>
+Content (Template) is Once your template is approved, DLT portals would give you a unique DLT
+Template ID which needs to be sent during your SMS submission.
+7. Unicode
+ <unicode>true</unicode>
+Unicode value to be true in case of vernacular message or in any regional language, in case of English
+content it should be false.

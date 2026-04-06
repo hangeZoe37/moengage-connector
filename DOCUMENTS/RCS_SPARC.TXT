@@ -1,0 +1,768 @@
+INTEGRATED-RCS API Documentation 
+Overview 
+The INTEGRATED-RCS-BACKEND is a comprehensive platform designed to manage Rich 
+Communication Services (RCS) workflows. This includes: 
+● Building interactive bot assistants 
+● Executing campaigns 
+● Upload files 
+Base URL: https://prodbackendrcs.sparc.smartping.io/ 
+Assistant (Bot) APIs 
+The Assistant (Bot) APIs allow clients to create and manage RCS Assistants that represent 
+a brand on the RCS channel. An Assistant defines branding elements, business use cases, 
+communication contact points, verification details, and credential metadata required by the 
+operator. Assistants are always created under a valid account and license, and their lifecycle 
+(creation, verification, approval) is tightly coupled with the account credentials fetched from 
+the License API. 
+Create Assistant 
+This API creates a new RCS Assistant with branding, bot communication details, brand 
+verification information, and channel credentials. The Assistant created using this API is later 
+used for campaign execution and RCS message delivery. 
+API Details 
+Endpoint 
+POST /backend/api/v2/rcs/createassistant 
+Authentication 
+● Header-based authentication (serviceAccountName, apiPassword) 
+Key Payload Sections 
+● Assistant Details – Name, use case, description, branding 
+ 
+● Bot Communication – Phone numbers, emails, websites, contact details 
+ 
+● Brand & Bot Verification – Opt-in, opt-out, consent proof, triggers 
+ 
+● Credential Metadata – Authentication and operator-specific metadata 
+ 
+Request Payload (Sample) 
+{ 
+  "assistantName": "assistant_gaurav01", 
+  "assistant_use_case": "TRANSACTIONAL", 
+  "description": "hi this is assistant description", 
+  "billing_category": "CONVERSATIONAL", 
+  "termsAndConditions": "https://www.google.com", 
+  "privacyPolicy": "https://www.google.com", 
+  "logoUrl": 
+"https://stagingbackendocmpv2.smartping.io/backend/api/v2/rcs/drive/
+uploads/bdac61cd-5c96-4272-8901-f1be6e9e7427/icons8_download_32(2).p
+ng", 
+  "coverImageUrl": 
+"https://stagingbackendocmpv2.smartping.io/backend/api/v2/rcs/drive/
+uploads/bdac61cd-5c96-4272-8901-f1be6e9e7427/arsen_vivcharyk_dmRB6RX
+RpFk_unsplash_1_(2).jpg", 
+  "theme_colour": "#4b30cf", 
+  "botCommunication": { 
+    "phone_numbers": [ 
+      { 
+        "phoneNumber": "9900990099", 
+        "label": "phone 1" 
+      } 
+    ], 
+    "contact": [ 
+      { 
+        "full_name": "gaurav", 
+        "mobile_number": "8899880099", 
+        "email_id": "g@test.com", 
+        "designation": "dev" 
+      } 
+    ], 
+    "emails": [ 
+      { 
+        "address": "g@test.com", 
+        "label": "email 1" 
+      } 
+    ], 
+    "websites": [ 
+      { 
+        "uri": "https://www.google.com", 
+        "label": "web 1" 
+      } 
+    ], 
+  }, 
+  "bot_and_brand_Verification_details": { 
+    "optin_message": "Hi Hello", 
+"consent_screenshot":"https://stagingbackendocmp.smartping.io/backend/api/v2/r
+cs/drive/uploads/4d715b67-3f39-4694-95f2-00f7391ef45d/1440X720(2).jpeg 
+", 
+    "optout_message": "Hi opting out", 
+    "interactions": "Hey interactions are there", 
+    "action_triggers": "Hello this is trigger messags" 
+  }, 
+} 
+ 
+ 
+Fetch Assistants 
+This API retrieves all RCS Assistants linked to a specific account. It is commonly used to 
+view assistant status, approval state, branding details, and communication metadata. 
+API Details 
+Endpoint 
+GET /backend/api/v2/rcs/fetchassistants 
+ 
+Description 
+ Returns all assistants associated with the given service account name 
+ 
+Sample Response 
+{ 
+  "status_code": 200, 
+  "message": "Data fetched sucessfully", 
+  "data": [ 
+    { 
+      "assistant_id": null, 
+      "assistant_name": "test_Assistant", 
+      "assistant_status": "pending", 
+      "assistant_use_case": "TRANSACTIONAL", 
+      "billing_category": "CONVERSATIONAL", 
+      "created_at": "2026-01-19T04:44:36.000Z", 
+      "updated_at": "2026-01-19T04:44:36.000Z" 
+    }, 
+    { 
+      "assistant_id": "68a2f70eec220d7409d8139c", 
+      "assistant_name": "Assitantfor16test", 
+      "assistant_status": "APPROVED", 
+      "assistant_use_case": "PROMO", 
+      "billing_category": null, 
+      "created_at": "2025-12-16T09:37:59.000Z", 
+      "updated_at": "2025-12-16T09:54:32.000Z" 
+    }, 
+    { 
+      "assistant_id": "686e3627517f34691", 
+      "assistant_name": "Smartping AI Promotional", 
+      "assistant_status": "APPROVED", 
+      "assistant_use_case": "PROMO", 
+      "billing_category": null, 
+      "created_at": "2025-10-31T12:04:02.000Z", 
+      "updated_at": "2025-11-03T06:30:10.000Z" 
+    }, 
+    { 
+      "assistant_id": null, 
+      "assistant_name": "testasistant11", 
+      "assistant_status": "REJECTED", 
+      "assistant_use_case": "PROMO", 
+      "billing_category": "BASIC", 
+      "created_at": "2026-01-21T08:34:05.000Z", 
+      "updated_at": "2026-01-25T04:14:01.000Z" 
+    }, 
+    { 
+      "assistant_id": "test", 
+      "assistant_name": "testlargefile02", 
+      "assistant_status": "PENDING", 
+      "assistant_use_case": "PROMO", 
+      "billing_category": "CONVERSATIONAL", 
+      "created_at": "2025-12-31T09:04:28.000Z", 
+      "updated_at": "2026-01-16T05:53:10.000Z" 
+    } 
+  ] 
+} 
+ 
+ 
+Media Library APIs 
+Upload Media 
+Endpoint: POST /backend/api/v2/rcs/mediaupload 
+ Content-Type: multipart/form-data 
+Fields: 
+● file 
+Sample response: 
+{ 
+    "status_code": 200, 
+    "message": "File uploaded successfully", 
+    "data": { 
+        "id": "ddf2fcf3-fb93-4063-83c3-20dbf2127899", 
+        "account_id": "891283_8392293_383_8231", 
+        "file_name": "Fresh_Lemon_Soda(1).jpg", 
+        "channel": "rcs", 
+        "file_type": "image", 
+        "is_active": true, 
+        "mime_type": "image/jpeg", 
+        "url": 
+"https://stagingbackendocmpv2.smartping.io/backend/api/v2/rcs/
+drive/uploads/891283_8392293_383_8231/Fresh_Lemon_Soda(1).jpg"
+, 
+        "created_by": "Naveen", 
+        "size": "55.78 KB", 
+        "updated_at": "2026-01-18T07:53:49.371Z", 
+        "created_at": "2026-01-18T07:53:49.371Z" 
+    } 
+} 
+ 
+ 
+ 
+ 
+ 
+Campaign APIs 
+Send Bulk Campaign 
+This API is used to send bulk RCS campaigns using Jio RCS. 
+ It supports template-based, plain text, and rich content messages 
+with personalization variables and delivery report (DLR) webhooks. 
+Endpoint 
+POST /backend/api/v2/rcs/sendmessage 
+Prerequisites 
+Before running a bulk campaign, ensure the following: 
+1. Assistant ID 
+ 
+○ Fetch assistant_id using Assistant Fetch API 
+○ Each recipient must have a valid assistant_id 
+2. Jio Content Payload 
+○ User can directly paste Jio-compliant content payload 
+○ Supports Plain Text & Rich Content 
+3. Template Variables 
+○ Mandatory if template_name contains placeholders 
+○ Optional when using direct content 
+Content-Type 
+Content-Type: application/json 
+High-Level Rules 
+Scenario 
+Only template_name 
+provided 
+Behavior 
+Template-based message 
+Only content provided 
+ttl provided 
+Variables 
+seq_id empty 
+Content-based message 
+Applicable only for template_name 
+Mandatory for template if placeholders 
+exist 
+Defaults to mobile_number 
+Request Payload – Plain & Rich Text Messages 
+{ 
+  "messages": [ 
+    { 
+      "message_id": "msg-001", 
+      "template_name": "name123", 
+      "ttl": 300, 
+      "addresses": [ 
+        { 
+          "seq_id": "seq-001", 
+          "assistant_id": "677baf920f6d1f157306740b", 
+          "mobile_number": "91868674750*" 
+        } 
+      ] 
+    }, 
+    { 
+      "message_id": "msg-002", 
+      "ttl": 300, 
+      "content": { 
+        "plainText": "This is a plain text message" 
+      }, 
+      "addresses": [ 
+        { 
+          "seq_id": "seq-002", 
+          "assistant_id": "677baf920f6d1f157306740b", 
+          "mobile_number": "91868674750*" 
+        } 
+      ] 
+    } 
+  ], 
+  "dlr_url": [ 
+    { 
+      "url": "https://example.com/dlr", 
+      "headers": { 
+        "Authorization": "Bearer token123" 
+      }, 
+      "request_body": { 
+        "event": "DELIVERED" 
+      } 
+    } 
+  ] 
+} 
+Plain and Rich Text Message with 
+variables 
+ 
+Request Payload 
+ 
+{ 
+  "messages": [ 
+    { 
+      "message_id": "msg-001", 
+      "template_name": "name123", 
+      "ttl": 300, 
+      "addresses": [ 
+        { 
+          "seq_id": "seq-001", 
+          "assistant_id": "677baf920f6d1f157306740b", 
+          "mobile_number": "91868674750*", 
+          "variables": [ 
+            { "name": "{{1}}", "value": "gaurav" }, 
+            { "name": "{{2}}", "value": "779797979797" }, 
+            { "name": "{{3}}", "value": "1120" } 
+          ] 
+        } 
+      ] 
+    }, 
+    { 
+      "message_id": "msg-002", 
+      "ttl": 300, 
+      "content": { 
+        "plainText": "Would you Recommend our Service to a Friend?", 
+        "suggestions": [ 
+            { 
+                "reply": { 
+                    "plainText": "Yes, Absolutely", 
+                    "postBack": { 
+                        "data": "suggestion_1" 
+                    } 
+                } 
+            }, 
+            { 
+                "reply": { 
+                    "plainText": "It needs more Work", 
+                    "postBack": { 
+                        "data": "suggestion_2" 
+                    } 
+                } 
+            }, 
+                       { 
+                "action": { 
+                    "plainText": "Mark Your Calendar", 
+                    "postBack": { 
+                        "data": "SA1L1C1" 
+                    }, 
+                    "createCalendarEvent": { 
+                        "startTime": "2023-06-26T15:01:23Z", 
+                        "endTime": "2023-06-26T18:01:23Z", 
+                        "title": "Bot Development Seminar", 
+                        "description": "Session 1 of 4" 
+                    } 
+                } 
+            } 
+        ] 
+    }, 
+      "addresses": [ 
+        { 
+          "seq_id": "seq-002", 
+          "assistant_id": "677baf920f6d1f157306740b", 
+          "mobile_number": "91868674750*" 
+        } 
+      ] 
+    } 
+  ], 
+  "dlr_url": [ 
+    { 
+      "url": "https://example.com/dlr", 
+      "headers": { 
+        "Authorization": "Bearer token123" 
+      }, 
+      "request_body": { 
+        "event": "DELIVERED" 
+      } 
+    } 
+  ] 
+} 
+ 
+ 
+ 
+ 
+ 
+Rich Card Message with title variables 
+and normal variables 
+{ 
+  "messages": [ 
+    { 
+      "message_id": "msg-001", 
+      "template_name": "name123", 
+      "ttl": 300, 
+      "addresses": [ 
+        { 
+          "seq_id": "seq-001", 
+          "assistant_id": "677baf920f6d1f157306740b", 
+          "mobile_number": "91868674750*", 
+          "variables": { 
+        "orientation": "HORIZONTAL", 
+        "media_height_or_width": "LEFT", 
+        "media_height": "LEFT", 
+        "media_url": 
+"https://stagingbackendocmp.smartping.io/backend/api/v2/rcs/drive/uploads/4d715b67-3f39
+4694-95f2-00f7391ef45d/pexels_pixabay_60597_1_.jpg", 
+        "card_title_variables": [ 
+            { 
+                "name": "{{1}}", 
+                "value": "source" 
+            } 
+        ], 
+        "card_variables": [ 
+            { 
+                "name": "{{1}}", 
+                "value": "channel" 
+            } 
+        ] 
+    }, 
+} 
+      ] 
+    }, 
+    { 
+      "message_id": "msg-002", 
+      "ttl": 300, 
+      "content":   { 
+        "richCardDetails": { 
+            "standalone": { 
+                "cardOrientation": "VERTICAL", 
+                "content": { 
+                    "cardTitle": "This is card title", 
+                    "cardDescription": "This is card description", 
+                    "cardMedia": { 
+                        "mediaHeight": "TALL", 
+                        "contentInfo": { 
+                            "fileUrl": 
+"http://www.google.com/logos/doodles/2015/googles-new-logo-5078286822539264.3-hp2x.g
+if" 
+                            // "thumbnailUrl": 
+"https://jfxv.akamaized.net/JBMCampaigns/JioMart/Creatives/Camp2/WelcomeThumbnail.pn
+g" 
+                        } 
+                    }, 
+                    "suggestions": [ 
+                        { 
+                            "reply": { 
+                                "plainText": "Call Now", 
+                    "postBack": { 
+                        "data": "SA1L1C1" 
+                    }, 
+                    "dialerAction": { 
+                        "phoneNumber": "+91868674750*" 
+                    } 
+                            } 
+                        }, 
+                        { 
+                            "reply": { 
+                                "plainText": "Suggestion #2", 
+                                "postBack": { 
+                                    "data": "suggestion_2" 
+                                } 
+                            } 
+                        }, 
+                         { 
+                            "reply": { 
+                                "plainText": "Suggestion #2", 
+                                "postBack": { 
+                                    "data": "suggestion_2" 
+                                } 
+                            } 
+                        }, 
+                         { 
+                "action": { 
+                    "plainText": "Visit Now", 
+                    "postBack": { 
+                        "data": "SA1L1C1" 
+                    }, 
+                    "showLocation": { 
+                        "coordinAtes": { 
+                            "latitude": 21.5937, 
+                            "longitude": 78.9629 
+                        }, 
+                        "label": "Label - Show Location" 
+                    } 
+                } 
+            } 
+                    ] 
+                } 
+            } 
+        }, 
+         "suggestions": [ 
+            { 
+                "reply": { 
+                    "plainText": "Know Mfddfore", 
+                    "postBack": { 
+                        "data": "SR1L1C0" 
+                    } 
+                } 
+            }, 
+            { 
+                "action": { 
+                    "plainText": "Mark Your Calendar", 
+                    "postBack": { 
+                        "data": "SA1L1C1" 
+                    }, 
+                    "createCalendarEvent": { 
+                        "startTime": "2023-06-26T15:01:23Z", 
+                        "endTime": "2023-06-26T18:01:23Z", 
+                        "title": "Bot Development Seminar", 
+                        "description": "Session 1 of 4" 
+                    } 
+                } 
+            }, 
+            { 
+                "reply": { 
+                    "plainText": "Know More", 
+                    "postBack": { 
+                        "data": "SR1L1C0" 
+                    } 
+                } 
+            }, 
+            { 
+                "reply": { 
+                    "plainText": "Know More", 
+                    "postBack": { 
+                        "data": "SR1L1C0" 
+                    } 
+                } 
+            }, 
+            { 
+                "reply": { 
+                    "plainText": "Know More", 
+                    "postBack": { 
+                        "data": "SR1L1C0" 
+                    } 
+                } 
+            }, 
+            { 
+                "reply": { 
+                    "plainText": "Know More", 
+                    "postBack": { 
+                        "data": "SR1L1C0" 
+                    } 
+                } 
+            }, 
+            { 
+                "action": { 
+                    "plainText": "Visit Now", 
+                    "postBack": { 
+                        "data": "SA1L1C1" 
+                    }, 
+                    "showLocation": { 
+                        "coordinAtes": { 
+                            "latitude": 21.5937, 
+                            "longitude": 78.9629 
+                        }, 
+                        "label": "Label - Show Location" 
+                    } 
+                } 
+            }, 
+            { 
+                "action": { 
+                    "plainText": "Dial Now", 
+                    "postBack": { 
+                        "data": "SA1L1C1" 
+                    }, 
+                    "dialerAction": { 
+                        "phoneNumber": "+91868674750*" 
+                    } 
+                } 
+            } 
+        ] 
+    } , 
+      "addresses": [ 
+        { 
+          "seq_id": "seq-002", 
+          "assistant_id": "677baf920f6d1f157306740b", 
+          "mobile_number": "91868674750*" 
+        } 
+      ] 
+    } 
+  ], 
+  "dlr_url": [ 
+    { 
+      "url": "https://example.com/dlr", 
+          } 
+  ] 
+} 
+ 
+ 
+ 
+ 
+ 
+Rich Card Carousel with title variables 
+and normal variables 
+Request Payload: 
+{ 
+  "messages": [ 
+    { 
+      "message_id": "msg-001", 
+      "template_name": "name123", 
+      "ttl": 300, 
+      "addresses": [ 
+        { 
+          "seq_id": "seq-001", 
+          "assistant_id": "677baf920f6d1f157306740b", 
+          "mobile_number": "91868674750*", 
+          "variables": { 
+        "orientation": "VERTICAL", 
+        "media_height_or_width": "MEDIUM", 
+        "card_width": "MEDIUM", 
+        "cards": [ 
+            { 
+                "media_url": 
+"https://stagingbackendocmp.smartping.io/backend/api/v2/rcs/drive/uploads/4d715b67-3f39
+4694-95f2-00f7391ef45d/generated_image_3_.png", 
+                "card_title_variables": [ 
+                    { 
+                        "name": "{{1}}", 
+                        "value": "var2" 
+                    } 
+                ], 
+                "card_variables": [ 
+                    { 
+                        "name": "{{1}}", 
+                        "value": "mobile2" 
+                    } 
+                ], 
+            }, 
+            { 
+                "media_url": 
+"https://stagingbackendocmp.smartping.io/backend/api/v2/rcs/drive/uploads/4d715b67-3f39
+4694-95f2-00f7391ef45d/trendy_colour_swatches_collage_11zon.jpg", 
+                "card_title_variables": [ 
+                    { 
+                        "name": "{{1}}", 
+                        "value": "var2" 
+                    } 
+                ], 
+                "card_variables": [ 
+                    { 
+                        "name": "{{1}}", 
+                        "value": "mobile2" 
+                    } 
+                ], 
+            } 
+        ] 
+    }, 
+, 
+} 
+      ] 
+    }, 
+    { 
+      "message_id": "msg-002", 
+      "ttl": 300, 
+      "content":  { 
+      "richCardDetails":{ 
+         "carousel":{ 
+            "cardWidth":"MEDIUM_WIDTH", 
+            "contents":[ 
+               { 
+                  "cardTitle":"Explore the web securely", 
+                  "cardDescription":"Loaded with features like AdBlocker, Multiple search engines 
+& VPN for Indians", 
+                  "cardMedia":{ 
+                     "contentInfo":{ 
+                        
+"fileUrl":"https://jfxv.akamaized.net/JBMCampaigns/JioSphere/Creatives/Camp1/caro1_card
+1.jpg", 
+                        "thumbnailUrl": 
+"https://jfxv.akamaized.net/JBMCampaigns/JioMart/Creatives/Camp2/WelcomeThumbnail.pn
+g" 
+                     }, 
+                     "mediaHeight":"MEDIUM" 
+                  }, 
+                  "suggestions":[ 
+                     { 
+                        "action":{ 
+                           "plainText":"Browse Now", 
+                           "postBack":{ 
+                              "data":"SA1L1C1" 
+                           }, 
+                           "openUrl":{ 
+                              "url":"https://jiosphere.page.link/creative1" 
+                           } 
+                        } 
+                     }, 
+                      { 
+            "reply":{ 
+               "plainText":"Know More", 
+               "postBack":{ 
+                  "data":"SR1L1C0" 
+               } 
+            } 
+         } 
+                  ] 
+               }, 
+               { 
+                  "cardTitle":"Entertainment on tap", 
+                  "cardDescription":"Enjoy tailored content in your language across various topics", 
+                  "cardMedia":{ 
+                     "contentInfo":{ 
+                        
+"fileUrl":"https://jfxv.akamaized.net/JBMCampaigns/JioSphere/Creatives/Camp1/caro1_card
+2.jpg" 
+                     }, 
+                     "mediaHeight":"MEDIUM" 
+                  }, 
+                  "suggestions":[ 
+                     { 
+                        "action":{ 
+                           "plainText":"Download Now", 
+                           "postBack":{ 
+                              "data":"SA2L1C2" 
+                           }, 
+                           "openUrl":{ 
+                              "url":"https://jiosphere.page.link/Creative2" 
+                           } 
+                        } 
+                     } 
+                  ] 
+               }, 
+               { 
+                  "cardTitle":"Your digital privacy matters", 
+                  "cardDescription":"Anti-tracking mode stops websites from tracking you", 
+                  "cardMedia":{ 
+                     "contentInfo":{ 
+                        
+"fileUrl":"https://jfxv.akamaized.net/JBMCampaigns/JioSphere/Creatives/Camp1/caro1_card
+3.jpg" 
+                     }, 
+                     "mediaHeight":"MEDIUM" 
+                  }, 
+                  "suggestions":[ 
+                     { 
+                        "action":{ 
+                           "plainText":"Browse Privately", 
+                           "postBack":{ 
+                              "data":"SA3L1C3" 
+                           }, 
+                           "openUrl":{ 
+                              "url":"https://jiosphere.page.link/Creative3" 
+                           } 
+                        } 
+                     } 
+                  ] 
+               } 
+            ] 
+         } 
+      }, 
+      "suggestions":[ 
+         { 
+            "reply":{ 
+               "plainText":"Know More", 
+               "postBack":{ 
+                  "data":"SR1L1C0" 
+               } 
+            } 
+         } 
+      ] 
+   }, 
+      "addresses": [ 
+        { 
+          "seq_id": "seq-002", 
+          "assistant_id": "677baf920f6d1f157306740b", 
+          "mobile_number": "91868674750*" 
+        } 
+      ] 
+    } 
+  ], 
+  "dlr_url": [ 
+    { 
+      "url": "https://example.com/dlr", 
+     } 
+  ] 
+} 
+ 
+ 
+ 
+ 
+Sample response: 
+{ 
+    "status_code": 200, 
+    "message": "Successfull", 
+    "submission_id": "e3f95e63-6f74-4520-b382-5e5abb762480", 
+    "success": [ 
+        { 
+            "seq_id": "seq-dddddd" 
+        }, 
+        { 
+            "seq_id": "919390977728" 
+        } 
+    ], 
+    "failed": [ { 
+            "seq_id": "919390977728", 
+            "error":"invalid templateId" 
+        }] 
+} 
+ 
+ 
+ 

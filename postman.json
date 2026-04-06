@@ -5,13 +5,41 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "base_url", "value": "http://localhost:3000", "type": "string" },
-    { "key": "bearer_token", "value": "MTExX3Rva2VuXzc4OQ==", "type": "string" },
-    { "key": "test_destination", "value": "+918287902252", "type": "string" },
-    { "key": "bot_id", "value": "677baf920f6d1f157306740b", "type": "string" },
-    { "key": "dashboard_user", "value": "admin", "type": "string" },
-    { "key": "dashboard_pass", "value": "admin123", "type": "string" },
-    { "key": "last_msg_id", "value": "", "type": "string" }
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "bearer_token",
+      "value": "YOUR_BEARER_TOKEN_HERE",
+      "type": "string"
+    },
+    {
+      "key": "test_destination",
+      "value": "+918287902252",
+      "type": "string"
+    },
+    {
+      "key": "bot_id",
+      "value": "677baf920f6d1f157306740b",
+      "type": "string"
+    },
+    {
+      "key": "dashboard_user",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "dashboard_pass",
+      "value": "admin123",
+      "type": "string"
+    },
+    {
+      "key": "last_msg_id",
+      "value": "",
+      "type": "string"
+    }
   ],
   "item": [
     {
@@ -20,41 +48,137 @@
       "item": [
         {
           "name": "1.1 TEXT: Templated (Success Flow)",
-          "event": [ { "listen": "test", "script": { "exec": [ "const reqData = JSON.parse(pm.request.body.raw);", "const cbData = reqData.messages[0].callback_data;", "pm.collectionVariables.set(\"last_msg_id\", cbData);" ], "type": "text/javascript" } } ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const reqData = JSON.parse(pm.request.body.raw);",
+                  "const cbData = reqData.messages[0].callback_data;",
+                  "pm.collectionVariables.set(\"last_msg_id\", cbData);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
-            "header": [ { "key": "Authentication", "value": "Bearer {{bearer_token}}" }, { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Authentication",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"moe_text_{{$timestamp}}\",\n      \"fallback_order\": [\"rcs\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"template_id\": \"welcome_msg_01\",\n        \"message_content\": {\n          \"type\": \"TEXT\",\n          \"data\": {\n            \"text\": \"Hello John!\",\n            \"parameters\": { \"name\": \"John\", \"company\": \"MoEngage\" }\n          }\n        }\n      }\n    }\n  ]\n}"
+              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"moe_text_{{$timestamp}}\",\n      \"fallback_order\": [\"rcs\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"template_id\": \"test15\",\n        \"message_content\": {\n          \"type\": \"TEXT\",\n          \"data\": {\n            \"text\": \"Hello John!\",\n            \"parameters\": { \"name\": \"John\", \"company\": \"MoEngage\" }\n          }\n        }\n      }\n    }\n  ]\n}"
             },
-            "url": { "raw": "{{base_url}}/integrations/moengage/rcs/send", "host": ["{{base_url}}"], "path": ["integrations", "moengage", "rcs", "send"] }
+            "url": {
+              "raw": "{{base_url}}/integrations/moengage/rcs/send",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "integrations",
+                "moengage",
+                "rcs",
+                "send"
+              ]
+            }
           }
         },
         {
           "name": "1.2 CARD: International (Video + Reply Suggestion)",
-          "event": [ { "listen": "test", "script": { "exec": [ "const reqData = JSON.parse(pm.request.body.raw);", "const cbData = reqData.messages[0].callback_data;", "pm.collectionVariables.set(\"last_msg_id\", cbData);" ], "type": "text/javascript" } } ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const reqData = JSON.parse(pm.request.body.raw);",
+                  "const cbData = reqData.messages[0].callback_data;",
+                  "pm.collectionVariables.set(\"last_msg_id\", cbData);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
-            "header": [ { "key": "Authentication", "value": "Bearer {{bearer_token}}" }, { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Authentication",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"moe_card_{{$timestamp}}\",\n      \"fallback_order\": [\"rcs\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"template_id\": null,\n        \"message_content\": {\n          \"type\": \"CARD\",\n          \"data\": {\n            \"media\": {\n              \"media_url\": \"https://www.w3schools.com/html/mov_bbb.mp4\",\n              \"content_type\": \"VIDEO\"\n            },\n            \"title\": \"Discover Nature\",\n            \"description\": \"A sample ad-hoc card message.\",\n            \"orientation\": \"VERTICAL\",\n            \"height\": \"MEDIUM\"\n          },\n          \"suggestions\": {\n            \"type\": \"REPLY\",\n            \"text\": \"Watch Video\",\n            \"postback_data\": \"VIDEO_OK\"\n          }\n        }\n      }\n    }\n  ]\n}"
             },
-            "url": { "raw": "{{base_url}}/integrations/moengage/rcs/send", "host": ["{{base_url}}"], "path": ["integrations", "moengage", "rcs", "send"] }
+            "url": {
+              "raw": "{{base_url}}/integrations/moengage/rcs/send",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "integrations",
+                "moengage",
+                "rcs",
+                "send"
+              ]
+            }
           }
         },
         {
           "name": "1.3 MEDIA: Native Image + Open URL Suggestion",
-          "event": [ { "listen": "test", "script": { "exec": [ "const reqData = JSON.parse(pm.request.body.raw);", "const cbData = reqData.messages[0].callback_data;", "pm.collectionVariables.set(\"last_msg_id\", cbData);" ], "type": "text/javascript" } } ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const reqData = JSON.parse(pm.request.body.raw);",
+                  "const cbData = reqData.messages[0].callback_data;",
+                  "pm.collectionVariables.set(\"last_msg_id\", cbData);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
-            "header": [ { "key": "Authentication", "value": "Bearer {{bearer_token}}" }, { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Authentication",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"moe_media_{{$timestamp}}\",\n      \"fallback_order\": [\"rcs\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"template_id\": null,\n        \"message_content\": {\n          \"type\": \"MEDIA\",\n          \"data\": {\n            \"media_url\": \"https://wowbouquet.com/images/2025/02/dahlia-scaled.webp\",\n            \"content_type\": \"IMAGE\"\n          },\n          \"suggestions\": [\n             {\n               \"type\": \"OPEN_URL\",\n               \"text\": \"Learn More\",\n               \"postback_data\": \"URL_CLICKED\",\n               \"url\": \"https://moengage.com\"\n             },\n             {\n               \"type\": \"DIAL_PHONE\",\n               \"text\": \"Call Support\",\n               \"postback_data\": \"DIAL_CLICKED\",\n               \"phone\": \"+919999999999\"\n             }\n          ]\n        }\n      }\n    }\n  ]\n}"
+              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"moe_media_{{$timestamp}}\",\n      \"fallback_order\": [\"rcs\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"template_id\": null,\n        \"message_content\": {\n          \"type\": \"MEDIA\",\n          \"data\": {\n            \"media_url\": \"https://i.pinimg.com/736x/57/3a/57/573a573683e5a79390d021688a043048.jpg\",\n            \"content_type\": \"IMAGE\"\n          },\n          \"suggestions\": [\n             {\n               \"type\": \"OPEN_URL\",\n               \"text\": \"Learn More\",\n               \"postback_data\": \"URL_CLICKED\",\n               \"url\": \"https://moengage.com\"\n             },\n             {\n               \"type\": \"DIAL_PHONE\",\n               \"text\": \"Call Support\",\n               \"postback_data\": \"DIAL_CLICKED\",\n               \"phone\": \"+919999999999\"\n             }\n          ]\n        }\n      }\n    }\n  ]\n}"
             },
-            "url": { "raw": "{{base_url}}/integrations/moengage/rcs/send", "host": ["{{base_url}}"], "path": ["integrations", "moengage", "rcs", "send"] }
+            "url": {
+              "raw": "{{base_url}}/integrations/moengage/rcs/send",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "integrations",
+                "moengage",
+                "rcs",
+                "send"
+              ]
+            }
           }
         }
       ]
@@ -67,35 +191,126 @@
           "name": "2.1 WEBHOOK: Message Delivered (Auto-ID)",
           "request": {
             "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n    \"eventData\": {\n        \"userPhoneNumber\": \"{{test_destination}}\",\n        \"entity\": {\n            \"eventType\": \"MESSAGE_DELIVERED\",\n            \"sendTime\": \"{{$isoTimestamp}}\"\n        }\n    },\n    \"seqId\": \"{{last_msg_id}}\"\n}"
             },
-            "url": { "raw": "{{base_url}}/sparc/webhook", "host": ["{{base_url}}"], "path": ["sparc", "webhook"] }
+            "url": {
+              "raw": "{{base_url}}/sparc/webhook",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sparc",
+                "webhook"
+              ]
+            }
           }
         },
         {
           "name": "2.2 WEBHOOK: Suggestion Click (Auto-ID)",
           "request": {
             "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n    \"interactionType\": \"REPLY\",\n    \"seq_id\": \"{{last_msg_id}}\",\n    \"suggestion_text\": \"Watch Video\",\n    \"postback_data\": \"VIDEO_OK\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n}"
             },
-            "url": { "raw": "{{base_url}}/sparc/webhook", "host": ["{{base_url}}"], "path": ["sparc", "webhook"] }
+            "url": {
+              "raw": "{{base_url}}/sparc/webhook",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sparc",
+                "webhook"
+              ]
+            }
           }
         }
       ]
     },
     {
       "name": "3. MONITORING & DASHBOARD APIs",
-      "auth": { "type": "basic", "basic": [ { "key": "password", "value": "{{dashboard_pass}}", "type": "string" }, { "key": "username", "value": "{{dashboard_user}}", "type": "string" } ] },
+      "auth": {
+        "type": "basic",
+        "basic": [
+          {
+            "key": "password",
+            "value": "{{dashboard_pass}}",
+            "type": "string"
+          },
+          {
+            "key": "username",
+            "value": "{{dashboard_user}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
-        { "name": "Get Stats", "request": { "method": "GET", "url": { "raw": "{{base_url}}/api/dashboard/metrics", "host": ["{{base_url}}"], "path": ["api", "dashboard", "metrics"] } } },
-        { "name": "Get Logs", "request": { "method": "GET", "url": { "raw": "{{base_url}}/api/dashboard/logs", "host": ["{{base_url}}"], "path": ["api", "dashboard", "logs"] } } },
-        { "name": "Live Log Stream (SSE)", "request": { "method": "GET", "url": { "raw": "{{base_url}}/api/dashboard/logs/stream", "host": ["{{base_url}}"], "path": ["api", "dashboard", "logs", "stream"] } } }
+        {
+          "name": "Get Stats",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/dashboard/metrics",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "metrics"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Logs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/dashboard/logs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "logs"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Live Log Stream (SSE)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/dashboard/logs/stream",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "logs",
+                "stream"
+              ]
+            }
+          }
+        }
       ]
     }
   ]
