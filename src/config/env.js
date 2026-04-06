@@ -20,6 +20,9 @@ const requiredVars = [
 const optionalVars = {
   SPARC_SERVICE_ACCOUNT: 'default_account',
   SPARC_API_PASSWORD: 'default_password',
+  SPARC_SMS_API_BASE_URL: 'https://pgapi.sparc.smartping.io/fe',
+  SPARC_SMS_USERNAME: '',
+  SPARC_SMS_PASSWORD: '',
   MOENGAGE_DLR_URL: 'https://api-01.moengage.com/rcs/dlr/sparc',
   DB_POOL_SIZE: '10',
   LOG_LEVEL: 'info',
@@ -51,6 +54,10 @@ function validateEnv() {
     SPARC_API_BASE_URL: process.env.SPARC_API_BASE_URL,
     SPARC_SERVICE_ACCOUNT: process.env.SPARC_SERVICE_ACCOUNT,
     SPARC_API_PASSWORD: process.env.SPARC_API_PASSWORD,
+
+    SPARC_SMS_API_BASE_URL: process.env.SPARC_SMS_API_BASE_URL,
+    SPARC_SMS_USERNAME: process.env.SPARC_SMS_USERNAME,
+    SPARC_SMS_PASSWORD: process.env.SPARC_SMS_PASSWORD,
 
     SPARC_WEBHOOK_URL: process.env.SPARC_WEBHOOK_URL,
 

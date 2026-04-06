@@ -9,10 +9,18 @@
 const { mapDlrEvent, translateStatus } = require('../mappers/dlrMapper');
 const dlrRepo = require('../repositories/dlrRepo');
 const messageRepo = require('../repositories/messageRepo');
-// ;
+const clientRepo = require('../repositories/clientRepo');
 const callbackDispatcher = require('../services/callbackDispatcher');
+const { attemptSms } = require('../services/fallbackEngine');
+const { CHANNELS, MESSAGE_STATUSES } = require('../config/constants');
 const { env } = require('../config/env');
 const logger = require('../config/logger');
+
+/** RCS statuses that should trigger SMS fallback */
+const RCS_FAILED_STATUSES = new Set([
+  MESSAGE_STATUSES.RCS_DELIVERY_FAILED,
+  MESSAGE_STATUSES.RCS_SENT_FAILED,
+]);
 
 /**
  * Handle a DLR event received from SPARC.
@@ -71,6 +79,53 @@ async function handleDlrEvent(sparcEvent) {
 
   if (dispatched) {
     await dlrRepo.markDispatched(dlrResult.insertId);
+  }
+
+  // --- SMS Fallback on RCS failure ---
+  // If RCS failed AND the original payload had fallback_order: ["RCS","SMS"],
+  // automatically send the SMS now — no DLR backend needed.
+  if (RCS_FAILED_STATUSES.has(moeStatus)) {
+    try {
+      // raw_payload is stored as JSON in DB — parse it to get sms{} + fallback_order
+      const rawPayload = typeof message.raw_payload === 'string'
+        ? JSON.parse(message.raw_payload)
+        : message.raw_payload;
+
+      const fallbackOrder = (rawPayload?.fallback_order || [])
+        .map(c => String(c).toLowerCase());
+      const smsBlock = rawPayload?.sms;
+
+      if (fallbackOrder.includes(CHANNELS.SMS) && smsBlock) {
+        logger.info('RCS DLR failure — triggering SMS fallback', {
+          callbackData,
+          moeStatus,
+        });
+
+        // Look up client credentials needed by sparcClient.sendSMS()
+        const client = await clientRepo.findById(message.client_id);
+        if (client) {
+          // Re-hydrate full message object that attemptSms() expects
+          const fullMessage = { ...rawPayload, callback_data: callbackData };
+          await attemptSms(fullMessage, client, dlrUrl);
+        } else {
+          logger.warn('Could not find client for SMS fallback', {
+            callbackData,
+            clientId: message.client_id,
+          });
+        }
+      } else {
+        logger.info('No SMS fallback configured for this message', {
+          callbackData,
+          fallbackOrder,
+          hasSmsBlock: !!smsBlock,
+        });
+      }
+    } catch (fallbackError) {
+      logger.error('Error during DLR-triggered SMS fallback', {
+        callbackData,
+        error: fallbackError.message,
+      });
+    }
   }
 
   // Notify dashboard of status update

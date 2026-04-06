@@ -66,51 +66,70 @@ async function sendRCS(clientData, sparcPayload) {
 }
 
 /**
- * Send an SMS message via SPARC (fallback).
- * POST {SPARC_API_BASE_URL}/sms/sendmessage
+ * Send an SMS message via SPARC SMS Gateway (fallback).
+ * POST https://pgapi.sparc.smartping.io/fe/api/v1/send?username=...&password=...&from=...&text=...&to=...
  *
  * @param {object} clientData - Client row from DB
- * @param {object} smsData - SMS data from MoEngage payload
- * @param {string} destination - Phone number
- * @param {string} assistantId - SPARC assistant ID
- * @returns {Promise<object>} SPARC API response data
+ * @param {object} smsData    - sms{} block from MoEngage payload { sender, message, template_id }
+ * @param {string} destination - Phone number in E.164 format (e.g. +919876543210)
+ * @returns {Promise<object>} SPARC SMS API response data
  */
-async function sendSMS(clientData, smsData, destination, assistantId) {
-  const client = createClient(clientData);
+async function sendSMS(clientData, smsData, destination) {
+  // SPARC SMS uses a completely different base URL + credentials from RCS
+  const smsBaseUrl = env.SPARC_SMS_API_BASE_URL;
+  const username   = clientData.sms_username || env.SPARC_SMS_USERNAME;
+  const password   = clientData.sms_password || env.SPARC_SMS_PASSWORD;
 
-  const smsPayload = {
-    messages: [
-      {
-        sender: smsData.sender,
-        template_name: smsData.template_name || null,
-        message: smsData.message,
-        destination: destination.replace('+', ''),
-        assistant_id: assistantId,
-      },
-    ],
+  // Normalise phone: SPARC SMS wants digits only (no + prefix), e.g. 919876543210
+  const toNumber = destination.replace(/^\+/, '');
+
+  // Build query-param object
+  const params = {
+    username,
+    password,
+    unicode: true,    // SPARC account requires unicode:true — safe for all content types
+    from:    smsData.sender,
+    text:    smsData.message,
+    to:      toNumber,
   };
 
-  logger.info('Calling SPARC SMS sendmessage', {
+  // Attach DLT template ID if present (mandatory for Indian numbers)
+  if (smsData.template_id) {
+    params.dltContentId = smsData.template_id;
+  }
+
+  logger.info('Calling SPARC SMS send API', {
     clientId: clientData.id,
-    destination,
+    to: toNumber,
+    from: smsData.sender,
   });
 
   try {
-    const response = await client.post('/sms/sendmessage', smsPayload);
+    const response = await axios.post(
+      `${smsBaseUrl}/api/v1/send`,
+      null,           // no request body — all params are in query string
+      {
+        params,
+        timeout: SPARC_REQUEST_TIMEOUT_MS,
+        headers: { accept: 'application/json' },
+      }
+    );
 
-    logger.info('SPARC SMS sendmessage succeeded', {
+    logger.info('SPARC SMS send succeeded', {
       clientId: clientData.id,
-      destination,
-      status: response.status,
+      to: toNumber,
+      transactionId: response.data?.transactionId,
+      state: response.data?.state,
     });
 
     return response.data;
   } catch (error) {
-    logger.error('SPARC SMS sendmessage failed', {
+    logger.error('SPARC SMS send failed', {
       clientId: clientData.id,
-      destination,
+      to: toNumber,
       error: error.message,
       status: error.response?.status,
+      data: error.response?.data,
     });
     throw error;
   }

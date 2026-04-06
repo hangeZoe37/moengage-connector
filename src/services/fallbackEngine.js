@@ -53,15 +53,38 @@ async function processMessage(message, client) {
       const sparcPayload = mapMessageToSparc(message, env.SPARC_WEBHOOK_URL);
       const sparcResponse = await sparcClient.sendRCS(client, sparcPayload);
 
-      // Check if SPARC API returned native failure inside 200 OK
-      if (sparcResponse && Array.isArray(sparcResponse.failed) && sparcResponse.failed.length > 0) {
-        const nativeError = sparcResponse.failed[0].error || 'Native SPARC validation error';
-        throw new Error(`SPARC API rejected message instantly: ${nativeError}`);
+      // Log raw SPARC response so we can see exactly what came back
+      logger.info('Raw SPARC RCS response', {
+        callbackData: callback_data,
+        sparcResponse: JSON.stringify(sparcResponse),
+      });
+
+      // SPARC returns EITHER:
+      //   Object: { status_code, submission_id, success:[], failed:[{ seq_id, error }] }
+      //   Array:  [{ status: "SUCCESS"|"FAILED", callback_data }]
+      let submissionId = null;
+
+      if (Array.isArray(sparcResponse)) {
+        // Array format — check if any item is a failure
+        const failedItem = sparcResponse.find(item =>
+          item.status && item.status.toUpperCase() !== 'SUCCESS'
+        );
+        if (failedItem) {
+          throw new Error(`SPARC rejected message: ${failedItem.status} — ${failedItem.error || failedItem.description || 'unknown reason'}`);
+        }
+        // Success — use callback_data as submission reference
+        submissionId = sparcResponse[0]?.callback_data || null;
+      } else if (sparcResponse && typeof sparcResponse === 'object') {
+        // Object format — check failed array
+        if (Array.isArray(sparcResponse.failed) && sparcResponse.failed.length > 0) {
+          const nativeError = sparcResponse.failed[0].error || 'Native SPARC validation error';
+          throw new Error(`SPARC API rejected message instantly: ${nativeError}`);
+        }
+        submissionId = sparcResponse.submission_id || null;
       }
 
       // Update message status to RCS_SENT
       const messageId = sparcPayload.messages[0].message_id;
-      const submissionId = sparcResponse.submission_id; // Capture API batch tracker
 
       await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.RCS_SENT, submissionId || messageId);
 
@@ -95,19 +118,21 @@ async function processMessage(message, client) {
       );
       await callbackDispatcher.dispatchStatus(dlrUrl, failedPayload, callback_data);
 
-      // --- Attempt SMS fallback ---
-      // if (includesSms && sms) {
-      //   await attemptSms(message, client, dlrUrl);
-      // }
-      return;
+      // --- Attempt SMS fallback if configured ---
+      if (includesSms && sms) {
+        logger.info('Attempting SMS fallback after RCS failure', { callbackData: callback_data });
+        await attemptSms(message, client, dlrUrl);
+      }
+      return; // RCS path handled (success or failure) — stop here
     }
   }
 
-  // --- SMS only path (no RCS in fallback_order) ---
-  // if (includesSms && sms) {
-  //   await attemptSms(message, client, dlrUrl);
-  //   return;
-  // }
+  // --- SMS only path (no RCS in fallback_order: ["SMS"]) ---
+  if (includesSms && sms) {
+    logger.info('SMS-only path triggered', { callbackData: callback_data });
+    await attemptSms(message, client, dlrUrl);
+    return;
+  }
 
   logger.warn('No valid channel in fallback_order (or SMS is disabled)', {
     callbackData: callback_data,
@@ -122,21 +147,24 @@ async function processMessage(message, client) {
  * @param {string} dlrUrl - MoEngage DLR callback URL
  */
 async function attemptSms(message, client, dlrUrl) {
-  // SMS Logic disabled temporarily as per requirement
-  /*
-  const { callback_data, destination, rcs, sms } = message;
+  const { callback_data, destination, sms } = message;
 
   try {
-    await sparcClient.sendSMS(client, sms, destination, rcs.bot_id);
+    const smsResponse = await sparcClient.sendSMS(client, sms, destination);
+
+    logger.info('SMS fallback sent successfully', {
+      callbackData: callback_data,
+      transactionId: smsResponse?.transactionId,
+      state: smsResponse?.state,
+    });
 
     await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.SMS_SENT);
 
     const smsPayload = buildMoeStatusPayload(MESSAGE_STATUSES.SMS_SENT, callback_data);
     await callbackDispatcher.dispatchStatus(dlrUrl, smsPayload, callback_data);
 
-    logger.info('SMS fallback sent successfully', { callbackData: callback_data });
   } catch (smsError) {
-    logger.error('SMS fallback failed', {
+    logger.error('SMS fallback also failed', {
       callbackData: callback_data,
       error: smsError.message,
     });
@@ -150,7 +178,6 @@ async function attemptSms(message, client, dlrUrl) {
     );
     await callbackDispatcher.dispatchStatus(dlrUrl, smsFailPayload, callback_data);
   }
-  */
 }
 
 /**
