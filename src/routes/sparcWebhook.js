@@ -2,17 +2,37 @@
 
 /**
  * src/routes/sparcWebhook.js
- * POST /sparc/webhook
- * Unified endpoint to receive BOTH DLR (delivery status) and Interaction events from SPARC.
+ * POST /sparc/webhook  — unified RCS DLR + interaction events from SPARC
+ * GET  /sparc/sms-dlr  — SMS delivery receipt (DLR) webhook from SPARC SMS gateway
+ *
  * NO Bearer auth — protected by Nginx IP allowlist.
  */
 
 const { Router } = require('express');
 const dlrController = require('../controllers/dlrController');
 const interactionController = require('../controllers/interactionController');
+const messageRepo = require('../repositories/messageRepo');
+const callbackDispatcher = require('../services/callbackDispatcher');
+const { buildMoeStatusPayload } = require('../services/fallbackEngine');
+const { MESSAGE_STATUSES } = require('../config/constants');
+const { env } = require('../config/env');
 const logger = require('../config/logger');
 
 const router = Router();
+
+/**
+ * SPARC SMS DLR status → MoEngage status mapping.
+ * SPARC SMS gateway sends these values as the `deliverystatus` query param.
+ */
+const SMS_DLR_STATUS_MAP = {
+  'DELIVERY_SUCCESS': MESSAGE_STATUSES.SMS_DELIVERED,
+  'DELIVERY_FAILURE': MESSAGE_STATUSES.SMS_DELIVERY_FAILED,
+  'UNDELIVERED':      MESSAGE_STATUSES.SMS_DELIVERY_FAILED,
+  'REJECTED':         MESSAGE_STATUSES.SMS_DELIVERY_FAILED,
+  'EXPIRED':          MESSAGE_STATUSES.SMS_DELIVERY_FAILED,
+};
+
+// ─── RCS DLR + Interaction events (POST) ──────────────────────────────────────
 
 router.post('/webhook', async (req, res) => {
   try {
@@ -45,4 +65,77 @@ router.post('/webhook', async (req, res) => {
   }
 });
 
+// ─── SMS DLR webhook (GET with query params) ──────────────────────────────────
+//
+// SPARC SMS gateway calls:
+//   GET /sparc/sms-dlr?transactionId=890445775&recipient=919990927990
+//     &deliverystatus=DELIVERY_SUCCESS&deliverytime=2026-04-07+15:57:11
+//     &from=SMPALT&description=Message+delivered+successfully&pdu=4&fynomsgId=NA
+
+router.get('/sms-dlr', async (req, res) => {
+  // Always ack immediately — SPARC expects 200
+  res.status(200).send('OK');
+
+  setImmediate(async () => {
+    const { transactionId, deliverystatus, deliverytime, recipient, description } = req.query;
+
+    logger.info('SPARC SMS DLR received', { transactionId, deliverystatus, recipient, deliverytime, description });
+
+    if (!transactionId || !deliverystatus) {
+      logger.warn('SPARC SMS DLR missing required params', { query: req.query });
+      return;
+    }
+
+    try {
+      // Map SPARC delivery status → MoEngage status
+      const moeStatus = SMS_DLR_STATUS_MAP[deliverystatus.toUpperCase()];
+      if (!moeStatus) {
+        logger.warn('SPARC SMS DLR: unknown deliverystatus — ignoring', { deliverystatus, transactionId });
+        return;
+      }
+
+      // Look up the original message by the stored transactionId
+      const message = await messageRepo.findBySparcTransactionId(transactionId);
+      if (!message) {
+        logger.warn('SPARC SMS DLR: no message found for transactionId', { transactionId });
+        return;
+      }
+
+      const { callback_data } = message;
+
+      // Convert deliverytime (e.g. "2026-04-07 15:57:11") to epoch seconds
+      let timestampSeconds = Math.floor(Date.now() / 1000);
+      if (deliverytime) {
+        const parsed = Math.floor(new Date(deliverytime.replace(' ', 'T') + 'Z').getTime() / 1000);
+        if (!isNaN(parsed)) timestampSeconds = parsed;
+      }
+
+      // Update DB status
+      await messageRepo.updateStatus(callback_data, moeStatus);
+      logger.info('SPARC SMS DLR: message status updated', { callback_data, moeStatus, transactionId });
+
+      // Build MoEngage payload and dispatch
+      const isFailed = moeStatus === MESSAGE_STATUSES.SMS_DELIVERY_FAILED;
+      const moePayload = {
+        statuses: [{
+          status: moeStatus,
+          callback_data,
+          timestamp: String(timestampSeconds),
+          ...(isFailed && { error_message: 'Mobile number is incorrect' }),
+        }],
+      };
+
+      const dlrUrl = env.MOENGAGE_DLR_URL;
+      const dispatched = await callbackDispatcher.dispatchStatus(dlrUrl, moePayload, callback_data);
+      if (dispatched) {
+        logger.info('SPARC SMS DLR: SMS_DELIVERED dispatched to MoEngage', { callback_data, moeStatus });
+      }
+
+    } catch (err) {
+      logger.error('SPARC SMS DLR processing error', { transactionId, error: err.message, stack: err.stack });
+    }
+  });
+});
+
 module.exports = router;
+

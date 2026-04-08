@@ -65,6 +65,32 @@ async function updateStatus(callbackData, status, sparcMessageId = null) {
 }
 
 /**
+ * Store the SPARC SMS transactionId on a message so SMS DLRs can be correlated.
+ * @param {string} callbackData
+ * @param {string} transactionId - Returned by SPARC SMS send API
+ * @returns {Promise<object>}
+ */
+async function updateSparcTransactionId(callbackData, transactionId) {
+  return query(
+    'UPDATE message_logs SET sparc_transaction_id = ? WHERE callback_data = ?',
+    [String(transactionId), callbackData]
+  );
+}
+
+/**
+ * Find a message by the SPARC SMS transactionId (used to correlate SMS DLR webhooks).
+ * @param {string} transactionId
+ * @returns {Promise<object|null>}
+ */
+async function findBySparcTransactionId(transactionId) {
+  const rows = await query(
+    'SELECT * FROM message_logs WHERE sparc_transaction_id = ? LIMIT 1',
+    [String(transactionId)]
+  );
+  return rows.length > 0 ? rows[0] : null;
+}
+
+/**
  * Find a message by callback_data.
  * @param {string} callbackData
  * @returns {Promise<object|null>}
@@ -186,6 +212,8 @@ module.exports = {
   updateStatus, 
   findByCallbackData,
   findById,
+  updateSparcTransactionId,
+  findBySparcTransactionId,
   getStats, 
   getRecentLogs,
   getTimelineStats,

@@ -81,7 +81,7 @@
             "body": {
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
-              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"moe_text_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\", \"SMS\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"template_id\": \"test15\",\n        \"message_content\": {\n          \"type\": \"TEXT\",\n          \"data\": {\n            \"text\": \"Hello John!\",\n            \"parameters\": { \"name\": \"John\", \"company\": \"MoEngage\" }\n          }\n        }\n      },\n      \"sms\": {\n        \"sender\": \"{{sms_sender}}\",\n        \"message\": \"Hi John! Welcome to MoEngage. This is your SMS fallback message.\",\n        \"template_id\": \"{{sms_template_id}}\"\n      }\n    }\n  ]\n}"
+              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"moe_text_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\", \"SMS\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"template_id\": \"test15\",\n        \"message_content\": {\n          \"type\": \"TEXT\",\n          \"data\": {\n            \"text\": \"Hello John!\",\n            \"parameters\": { \"name\": \"John\", \"company\": \"MoEngage\" }\n          }\n        }\n      },\n      \"sms\": {\n        \"sender\": \"{{sms_sender}}\",\n        \"message\": \"Thanks for sharing your documents with Smartping. Our team is reviewing them as part of the verification process. We’ll notify you once it’s complete or if any more details are needed. For support, reach us at gracee– Smartping\",\n        \"template_id\": \"{{sms_template_id}}\"\n      }\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{base_url}}/integrations/moengage/rcs/send",
@@ -114,7 +114,7 @@
             "body": {
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
-              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"moe_card_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\", \"SMS\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"template_id\": null,\n        \"message_content\": {\n          \"type\": \"CARD\",\n          \"data\": {\n            \"media\": {\n              \"media_url\": \"https://www.w3schools.com/html/mov_bbb.mp4\",\n              \"content_type\": \"VIDEO\"\n            },\n            \"title\": \"Discover Nature\",\n            \"description\": \"A sample ad-hoc card message.\",\n            \"orientation\": \"VERTICAL\",\n            \"height\": \"MEDIUM\"\n          },\n          \"suggestions\": {\n            \"type\": \"REPLY\",\n            \"text\": \"Watch Video\",\n            \"postback_data\": \"VIDEO_OK\"\n          }\n        }\n      },\n      \"sms\": {\n        \"sender\": \"{{sms_sender}}\",\n        \"message\": \"Hi! Check out Discover Nature. Watch more at https://www.w3schools.com/html/mov_bbb.mp4\",\n        \"template_id\": \"{{sms_template_id}}\"\n      }\n    }\n  ]\n}"
+              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"moe_card_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\", \"SMS\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"template_id\": null,\n        \"message_content\": {\n          \"type\": \"CARD\",\n          \"data\": {\n            \"media\": {\n              \"media_url\": \"https://www.w3schools.com/html/mov_bbb.mp4\",\n              \"content_type\": \"VIDEO\"\n            },\n            \"title\": \"Discover Nature\",\n            \"description\": \"A sample ad-hoc card message.\",\n            \"orientation\": \"VERTICAL\",\n            \"height\": \"MEDIUM\"\n          },\n          \"suggestions\": {\n            \"type\": \"REPLY\",\n            \"text\": \"Watch Video\",\n            \"postback_data\": \"VIDEO_OK\"\n          }\n        }\n      },\n      \"sms\": {\n        \"sender\": \"{{sms_sender}}\",\n        \"message\": \"Thanks for sharing your documents with Smartping. Our team is reviewing them as part of the verification process. We’ll notify you once it’s complete or if any more details are needed. For support, reach us at gracee– Smartping\",\n        \"template_id\": \"{{sms_template_id}}\"\n      }\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{base_url}}/integrations/moengage/rcs/send",
@@ -147,7 +147,7 @@
             "body": {
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
-              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"moe_media_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\", \"SMS\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"template_id\": null,\n        \"message_content\": {\n          \"type\": \"MEDIA\",\n          \"data\": {\n            \"media_url\": \"https://i.pinimg.com/736x/57/3a/57/573a573683e5a79390d021688a043048.jpg\",\n            \"content_type\": \"IMAGE\"\n          },\n          \"suggestions\": [\n            {\n              \"type\": \"OPEN_URL\",\n              \"text\": \"Learn More\",\n              \"postback_data\": \"URL_CLICKED\",\n              \"url\": \"https://moengage.com\"\n            },\n            {\n              \"type\": \"DIAL_PHONE\",\n              \"text\": \"Call Support\",\n              \"postback_data\": \"DIAL_CLICKED\",\n              \"phone\": \"+919999999999\"\n            }\n          ]\n        }\n      },\n      \"sms\": {\n        \"sender\": \"{{sms_sender}}\",\n        \"message\": \"Hi! View our latest media. Learn more at https://moengage.com or call +919999999999 for support.\",\n        \"template_id\": \"{{sms_template_id}}\"\n      }\n    }\n  ]\n}"
+              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"moe_media_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\", \"SMS\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"template_id\": null,\n        \"message_content\": {\n          \"type\": \"MEDIA\",\n          \"data\": {\n            \"media_url\": \"https://i.pinimg.com/736x/57/3a/57/573a573683e5a79390d021688a043048.jpg\",\n            \"content_type\": \"IMAGE\"\n          },\n          \"suggestions\": [\n            {\n              \"type\": \"OPEN_URL\",\n              \"text\": \"Learn More\",\n              \"postback_data\": \"URL_CLICKED\",\n              \"url\": \"https://moengage.com\"\n            },\n            {\n              \"type\": \"DIAL_PHONE\",\n              \"text\": \"Call Support\",\n              \"postback_data\": \"DIAL_CLICKED\",\n              \"phone\": \"+919999999999\"\n            }\n          ]\n        }\n      },\n      \"sms\": {\n        \"sender\": \"{{sms_sender}}\",\n        \"message\": \"Thanks for sharing your documents with Smartping. Our team is reviewing them as part of the verification process. We’ll notify you once it’s complete or if any more details are needed. For support, reach us at gracee– Smartping\",\n        \"template_id\": \"{{sms_template_id}}\"\n      }\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{base_url}}/integrations/moengage/rcs/send",
@@ -181,7 +181,7 @@
             "body": {
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
-              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"moe_failtest_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\", \"SMS\"],\n      \"rcs\": {\n        \"bot_id\": \"INVALID_BOT_FORCE_FAILURE\",\n        \"message_content\": {\n          \"type\": \"TEXT\",\n          \"data\": {\n            \"text\": \"This RCS will fail and SMS fallback will fire.\"\n          }\n        }\n      },\n      \"sms\": {\n        \"sender\": \"{{sms_sender}}\",\n        \"message\": \"Hello! RCS was unavailable so you are receiving this via SMS fallback.\",\n        \"template_id\": \"{{sms_template_id}}\"\n      }\n    }\n  ]\n}"
+              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"moe_failtest_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\", \"SMS\"],\n      \"rcs\": {\n        \"bot_id\": \"INVALID_BOT_FORCE_FAILURE\",\n        \"message_content\": {\n          \"type\": \"TEXT\",\n          \"data\": {\n            \"text\": \"This RCS will fail and SMS fallback will fire.\"\n          }\n        }\n      },\n      \"sms\": {\n        \"sender\": \"{{sms_sender}}\",\n        \"message\": \"Thanks for sharing your documents with Smartping. Our team is reviewing them as part of the verification process. We’ll notify you once it’s complete or if any more details are needed. For support, reach us at gracee– Smartping\",\n        \"template_id\": \"{{sms_template_id}}\"\n      }\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{base_url}}/integrations/moengage/rcs/send",
@@ -240,6 +240,24 @@
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
               "raw": "{\n    \"eventData\": {\n        \"userPhoneNumber\": \"{{test_destination}}\",\n        \"entity\": {\n            \"eventType\": \"SEND_MESSAGE_FAILURE\",\n            \"sendTime\": \"{{$isoTimestamp}}\",\n            \"error\": {\n                \"message\": \"RCS not supported on this device\"\n            }\n        }\n    },\n    \"seqId\": \"{{last_msg_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/sparc/webhook",
+              "host": ["{{base_url}}"],
+              "path": ["sparc", "webhook"]
+            }
+          }
+        },
+        {
+          "name": "2.4 WEBHOOK: SMS Delivered (Auto-ID)",
+          "description": "Simulates SPARC SMS gateway sending a delivery receipt for a successfully delivered SMS.",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n    \"eventData\": {\n        \"userPhoneNumber\": \"{{test_destination}}\",\n        \"entity\": {\n            \"eventType\": \"SMS_DELIVERED\",\n            \"sendTime\": \"{{$isoTimestamp}}\"\n        }\n    },\n    \"seqId\": \"{{last_msg_id}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/sparc/webhook",

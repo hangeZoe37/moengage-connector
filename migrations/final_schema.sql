@@ -42,9 +42,10 @@ CREATE TABLE IF NOT EXISTS message_logs (
   bot_id           VARCHAR(100),            -- SPARC assistant_id
   template_name    VARCHAR(100),            -- null for international users
   message_type     ENUM('TEXT','CARD','MEDIA'),
-  fallback_order   JSON,                    -- e.g. ["rcs","sms"]
-  sparc_message_id VARCHAR(100),            -- message_id we sent to SPARC (submissionId)
-  status           ENUM(
+  fallback_order       JSON,                    -- e.g. ["rcs","sms"]
+  sparc_message_id     VARCHAR(100),            -- message_id for RCS (submissionId)
+  sparc_transaction_id VARCHAR(100),            -- transactionId for SMS
+  status               ENUM(
                      'QUEUED',
                      'RCS_SENT','RCS_SENT_FAILED',
                      'RCS_DELIVERED','RCS_DELIVERY_FAILED','RCS_READ',

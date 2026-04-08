@@ -37,6 +37,15 @@ app.use('/api/dashboard', dashboardRoutes);
 // Health check
 app.use('/', healthRoutes);
 
+// Dummy endpoint for testing MoEngage callbacks locally without 404s
+app.post('/test/moengage-dlr', (req, res) => {
+  const logger = require('./config/logger');
+  logger.info('\n\n========== RECEIVED MOENGAGE CALLBACK PAYLOAD ==========\n');
+  console.dir(req.body, { depth: null, colors: true });
+  logger.info('\n========================================================\n');
+  res.status(200).send('OK');
+});
+
 // --- 404 Handler ---
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });

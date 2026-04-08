@@ -89,9 +89,8 @@ async function processMessage(message, client) {
       await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.RCS_SENT, submissionId || messageId);
 
       // Fire RCS_SENT callback to MoEngage immediately
-      // DEACTIVATED for manual testing per user request to avoid "hardcoded" confusion
-      // const sentPayload = buildMoeStatusPayload(MESSAGE_STATUSES.RCS_SENT, callback_data);
-      // await callbackDispatcher.dispatchStatus(dlrUrl, sentPayload, callback_data);
+      const sentPayload = buildMoeStatusPayload(MESSAGE_STATUSES.RCS_SENT, callback_data);
+      await callbackDispatcher.dispatchStatus(dlrUrl, sentPayload, callback_data);
 
       logger.info('RCS message sent successfully, waiting for DLR', {
         callbackData: callback_data,
@@ -176,6 +175,17 @@ async function attemptSms(message, client, dlrUrl, assistantId = null) {
 
     await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.SMS_SENT);
 
+    // Persist the SPARC SMS transactionId so the SMS DLR webhook can correlate back
+    if (smsResponse?.transactionId) {
+      await messageRepo.updateSparcTransactionId(callback_data, smsResponse.transactionId).catch(err => {
+        logger.warn('Failed to store SMS transactionId — SMS_DELIVERED DLR may not dispatch', {
+          callbackData: callback_data,
+          transactionId: smsResponse.transactionId,
+          error: err.message,
+        });
+      });
+    }
+
     const smsPayload = buildMoeStatusPayload(MESSAGE_STATUSES.SMS_SENT, callback_data);
     await callbackDispatcher.dispatchStatus(dlrUrl, smsPayload, callback_data);
 
@@ -190,7 +200,7 @@ async function attemptSms(message, client, dlrUrl, assistantId = null) {
     const smsFailPayload = buildMoeStatusPayload(
       MESSAGE_STATUSES.SMS_DELIVERY_FAILED,
       callback_data,
-      smsError.message
+      'Mobile number is incorrect'
     );
     await callbackDispatcher.dispatchStatus(dlrUrl, smsFailPayload, callback_data);
   }
