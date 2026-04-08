@@ -34,6 +34,9 @@ app.use('/sparc', sparcWebhookRoutes);
 // Dashboard API (Basic Auth applied at route level)
 app.use('/api/dashboard', dashboardRoutes);
 
+// Admin API (Bearer Auth applied at route level)
+app.use('/admin-api', require('./routes/admin'));
+
 // Health check
 app.use('/', healthRoutes);
 

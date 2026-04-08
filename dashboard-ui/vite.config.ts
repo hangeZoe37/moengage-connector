@@ -27,6 +27,13 @@ export default defineConfig({
           Authorization: 'Basic ' + Buffer.from('admin:admin123').toString('base64'),
         },
       },
+      '/admin-api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        headers: {
+          Authorization: 'Bearer YOUR_BEARER_TOKEN_HERE',
+        },
+      },
     },
   },
   base: '/admin/',

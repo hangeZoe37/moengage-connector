@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Edit2, Trash2, X, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit2, Zap, X, Eye, EyeOff } from 'lucide-react';
 import { api, Client } from '../api';
 import { formatTimestamp } from '../utils';
 
@@ -102,11 +102,12 @@ export default function ClientsPage() {
     }
   };
 
-  const handleDelete = async (c: Client) => {
-    if (!confirm(`Permanently delete "${c.client_name}"? All related data and future calls will fail.`)) return;
+  const handleToggleStatus = async (c: Client) => {
+    const action = c.is_active ? 'deactivate' : 'activate';
+    if (!confirm(`Are you sure you want to ${action} "${c.client_name}"?`)) return;
     try {
       await api.deactivateClient(c.id);
-      showToast('Client deleted');
+      showToast(`Client ${action}d successfully`);
       loadClients();
     } catch (e: any) {
       showToast(e.message, 'error');
@@ -189,8 +190,8 @@ export default function ClientsPage() {
                     </td>
                     <td>
                       <div className="status-indicator">
-                        <span className="status-dot green" />
-                        Approved
+                        <span className={`status-dot ${c.is_active ? 'green' : 'red'}`} />
+                        {c.is_active ? 'Active' : 'Inactive'}
                       </div>
                     </td>
                     <td style={{ color: '#5c6678', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
@@ -201,8 +202,8 @@ export default function ClientsPage() {
                         <button className="btn btn-secondary btn-icon btn-sm" onClick={() => openEdit(c)} title="Edit">
                           <Edit2 size={13} />
                         </button>
-                        <button className="btn btn-danger btn-icon btn-sm" onClick={() => handleDelete(c)} title="Delete">
-                          <Trash2 size={13} />
+                        <button className="btn btn-secondary btn-icon btn-sm" onClick={() => handleToggleStatus(c)} title={c.is_active ? 'Deactivate' : 'Activate'}>
+                          <Zap size={13} style={{ color: c.is_active ? '#ef4444' : '#10b981' }} />
                         </button>
                       </div>
                     </td>

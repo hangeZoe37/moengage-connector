@@ -5,26 +5,22 @@ import {
   MessageSquare,
   Users,
   Radio,
-  Settings,
   Zap,
-  Moon,
-  Sun
 } from 'lucide-react';
+import { api } from '../api';
 
 const navItems = [
-  { to: '/',           label: 'DASHBOARD',    icon: LayoutDashboard, section: '' },
-  { to: '/clients',    label: 'CUSTOMERS',    icon: Users,           section: '' },
-  { to: '/dlr-events', label: 'ANALYTICS',    icon: Radio,           section: '' },
-  { to: '/messages',   label: 'MESSAGES',     icon: MessageSquare,   section: 'SETTINGS' },
-  { to: '/settings',   label: 'SETTING',      icon: Settings,        section: 'SETTINGS' },
+  { to: '/',           label: 'Overview',    icon: LayoutDashboard, section: '' },
+  { to: '/clients',    label: 'Clients',     icon: Users,           section: '' },
+  { to: '/messages',   label: 'Messages',    icon: MessageSquare,   section: '' },
+  { to: '/dlr-events', label: 'DLR Tracker', icon: Radio,           section: '', badgeKey: 'dlr_pending' },
 ];
 
 const pageTitles: Record<string, string> = {
   '/':           'Overview',
-  '/messages':   'Message Logs',
-  '/dlr-events': 'DLR Events',
+  '/messages':   'Message Explorer',
+  '/dlr-events': 'DLR Tracker',
   '/clients':    'Client Management',
-  '/settings':   'Settings',
 };
 
 export default function Layout() {
@@ -32,8 +28,9 @@ export default function Layout() {
   const pathKey = location.pathname;
   const title = pageTitles[pathKey] ?? (pathKey.startsWith('/messages/') ? 'Message Detail' : 'Dashboard');
 
-  const [isDark, setIsDark] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isDark, setIsDark] = useState(false); // Defaulting to light mode to match the reference image
+  const [dlrPending, setDlrPending] = useState(0);
 
   useEffect(() => {
     if (isDark) {
@@ -43,14 +40,29 @@ export default function Layout() {
     }
   }, [isDark]);
 
-  let lastSection = '';
+  useEffect(() => {
+    const checkMetrics = async () => {
+      try {
+        const res = await api.getMetrics();
+        setDlrPending(res.stats.dlr_pending || 0);
+      } catch (e) {
+        /* silent */
+      }
+    };
+    checkMetrics();
+    const interval = setInterval(checkMetrics, 30_000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className={`app-layout ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
       {/* ── Sidebar ─────────────────────────────────────────── */}
       <aside className="sidebar">
         <div className="sidebar-brand" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          {!isCollapsed && <h1 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, color: 'white' }}>Brand.</h1>}
+          {!isCollapsed && <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 32, height: 32, background: 'var(--accent-violet)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: 'white' }}>M</div>
+            <h1 style={{ fontSize: '1.2rem', fontWeight: 600, margin: 0, color: 'white' }}>MoEngage</h1>
+          </div>}
           <button 
             className="btn btn-icon" 
             style={{ color: '#5c6678', background: 'transparent' }}
@@ -60,52 +72,52 @@ export default function Layout() {
           </button>
         </div>
         <nav className="sidebar-nav">
-          {navItems.map((item) => {
-            const showSection = item.section !== lastSection;
-            if (showSection) lastSection = item.section;
-            return (
-              <div key={item.to}>
-                {showSection && !isCollapsed && (
-                  <div className="sidebar-section-label">{item.section}</div>
+          {navItems.map((item) => (
+            <div key={item.to}>
+              <NavLink
+                to={item.to}
+                end={item.to === '/'}
+                className={({ isActive }) =>
+                  `nav-item${isActive ? ' active' : ''}`
+                }
+              >
+                <item.icon size={18} />
+                {!isCollapsed && <span>{item.label}</span>}
+                {!isCollapsed && item.badgeKey === 'dlr_pending' && dlrPending > 0 && (
+                  <span className="badge-danger" style={{ marginLeft: 'auto' }}>
+                    {dlrPending}
+                  </span>
                 )}
-                <NavLink
-                  to={item.to}
-                  end={item.to === '/'}
-                  className={({ isActive }) =>
-                    `nav-item${isActive ? ' active' : ''}`
-                  }
-                >
-                  <item.icon size={18} />
-                  {!isCollapsed && <span>{item.label}</span>}
-                </NavLink>
-              </div>
-            );
-          })}
+              </NavLink>
+            </div>
+          ))}
         </nav>
       </aside>
 
       {/* ── Main Area ───────────────────────────────────────── */}
       <div className="main-area">
-        <header className="top-bar">
-          <h2 className="top-bar-title">{title}</h2>
-          <div className="top-bar-meta">
-            <button
-              className="btn btn-secondary btn-icon"
-              style={{ width: 32, height: 32, borderRadius: 16 }}
-              onClick={() => setIsDark(!isDark)}
-              title="Toggle Theme"
-            >
-              {isDark ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
-            <div className="live-indicator">
-              <span className="live-dot" />
-              Live
+        <div className="main-content-wrapper">
+          <header className="top-bar">
+            <h2 className="top-bar-title">{title}</h2>
+            <div className="top-bar-meta">
+              <button
+                className="btn btn-secondary btn-icon"
+                style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', background: 'var(--bg-input)' }}
+                onClick={() => setIsDark(!isDark)}
+                title="Toggle Theme"
+              >
+                {isDark ? '☀️' : '🌙'}
+              </button>
+              <div className="live-indicator">
+                <span className="live-dot" />
+                Live
+              </div>
             </div>
-          </div>
-        </header>
-        <main className="page-content">
-          <Outlet />
-        </main>
+          </header>
+          <main className="page-content">
+            <Outlet />
+          </main>
+        </div>
       </div>
     </div>
   );

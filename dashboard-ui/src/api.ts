@@ -4,7 +4,7 @@
  * or by Express basicAuth in production (cookie/session).
  */
 
-const API_BASE = '/api/dashboard';
+const API_BASE = '/admin-api';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}${path}`;
@@ -12,6 +12,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': 'Bearer YOUR_BEARER_TOKEN_HERE',
       ...(options?.headers || {}),
     },
   });
@@ -71,10 +72,26 @@ export interface Client {
   created_at: string;
 }
 
+export interface ClientStat {
+  client_id: number;
+  client_name: string;
+  rcs_sent: number;
+  sms_fallback: number;
+  failed: number;
+  dlrs_received: number;
+  total: number;
+  fallback_rate: number;
+}
+
 export interface MetricsResponse {
-  stats: Record<string, number>;
-  timeline: Array<{ hour: string; status: string; count: number }>;
-  channelStats: { RCS: number; SMS: number };
+  stats: {
+    total_received: number;
+    rcs_sent: number;
+    sms_fallback: number;
+    dlrs_received: number;
+    terminal_failures: number;
+  };
+  clients: ClientStat[];
 }
 
 export interface LogsResponse {
@@ -99,21 +116,24 @@ export interface MessageDetailResponse {
 /* ── Exported API functions ───────────────────────────────────── */
 
 export const api = {
-  getMetrics: () => request<MetricsResponse>('/metrics'),
+  getMetrics: () => request<any>('/stats/overview'),
 
-  getLogs: (limit = 30, offset = 0, clientId?: number) => {
+  getLogs: (limit = 30, offset = 0, clientId?: number, status?: string, channel?: string) => {
     let qs = `?limit=${limit}&offset=${offset}`;
-    if (clientId) qs += `&client_id=${clientId}`;
-    return request<LogsResponse>(`/logs${qs}`);
+    if (clientId) qs += `&clientId=${clientId}`;
+    if (status) qs += `&status=${status}`;
+    if (channel) qs += `&channel=${channel}`;
+    return request<LogsResponse>(`/messages${qs}`);
   },
 
   getMessageDetail: (id: number) =>
     request<MessageDetailResponse>(`/messages/${id}`),
 
-  getDlrEvents: (limit = 30, offset = 0, clientId?: number) => {
+  getDlrEvents: (limit = 30, offset = 0, clientId?: number, state?: string) => {
     let qs = `?limit=${limit}&offset=${offset}`;
-    if (clientId) qs += `&client_id=${clientId}`;
-    return request<DlrEventsResponse>(`/dlr-events${qs}`);
+    if (clientId) qs += `&clientId=${clientId}`;
+    if (state) qs += `&state=${state}`;
+    return request<DlrEventsResponse>(`/dlr${qs}`);
   },
 
   getClients: () => request<{ clients: Client[] }>('/clients'),
@@ -131,7 +151,7 @@ export const api = {
     }),
 
   deactivateClient: (id: number) =>
-    request<{ status: string }>(`/clients/${id}`, {
-      method: 'DELETE',
+    request<{ status: string }>(`/clients/${id}/status`, {
+      method: 'PATCH',
     }),
 };

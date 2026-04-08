@@ -18,7 +18,6 @@ export default function App() {
         <Route path="/messages/:id" element={<MessageDetailPage />} />
         <Route path="/clients" element={<ClientsPage />} />
         <Route path="/dlr-events" element={<DlrEventsPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
       </Route>
     </Routes>
   );
