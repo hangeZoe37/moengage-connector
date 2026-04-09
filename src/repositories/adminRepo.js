@@ -128,6 +128,8 @@ async function getDlrTracker(filters = {}, limit = 50, offset = 0) {
     params.push(dateTo);
   }
 
+  sql += ` ORDER BY d.created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`;
+
   const [rows, total] = await Promise.all([
     query(sql, params),
     countDlrTracker(filters)
