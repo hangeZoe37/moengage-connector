@@ -9,10 +9,11 @@ const { query } = require('../config/db');
 
 /**
  * Get the 5 top-level stats for today.
+ * @returns {Promise<object>}
  */
 async function getTodayStats() {
   const sql = `
-    SELECT 
+    SELECT
       COUNT(*) as total_received,
       SUM(CASE WHEN status IN ('RCS_SENT', 'RCS_DELIVERED', 'RCS_READ') AND message_type != 'SMS' THEN 1 ELSE 0 END) as rcs_sent,
       SUM(CASE WHEN channel = 'SMS' OR status LIKE 'SMS_%' THEN 1 ELSE 0 END) as sms_fallback,
@@ -22,24 +23,25 @@ async function getTodayStats() {
       SELECT *, CASE WHEN status LIKE 'SMS_%' THEN 'SMS' ELSE 'RCS' END as channel
       FROM message_logs
       WHERE DATE(created_at) = CURDATE()
-    ) sub;
+    ) sub
   `;
   const rows = await query(sql);
   return rows[0] || {
-    total_received: 0,
-    rcs_sent: 0,
-    sms_fallback: 0,
-    dlrs_received: 0,
-    terminal_failures: 0
+    total_received:    0,
+    rcs_sent:          0,
+    sms_fallback:      0,
+    dlrs_received:     0,
+    terminal_failures: 0,
   };
 }
 
 /**
  * Get today's stats per client.
+ * @returns {Promise<Array>}
  */
 async function getClientStatsToday() {
   const sql = `
-    SELECT 
+    SELECT
       c.id as client_id,
       c.client_name,
       SUM(CASE WHEN m.status IN ('RCS_SENT', 'RCS_DELIVERED', 'RCS_READ') AND m.message_type != 'SMS' THEN 1 ELSE 0 END) as rcs_sent,
@@ -50,17 +52,25 @@ async function getClientStatsToday() {
     FROM clients c
     LEFT JOIN message_logs m ON c.id = m.client_id AND DATE(m.created_at) = CURDATE()
     GROUP BY c.id, c.client_name
-    ORDER BY c.client_name ASC;
+    ORDER BY c.client_name ASC
   `;
   return query(sql);
 }
 
 /**
- * Status of stuck/exhausted DLRs for the tracker.
+ * Get stuck/unfwarded DLR events for the tracker.
+ * Pagination applied in SQL — no in-memory slicing.
+ * @param {object} filters
+ * @param {number} limit
+ * @param {number} offset
+ * @returns {Promise<Array>}
  */
-async function getDlrTracker(filters = {}) {
+async function getDlrTracker(filters = {}, limit = 50, offset = 0) {
   const { clientId, state, dateFrom, dateTo } = filters;
-  
+
+  const safeLimit  = Math.min(Math.max(parseInt(limit,  10) || 50,  1), 200);
+  const safeOffset = Math.max(parseInt(offset, 10) || 0, 0);
+
   let sql = `
     SELECT d.id, d.callback_data as seq_id, c.client_name, d.sparc_status, d.moe_status,
            d.callback_dispatched as forwarded, d.created_at, d.event_timestamp
@@ -72,37 +82,82 @@ async function getDlrTracker(filters = {}) {
   const params = [];
 
   if (clientId) {
-    sql += ` AND c.id = ?`;
+    sql += ' AND c.id = ?';
     params.push(clientId);
   }
 
   if (state === 'stuck') {
-    // defined as not forwarded and not DONE
-    sql += ` AND d.callback_dispatched = 0`;
+    sql += ' AND d.callback_dispatched = 0';
   }
 
   if (dateFrom) {
-    sql += ` AND d.created_at >= ?`;
+    sql += ' AND d.created_at >= ?';
     params.push(dateFrom);
   }
-  
+
   if (dateTo) {
-    sql += ` AND d.created_at <= ?`;
+    sql += ' AND d.created_at <= ?';
     params.push(dateTo);
   }
-  
-  sql += ` ORDER BY d.created_at DESC`;
+
+  sql += ' ORDER BY d.created_at DESC LIMIT ? OFFSET ?';
+  params.push(safeLimit, safeOffset);
+
   return query(sql, params);
 }
 
 /**
- * Message Explorer with complex pagination
+ * Count DLR tracker results (for pagination metadata).
+ * @param {object} filters
+ * @returns {Promise<number>}
+ */
+async function countDlrTracker(filters = {}) {
+  const { clientId, state, dateFrom, dateTo } = filters;
+
+  let sql = `
+    SELECT COUNT(d.id) as total
+    FROM dlr_events d
+    LEFT JOIN message_logs m ON d.callback_data = m.callback_data
+    LEFT JOIN clients c ON m.client_id = c.id
+    WHERE 1=1
+  `;
+  const params = [];
+
+  if (clientId) {
+    sql += ' AND c.id = ?';
+    params.push(clientId);
+  }
+  if (state === 'stuck') {
+    sql += ' AND d.callback_dispatched = 0';
+  }
+  if (dateFrom) {
+    sql += ' AND d.created_at >= ?';
+    params.push(dateFrom);
+  }
+  if (dateTo) {
+    sql += ' AND d.created_at <= ?';
+    params.push(dateTo);
+  }
+
+  const rows = await query(sql, params);
+  return rows[0]?.total || 0;
+}
+
+/**
+ * Message Explorer with SQL-level pagination.
+ * @param {object} filters
+ * @param {number} limit
+ * @param {number} offset
+ * @returns {Promise<{logs: Array, total: number}>}
  */
 async function getMessages(filters = {}, limit = 50, offset = 0) {
   const { clientId, status, channel, dateFrom, dateTo } = filters;
 
+  const safeLimit  = Math.min(Math.max(parseInt(limit,  10) || 50,  1), 200);
+  const safeOffset = Math.max(parseInt(offset, 10) || 0, 0);
+
   let sql = `
-    SELECT m.id, m.callback_data, c.client_name, m.message_type, m.status, 
+    SELECT m.id, m.callback_data, c.client_name, m.message_type, m.status,
            m.created_at, m.bot_id, m.destination,
            (SELECT COUNT(*) FROM dlr_events d WHERE d.callback_data = m.callback_data) as total_dlrs,
            (SELECT COUNT(*) FROM dlr_events d WHERE d.callback_data = m.callback_data AND d.callback_dispatched = 1) as forwarded_dlrs
@@ -110,43 +165,51 @@ async function getMessages(filters = {}, limit = 50, offset = 0) {
     LEFT JOIN clients c ON m.client_id = c.id
     WHERE 1=1
   `;
-  let countSql = `SELECT COUNT(m.id) as total FROM message_logs m WHERE 1=1`;
-  const params = [];
+  let countSql = 'SELECT COUNT(m.id) as total FROM message_logs m WHERE 1=1';
+  const params      = [];
+  const countParams = [];
 
   if (clientId) {
-    const clause = ` AND m.client_id = ?`;
-    sql += clause; countSql += clause; params.push(clientId);
+    const clause = ' AND m.client_id = ?';
+    sql += clause; countSql += clause;
+    params.push(clientId); countParams.push(clientId);
   }
 
   if (status) {
-    const clause = ` AND m.status = ?`;
-    sql += clause; countSql += clause; params.push(status);
+    const clause = ' AND m.status = ?';
+    sql += clause; countSql += clause;
+    params.push(status); countParams.push(status);
   }
 
   if (channel) {
     if (channel === 'RCS') {
-      const clause = ` AND (m.status NOT LIKE 'SMS_%' AND m.message_type != 'SMS')`;
+      const clause = " AND (m.status NOT LIKE 'SMS_%' AND m.message_type != 'SMS')";
       sql += clause; countSql += clause;
     } else if (channel === 'SMS') {
-      const clause = ` AND (m.status LIKE 'SMS_%' OR m.message_type = 'SMS')`;
+      const clause = " AND (m.status LIKE 'SMS_%' OR m.message_type = 'SMS')";
       sql += clause; countSql += clause;
     }
   }
 
   if (dateFrom) {
-    const clause = ` AND m.created_at >= ?`;
-    sql += clause; countSql += clause; params.push(dateFrom);
+    const clause = ' AND m.created_at >= ?';
+    sql += clause; countSql += clause;
+    params.push(dateFrom); countParams.push(dateFrom);
   }
 
   if (dateTo) {
-    const clause = ` AND m.created_at <= ?`;
-    sql += clause; countSql += clause; params.push(dateTo);
+    const clause = ' AND m.created_at <= ?';
+    sql += clause; countSql += clause;
+    params.push(dateTo); countParams.push(dateTo);
   }
 
-  sql += ` ORDER BY m.created_at DESC LIMIT ${Number(limit)} OFFSET ${Number(offset)}`;
+  sql += ' ORDER BY m.created_at DESC LIMIT ? OFFSET ?';
+  params.push(safeLimit, safeOffset);
 
-  const rows = await query(sql, params);
-  const countRow = await query(countSql, params);
+  const [rows, countRow] = await Promise.all([
+    query(sql, params),
+    query(countSql, countParams),
+  ]);
 
   return { logs: rows, total: countRow[0]?.total || 0 };
 }
@@ -155,5 +218,6 @@ module.exports = {
   getTodayStats,
   getClientStatsToday,
   getDlrTracker,
-  getMessages
+  countDlrTracker,
+  getMessages,
 };

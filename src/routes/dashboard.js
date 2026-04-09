@@ -8,12 +8,12 @@
 
 const { Router } = require('express');
 const dashboardController = require('../controllers/dashboardController');
-const basicAuth = require('../middleware/basicAuth');
+const jwtAuth = require('../middleware/jwtAuth');
 
 const router = Router();
 
 // Apply auth to all dashboard endpoints
-router.use(basicAuth);
+router.use(jwtAuth);
 
 // ── Metrics ──────────────────────────────────────────────────────────────────
 router.get('/metrics', dashboardController.getMetrics);

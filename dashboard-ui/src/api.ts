@@ -1,23 +1,38 @@
 /**
  * API helper — thin wrapper over fetch.
- * Basic-auth credentials are injected by the Vite proxy in dev,
- * or by Express basicAuth in production (cookie/session).
+ * Uses Bearer JWT stored in localStorage.
  */
 
 const API_BASE = '/admin-api';
+const AUTH_BASE = '/api/auth';
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const url = `${API_BASE}${path}`;
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer YOUR_BEARER_TOKEN_HERE',
-      ...(options?.headers || {}),
-    },
-  });
+// Helper to get token
+export const getToken = () => localStorage.getItem('admin_token');
+export const setToken = (token: string) => localStorage.setItem('admin_token', token);
+export const clearToken = () => localStorage.removeItem('admin_token');
+
+export const onUnauthorized = () => {
+  clearToken();
+  window.location.href = '/admin/login';
+};
+
+async function request<T>(path: string, options?: RequestInit, overrideBase = API_BASE): Promise<T> {
+  const url = `${overrideBase}${path}`;
+  const token = getToken();
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options?.headers as Record<string, string> || {}),
+  };
+
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(url, { ...options, headers });
 
   if (!res.ok) {
+    if (res.status === 401 && path !== '/login') {
+      onUnauthorized();
+    }
     const body = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(body.error || `HTTP ${res.status}`);
   }
@@ -154,4 +169,10 @@ export const api = {
     request<{ status: string }>(`/clients/${id}/status`, {
       method: 'PATCH',
     }),
+
+  login: (data: Record<string, string>) =>
+    request<{ token: string; message: string }>('/login', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }, AUTH_BASE),
 };

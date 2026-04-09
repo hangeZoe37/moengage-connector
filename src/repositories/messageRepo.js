@@ -26,8 +26,8 @@ async function create(params) {
   } = params;
 
   const result = await query(
-    `INSERT INTO message_logs 
-      (callback_data, client_id, destination, bot_id, template_name, 
+    `INSERT INTO message_logs
+      (callback_data, client_id, destination, bot_id, template_name,
        message_type, fallback_order, sparc_message_id, status, raw_payload)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'QUEUED', ?)`,
     [
@@ -35,11 +35,11 @@ async function create(params) {
       client_id,
       destination,
       bot_id,
-      template_name || null,
+      template_name    || null,
       message_type,
       JSON.stringify(fallback_order || ['rcs']),
       sparc_message_id || null,
-      JSON.stringify(raw_payload || {}),
+      JSON.stringify(raw_payload   || {}),
     ]
   );
   return result;
@@ -65,9 +65,9 @@ async function updateStatus(callbackData, status, sparcMessageId = null) {
 }
 
 /**
- * Store the SPARC SMS transactionId on a message so SMS DLRs can be correlated.
+ * Store the SPARC SMS transactionId so SMS DLRs can be correlated.
  * @param {string} callbackData
- * @param {string} transactionId - Returned by SPARC SMS send API
+ * @param {string} transactionId
  * @returns {Promise<object>}
  */
 async function updateSparcTransactionId(callbackData, transactionId) {
@@ -120,14 +120,15 @@ async function findById(id) {
 
 /**
  * Get aggregated statistics grouped by status.
+ * @returns {Promise<object>}
  */
 async function getStats() {
   const rows = await query(`
-    SELECT status, COUNT(*) as count 
-    FROM message_logs 
+    SELECT status, COUNT(*) as count
+    FROM message_logs
     GROUP BY status
   `);
-  
+
   const stats = {};
   for (const row of rows) {
     stats[row.status] = row.count;
@@ -137,31 +138,37 @@ async function getStats() {
 
 /**
  * Get recent logs for the dashboard table.
+ * Uses fully parameterized LIMIT/OFFSET to prevent SQL injection.
+ * @param {number} limit
+ * @param {number} offset
+ * @param {number|null} clientId
+ * @returns {Promise<Array>}
  */
 async function getRecentLogs(limit = 50, offset = 0, clientId = null) {
-  let sql = `
-    SELECT m.*, c.client_name 
-    FROM message_logs m
-    LEFT JOIN clients c ON m.client_id = c.id
-  `;
+  const safeLimit  = Math.min(Math.max(parseInt(limit,  10) || 50,  1), 200);
+  const safeOffset = Math.max(parseInt(offset, 10) || 0, 0);
+
+  let sql    = `SELECT m.*, c.client_name FROM message_logs m LEFT JOIN clients c ON m.client_id = c.id`;
   const params = [];
 
   if (clientId) {
-    sql += ` WHERE m.client_id = ? `;
+    sql += ' WHERE m.client_id = ?';
     params.push(clientId);
   }
 
-  sql += ` ORDER BY m.created_at DESC LIMIT ${Number(limit)} OFFSET ${Number(offset)} `;
+  sql += ' ORDER BY m.created_at DESC LIMIT ? OFFSET ?';
+  params.push(safeLimit, safeOffset);
 
   return query(sql, params);
 }
 
 /**
  * Get hourly message volume stats for the last 24 hours.
+ * @returns {Promise<Array>}
  */
 async function getTimelineStats() {
   return query(`
-    SELECT 
+    SELECT
       DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00') as hour,
       status,
       COUNT(*) as count
@@ -174,11 +181,12 @@ async function getTimelineStats() {
 
 /**
  * Get RCS vs SMS channel breakdown counts.
+ * @returns {Promise<object>}
  */
 async function getChannelStats() {
   const rows = await query(`
-    SELECT 
-      CASE 
+    SELECT
+      CASE
         WHEN status LIKE 'SMS_%' THEN 'SMS'
         ELSE 'RCS'
       END AS channel,
@@ -195,9 +203,11 @@ async function getChannelStats() {
 
 /**
  * Count total messages (optionally filtered by clientId).
+ * @param {number|null} clientId
+ * @returns {Promise<number>}
  */
 async function countMessages(clientId = null) {
-  let sql = 'SELECT COUNT(*) as total FROM message_logs';
+  let sql    = 'SELECT COUNT(*) as total FROM message_logs';
   const params = [];
   if (clientId) {
     sql += ' WHERE client_id = ?';
@@ -207,14 +217,14 @@ async function countMessages(clientId = null) {
   return rows[0]?.total || 0;
 }
 
-module.exports = { 
-  create, 
-  updateStatus, 
+module.exports = {
+  create,
+  updateStatus,
   findByCallbackData,
   findById,
   updateSparcTransactionId,
   findBySparcTransactionId,
-  getStats, 
+  getStats,
   getRecentLogs,
   getTimelineStats,
   getChannelStats,

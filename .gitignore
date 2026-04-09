@@ -1,4 +1,5 @@
 antigravity-skills/
+
 # Dependencies
 node_modules/
 
@@ -22,4 +23,3 @@ Thumbs.db
 
 # PM2
 ecosystem.config.js
-antigravity-skills/

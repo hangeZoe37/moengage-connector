@@ -7,14 +7,15 @@
  */
 
 const { mapDlrEvent, translateStatus } = require('../mappers/dlrMapper');
-const dlrRepo = require('../repositories/dlrRepo');
-const messageRepo = require('../repositories/messageRepo');
-const clientRepo = require('../repositories/clientRepo');
-const callbackDispatcher = require('../services/callbackDispatcher');
-const { attemptSms } = require('../services/fallbackEngine');
+const dlrRepo             = require('../repositories/dlrRepo');
+const messageRepo         = require('../repositories/messageRepo');
+const clientRepo          = require('../repositories/clientRepo');
+const callbackDispatcher  = require('../services/callbackDispatcher');
+const { attemptSms }      = require('../services/fallbackEngine');
+const { notifyUpdate }    = require('../services/dashboardService');
 const { CHANNELS, MESSAGE_STATUSES } = require('../config/constants');
-const { env } = require('../config/env');
-const logger = require('../config/logger');
+const { env }             = require('../config/env');
+const logger              = require('../config/logger');
 
 /** RCS statuses that should trigger SMS fallback */
 const RCS_FAILED_STATUSES = new Set([
@@ -24,22 +25,17 @@ const RCS_FAILED_STATUSES = new Set([
 
 /**
  * Handle a DLR event received from SPARC.
- *
  * @param {object} sparcEvent - Raw DLR event payload from SPARC
  */
 async function handleDlrEvent(sparcEvent) {
-  const eventRoot = sparcEvent.eventData || sparcEvent;
-  const entity = eventRoot.entity || {};
+  const eventRoot  = sparcEvent.eventData || sparcEvent;
+  const entity     = eventRoot.entity || {};
 
   const callbackData = sparcEvent.seqId || sparcEvent.seq_id || eventRoot.seqId;
-  const sparcStatus = (entity.eventType || '').toUpperCase();
-  const moeStatus = translateStatus(sparcStatus);
+  const sparcStatus  = (entity.eventType || '').toUpperCase();
+  const moeStatus    = translateStatus(sparcStatus);
 
-  logger.info('Processing DLR event', {
-    callbackData,
-    sparcStatus,
-    moeStatus,
-  });
+  logger.info('Processing DLR event', { callbackData, sparcStatus, moeStatus });
 
   // Save DLR event to DB
   let eventTimestamp = null;
@@ -49,10 +45,10 @@ async function handleDlrEvent(sparcEvent) {
   }
 
   const dlrResult = await dlrRepo.create({
-    callback_data: callbackData,
-    sparc_status: sparcStatus,
-    moe_status: moeStatus,
-    error_message: entity.error?.message || null,
+    callback_data:   callbackData,
+    sparc_status:    sparcStatus,
+    moe_status:      moeStatus,
+    error_message:   entity.error?.message || null,
     event_timestamp: eventTimestamp,
   });
 
@@ -67,13 +63,8 @@ async function handleDlrEvent(sparcEvent) {
   // Update message status
   await messageRepo.updateStatus(callbackData, moeStatus);
 
-  // Get client info if needed (DLR URL is now global)
-  
-  
-  // Temp override: always use .env MOENGAGE_DLR_URL for mock testing
-  const dlrUrl = env.MOENGAGE_DLR_URL;
-
   // Map to MoEngage format and dispatch
+  const dlrUrl    = env.MOENGAGE_DLR_URL;
   const moePayload = mapDlrEvent(sparcEvent);
   const dispatched = await callbackDispatcher.dispatchStatus(dlrUrl, moePayload, callbackData);
 
@@ -81,12 +72,9 @@ async function handleDlrEvent(sparcEvent) {
     await dlrRepo.markDispatched(dlrResult.insertId);
   }
 
-  // --- SMS Fallback on RCS failure ---
-  // If RCS failed AND the original payload had fallback_order: ["RCS","SMS"],
-  // automatically send the SMS now — no DLR backend needed.
+  // ── SMS Fallback on RCS failure ───────────────────────────────────────────
   if (RCS_FAILED_STATUSES.has(moeStatus)) {
     try {
-      // raw_payload is stored as JSON in DB — parse it to get sms{} + fallback_order
       const rawPayload = typeof message.raw_payload === 'string'
         ? JSON.parse(message.raw_payload)
         : message.raw_payload;
@@ -96,18 +84,12 @@ async function handleDlrEvent(sparcEvent) {
       const smsBlock = rawPayload?.sms;
 
       if (fallbackOrder.includes(CHANNELS.SMS) && smsBlock) {
-        logger.info('RCS DLR failure — triggering SMS fallback', {
-          callbackData,
-          moeStatus,
-        });
+        logger.info('RCS DLR failure — triggering SMS fallback', { callbackData, moeStatus });
 
-        // Look up client credentials needed by sparcClient.sendSMS()
         const client = await clientRepo.findById(message.client_id);
         if (client) {
-          // Re-hydrate full message object that attemptSms() expects
-          const fullMessage = { ...rawPayload, callback_data: callbackData };
-          // Resolve assistantId from the original payload's rcs block or client record
-          const assistantId = rawPayload?.rcs?.bot_id || client.rcs_assistant_id || null;
+          const fullMessage  = { ...rawPayload, callback_data: callbackData };
+          const assistantId  = rawPayload?.rcs?.bot_id || client.rcs_assistant_id || null;
           await attemptSms(fullMessage, client, dlrUrl, assistantId);
         } else {
           logger.warn('Could not find client for SMS fallback', {
@@ -131,11 +113,10 @@ async function handleDlrEvent(sparcEvent) {
   }
 
   // Notify dashboard of status update
-  const { notifyUpdate } = require('../services/dashboardService');
   notifyUpdate('message', {
     ...message,
-    status: moeStatus,
-    updated_at: new Date().toISOString()
+    status:     moeStatus,
+    updated_at: new Date().toISOString(),
   });
 }
 

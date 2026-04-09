@@ -7,7 +7,7 @@ import {
   Radio,
   Zap,
 } from 'lucide-react';
-import { api } from '../api';
+import { api, clearToken } from '../api';
 
 const navItems = [
   { to: '/',           label: 'Overview',    icon: LayoutDashboard, section: '' },
@@ -100,6 +100,18 @@ export default function Layout() {
           <header className="top-bar">
             <h2 className="top-bar-title">{title}</h2>
             <div className="top-bar-meta">
+              <button
+                className="btn btn-secondary btn-icon"
+                style={{ height: 36, padding: '0 12px', fontSize: '13px', borderRadius: '18px', border: 'none', background: 'var(--bg-input)', fontWeight: 500 }}
+                onClick={() => {
+                  if (confirm('Are you sure you want to log out?')) {
+                    clearToken();
+                    window.location.href = '/admin/login';
+                  }
+                }}
+              >
+                Logout
+              </button>
               <button
                 className="btn btn-secondary btn-icon"
                 style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', background: 'var(--bg-input)' }}

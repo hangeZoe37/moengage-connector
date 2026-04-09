@@ -7,12 +7,20 @@ import {
   ClientsPage,
   DlrEventsPage,
   SettingsPage,
+  LoginPage,
 } from './pages';
+import { getToken } from './api';
+import { Navigate } from 'react-router-dom';
+
+const PrivateRoute = ({ children }: { children: JSX.Element }) => {
+  return getToken() ? children : <Navigate to="/login" replace />;
+};
 
 export default function App() {
   return (
     <Routes>
-      <Route element={<Layout />}>
+      <Route path="/login" element={<LoginPage />} />
+      <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route path="/" element={<OverviewPage />} />
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/messages/:id" element={<MessageDetailPage />} />

@@ -2,7 +2,7 @@
 
 /**
  * src/repositories/clientRepo.js
- * SQL operations for the clients table (dashboard credentials).
+ * SQL operations for the clients table.
  */
 
 const { query } = require('../config/db');
@@ -23,6 +23,8 @@ async function findByToken(token) {
 
 /**
  * Find a client by ID.
+ * @param {number} clientId
+ * @returns {Promise<object|null>}
  */
 async function findById(clientId) {
   const rows = await query(
@@ -33,7 +35,8 @@ async function findById(clientId) {
 }
 
 /**
- * Get all active clients for the dashboard list.
+ * Get all clients for the dashboard/admin list.
+ * @returns {Promise<Array>}
  */
 async function getAll() {
   return query('SELECT * FROM clients ORDER BY created_at DESC');
@@ -41,6 +44,8 @@ async function getAll() {
 
 /**
  * Onboard a new client into the database.
+ * @param {object} clientData
+ * @returns {Promise<number>} New client ID
  */
 async function createClient(clientData) {
   const {
@@ -50,7 +55,7 @@ async function createClient(clientData) {
     rcs_password,
     sms_username,
     sms_password,
-    rcs_assistant_id
+    rcs_assistant_id,
   } = clientData;
 
   const result = await query(
@@ -61,19 +66,19 @@ async function createClient(clientData) {
     [
       client_name,
       bearer_token,
-      rcs_username || null,
-      rcs_password || null,
-      sms_username || null,
-      sms_password || null,
-      rcs_assistant_id || null
+      rcs_username     || null,
+      rcs_password     || null,
+      sms_username     || null,
+      sms_password     || null,
+      rcs_assistant_id || null,
     ]
   );
-  
+
   return result.insertId;
 }
 
 /**
- * Update client fields.
+ * Update client fields (allowlisted columns only).
  * @param {number} id
  * @param {object} fields - Partial updates
  */
@@ -83,7 +88,7 @@ async function updateClient(id, fields) {
     'sms_username', 'sms_password', 'rcs_assistant_id',
   ];
   const updates = [];
-  const params = [];
+  const params  = [];
   for (const key of allowed) {
     if (fields[key] !== undefined) {
       updates.push(`${key} = ?`);
@@ -96,12 +101,28 @@ async function updateClient(id, fields) {
 }
 
 /**
- * Permanently delete a client.
+ * Soft-deactivate a client (sets is_active = 0).
+ * Message history is preserved. Re-enable via toggleClientStatus.
  * @param {number} id
  */
 async function deactivateClient(id) {
-  // Permanently delete instead of setting is_active = 0
-  return query('DELETE FROM clients WHERE id = ?', [id]);
+  return query('UPDATE clients SET is_active = 0 WHERE id = ?', [id]);
 }
 
-module.exports = { findByToken, findById, getAll, createClient, updateClient, deactivateClient };
+/**
+ * Toggle a client's active status (0 → 1 or 1 → 0).
+ * @param {number} id
+ */
+async function toggleActive(id) {
+  return query('UPDATE clients SET is_active = NOT is_active WHERE id = ?', [id]);
+}
+
+module.exports = {
+  findByToken,
+  findById,
+  getAll,
+  createClient,
+  updateClient,
+  deactivateClient,
+  toggleActive,
+};

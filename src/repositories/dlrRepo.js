@@ -22,7 +22,7 @@ async function create(params) {
   } = params;
 
   return query(
-    `INSERT INTO dlr_events 
+    `INSERT INTO dlr_events
       (callback_data, sparc_status, moe_status, error_message, event_timestamp)
      VALUES (?, ?, ?, ?, ?)`,
     [callback_data, sparc_status, moe_status, error_message || null, event_timestamp || null]
@@ -55,24 +55,32 @@ async function findByCallbackData(callbackData) {
 
 /**
  * Get recent DLR events across all messages, paginated.
+ * Uses fully parameterized LIMIT/OFFSET — no string interpolation.
  * @param {number} limit
  * @param {number} offset
  * @param {number|null} clientId
  * @returns {Promise<Array>}
  */
 async function getRecent(limit = 50, offset = 0, clientId = null) {
-  let sql = `
+  const safeLimit  = Math.min(Math.max(parseInt(limit,  10) || 50,  1), 200);
+  const safeOffset = Math.max(parseInt(offset, 10) || 0, 0);
+
+  let sql    = `
     SELECT d.*, m.destination, m.message_type, c.client_name
     FROM dlr_events d
     LEFT JOIN message_logs m ON d.callback_data = m.callback_data
     LEFT JOIN clients c ON m.client_id = c.id
   `;
   const params = [];
+
   if (clientId) {
-    sql += ` WHERE m.client_id = ? `;
+    sql += ' WHERE m.client_id = ?';
     params.push(clientId);
   }
-  sql += ` ORDER BY d.created_at DESC LIMIT ${Number(limit)} OFFSET ${Number(offset)} `;
+
+  sql += ' ORDER BY d.created_at DESC LIMIT ? OFFSET ?';
+  params.push(safeLimit, safeOffset);
+
   return query(sql, params);
 }
 
@@ -83,13 +91,13 @@ async function getRecent(limit = 50, offset = 0, clientId = null) {
  */
 async function countEvents(clientId = null) {
   let sql = `
-    SELECT COUNT(d.id) as total 
+    SELECT COUNT(d.id) as total
     FROM dlr_events d
     LEFT JOIN message_logs m ON d.callback_data = m.callback_data
   `;
   const params = [];
   if (clientId) {
-    sql += ` WHERE m.client_id = ? `;
+    sql += ' WHERE m.client_id = ?';
     params.push(clientId);
   }
   const rows = await query(sql, params);

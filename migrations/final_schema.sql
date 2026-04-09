@@ -5,12 +5,24 @@
 -- ============================================================
 -- 0. CLEANUP (Start Fresh)
 -- ============================================================
+DROP TABLE IF EXISTS admins;
 DROP TABLE IF EXISTS callback_dispatch_log;
 DROP TABLE IF EXISTS suggestion_events;
 DROP TABLE IF EXISTS dlr_events;
 DROP TABLE IF EXISTS message_logs;
 DROP TABLE IF EXISTS workspace_tokens; -- Old format
 DROP TABLE IF EXISTS clients;          -- New format
+
+-- ============================================================
+-- 0.5 Table: admins
+-- ============================================================
+CREATE TABLE IF NOT EXISTS admins (
+  id             INT AUTO_INCREMENT PRIMARY KEY,
+  username       VARCHAR(255) UNIQUE NOT NULL,
+  password_hash  VARCHAR(255) NOT NULL,
+  created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+INSERT INTO admins (username, password_hash) VALUES ('admin', '$2b$10$1VAQWk4FYlFIRizOdI8OCO5dwdt5KiWWaBLBt.oy7/xj1CAaUlDs2');
 
 -- ============================================================
 -- 1. Table: clients
@@ -35,30 +47,35 @@ CREATE TABLE IF NOT EXISTS clients (
 -- Central log for all incoming requests.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS message_logs (
-  id               BIGINT AUTO_INCREMENT PRIMARY KEY,
-  callback_data    VARCHAR(200) NOT NULL,   -- MoEngage reconciliation key (= SPARC seq_id)
-  client_id        INT,                     -- which dashboard client sent this
-  destination      VARCHAR(20),             -- phone number E.164
-  bot_id           VARCHAR(100),            -- SPARC assistant_id
-  template_name    VARCHAR(100),            -- null for international users
-  message_type     ENUM('TEXT','CARD','MEDIA'),
+  id                   BIGINT AUTO_INCREMENT PRIMARY KEY,
+  callback_data        VARCHAR(200) NOT NULL,   -- MoEngage reconciliation key (= SPARC seq_id)
+  client_id            INT,                     -- which dashboard client sent this
+  destination          VARCHAR(20),             -- phone number E.164
+  bot_id               VARCHAR(100),            -- SPARC assistant_id
+  template_name        VARCHAR(100),            -- null for international users
+  message_type         ENUM('TEXT','CARD','MEDIA'),
   fallback_order       JSON,                    -- e.g. ["rcs","sms"]
   sparc_message_id     VARCHAR(100),            -- message_id for RCS (submissionId)
-  sparc_transaction_id VARCHAR(100),            -- transactionId for SMS
+  sparc_transaction_id VARCHAR(100),            -- transactionId for SMS DLR correlation
   status               ENUM(
-                     'QUEUED',
-                     'RCS_SENT','RCS_SENT_FAILED',
-                     'RCS_DELIVERED','RCS_DELIVERY_FAILED','RCS_READ',
-                     'SMS_SENT','SMS_SENT_FAILED',
-                     'SMS_DELIVERED','SMS_DELIVERY_FAILED',
-                     'DONE'
-                   ) DEFAULT 'QUEUED',
-  raw_payload      JSON,                    -- debug only
-  created_at       TIMESTAMP DEFAULT NOW(),
-  updated_at       TIMESTAMP DEFAULT NOW() ON UPDATE NOW(),
-  INDEX idx_callback_data (callback_data),
-  INDEX idx_client_id  (client_id),
-  INDEX idx_created_at    (created_at),
+                         'QUEUED',
+                         'RCS_SENT','RCS_SENT_FAILED',
+                         'RCS_DELIVERED','RCS_DELIVERY_FAILED','RCS_READ',
+                         'SMS_SENT','SMS_SENT_FAILED',
+                         'SMS_DELIVERED','SMS_DELIVERY_FAILED',
+                         'DONE'
+                       ) DEFAULT 'QUEUED',
+  raw_payload          JSON,                    -- debug / fallback replay
+  created_at           TIMESTAMP DEFAULT NOW(),
+  updated_at           TIMESTAMP DEFAULT NOW() ON UPDATE NOW(),
+
+  -- Indexes for hot query paths
+  INDEX idx_callback_data      (callback_data),
+  INDEX idx_client_id          (client_id),
+  INDEX idx_created_at         (created_at),
+  INDEX idx_sparc_txn_id       (sparc_transaction_id),   -- needed for SMS DLR correlation
+  INDEX idx_status             (status),                  -- needed for stats/filter queries
+
   CONSTRAINT fk_client_log FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -75,27 +92,31 @@ CREATE TABLE IF NOT EXISTS dlr_events (
   event_timestamp      BIGINT,
   callback_dispatched  TINYINT(1) DEFAULT 0,
   created_at           TIMESTAMP DEFAULT NOW(),
-  INDEX idx_callback_data (callback_data)
+
+  INDEX idx_callback_data      (callback_data),
+  INDEX idx_dispatched         (callback_dispatched),    -- needed for stuck-DLR tracker queries
+  INDEX idx_created_at         (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
 -- 4. Table: suggestion_events
--- RCS interaction tracking.
+-- RCS interaction/postback tracking.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS suggestion_events (
-  id               BIGINT AUTO_INCREMENT PRIMARY KEY,
-  callback_data    VARCHAR(200),
-  suggestion_text  VARCHAR(500),
-  postback_data    VARCHAR(500),
-  event_timestamp  BIGINT,
+  id                  BIGINT AUTO_INCREMENT PRIMARY KEY,
+  callback_data       VARCHAR(200),
+  suggestion_text     VARCHAR(500),
+  postback_data       VARCHAR(500),
+  event_timestamp     BIGINT,
   callback_dispatched TINYINT(1) DEFAULT 0,
-  created_at       TIMESTAMP DEFAULT NOW(),
+  created_at          TIMESTAMP DEFAULT NOW(),
+
   INDEX idx_callback_data (callback_data)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
 -- 5. Table: callback_dispatch_log
--- Outbound log for MoEngage callbacks.
+-- Outbound log for MoEngage callbacks with retry tracking.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS callback_dispatch_log (
   id             BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -105,17 +126,21 @@ CREATE TABLE IF NOT EXISTS callback_dispatch_log (
   http_status    SMALLINT,
   success        TINYINT(1),
   error_message  TEXT,
-  dispatched_at  TIMESTAMP DEFAULT NOW()
+  dispatched_at  TIMESTAMP DEFAULT NOW(),
+
+  INDEX idx_callback_data (callback_data),
+  INDEX idx_success       (success)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
 -- 6. DEFAULT TEST CLIENT
+-- IMPORTANT: Replace bearer_token before deploying to production.
 -- ============================================================
 INSERT INTO clients (client_name, bearer_token, rcs_username, rcs_password, rcs_assistant_id)
 VALUES (
-  'Local Test Client',
-  'YOUR_BEARER_TOKEN_HERE',
-  'tstrcs444',
-  '6?aRp2xyk@Zw%(<b3',
-  '677baf920f6d1f157306740b'
+  'Default Test Client',
+  'REPLACE_WITH_SECURE_BEARER_TOKEN',
+  NULL,
+  NULL,
+  NULL
 );

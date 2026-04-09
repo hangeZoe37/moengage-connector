@@ -2,21 +2,23 @@
 
 /**
  * src/controllers/adminController.js
- * Controller for Admin Panel routes (/admin).
+ * Controller for Admin Panel routes (/admin-api/*).
+ * All routes are protected by adminAuth middleware (ADMIN_BEARER_TOKEN).
  */
 
-const adminRepo = require('../repositories/adminRepo');
-const clientRepo = require('../repositories/clientRepo');
+const adminRepo   = require('../repositories/adminRepo');
+const clientRepo  = require('../repositories/clientRepo');
 const messageRepo = require('../repositories/messageRepo');
-const dlrRepo = require('../repositories/dlrRepo');
-const logger = require('../config/logger');
-const crypto = require('crypto');
+const dlrRepo     = require('../repositories/dlrRepo');
+const { query }   = require('../config/db');
+const logger      = require('../config/logger');
+const crypto      = require('crypto');
 
 async function getOverviewStats(req, res) {
   try {
     const stats = await adminRepo.getTodayStats();
     let clients = await adminRepo.getClientStatsToday();
-    
+
     // Calculate fallback_rate
     clients = clients.map(c => {
       const fallback_rate = c.total > 0 ? (c.sms_fallback / c.total) * 100 : 0;
@@ -52,17 +54,21 @@ async function createClient(req, res) {
       return res.status(400).json({ error: 'client_name is required' });
     }
     const bearer_token = req.body.bearer_token || crypto.randomBytes(32).toString('hex');
-    
+
     const id = await clientRepo.createClient({ ...req.body, bearer_token });
     const newClient = await clientRepo.findById(id);
     if (newClient) {
       newClient.rcs_password = newClient.rcs_password ? '***' : null;
       newClient.sms_password = newClient.sms_password ? '***' : null;
     }
-    
+
+    logger.info('Admin: new client created', { clientId: id, clientName: client_name });
     res.status(201).json({ status: 'success', client: newClient });
   } catch (error) {
     logger.error('Admin createClient failed', { error: error.message });
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'Bearer token already exists' });
+    }
     res.status(500).json({ error: 'Internal server error' });
   }
 }
@@ -89,13 +95,16 @@ async function updateClient(req, res) {
 async function toggleClientStatus(req, res) {
   try {
     const id = parseInt(req.params.id, 10);
-    
-    // Instead of completely deleting, we update is_active status (as requested in the prompt: "Deactivating a client stops processing...")
-    // Wait, clientRepo.deactivateClient deletes it. Let's write a custom query here or update clientRepo directly.
-    const { query } = require('../config/db');
+    if (isNaN(id)) return res.status(400).json({ error: 'Invalid client id' });
+
+    const client = await clientRepo.findById(id);
+    if (!client) return res.status(404).json({ error: 'Client not found' });
+
     await query('UPDATE clients SET is_active = NOT is_active WHERE id = ?', [id]);
-    
-    res.json({ status: 'success' });
+
+    const updated = await clientRepo.findById(id);
+    logger.info('Admin: client status toggled', { clientId: id, is_active: updated?.is_active });
+    res.json({ status: 'success', is_active: updated?.is_active });
   } catch (error) {
     logger.error('Admin toggleClientStatus failed', { error: error.message });
     res.status(500).json({ error: 'Internal server error' });
@@ -104,15 +113,15 @@ async function toggleClientStatus(req, res) {
 
 async function getMessages(req, res) {
   try {
-    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
-    const offset = parseInt(req.query.offset, 10) || 0;
-    
+    const limit  = Math.min(parseInt(req.query.limit,  10) || 50, 200);
+    const offset = Math.max(parseInt(req.query.offset, 10) || 0,  0);
+
     const filters = {
       clientId: req.query.clientId,
-      status: req.query.status,
-      channel: req.query.channel,
+      status:   req.query.status,
+      channel:  req.query.channel,
       dateFrom: req.query.dateFrom,
-      dateTo: req.query.dateTo
+      dateTo:   req.query.dateTo,
     };
 
     const data = await adminRepo.getMessages(filters, limit, offset);
@@ -141,23 +150,23 @@ async function getMessageDetail(req, res) {
 
 async function getDlrTracker(req, res) {
   try {
+    const limit  = Math.min(parseInt(req.query.limit,  10) || 50, 200);
+    const offset = Math.max(parseInt(req.query.offset, 10) || 0,  0);
+
     const filters = {
       clientId: req.query.clientId,
-      state: req.query.state || 'stuck', // default 'stuck' or 'exhausted'
+      state:    req.query.state || 'stuck',
       dateFrom: req.query.dateFrom,
-      dateTo: req.query.dateTo
+      dateTo:   req.query.dateTo,
     };
-    
-    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
-    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
 
-    const rows = await adminRepo.getDlrTracker(filters);
-    
-    // Do simple in-memory pagination for DLR tracker since volume of stuck is usually low
-    const total = rows.length;
-    const paginated = rows.slice(offset, offset + limit);
+    // Both queries run in parallel at the DB level
+    const [events, total] = await Promise.all([
+      adminRepo.getDlrTracker(filters, limit, offset),
+      adminRepo.countDlrTracker(filters),
+    ]);
 
-    res.json({ events: paginated, total, limit, offset });
+    res.json({ events, total, limit, offset });
   } catch (error) {
     logger.error('Admin getDlrTracker failed', { error: error.message });
     res.status(500).json({ error: 'Internal server error' });
@@ -172,5 +181,5 @@ module.exports = {
   toggleClientStatus,
   getMessages,
   getMessageDetail,
-  getDlrTracker
+  getDlrTracker,
 };
