@@ -44,7 +44,7 @@ export default function Layout() {
     const checkMetrics = async () => {
       try {
         const res = await api.getMetrics();
-        setDlrPending(res.stats.dlr_pending || 0);
+        setDlrPending(Math.max(0, res.stats.total_received - res.stats.dlrs_received));
       } catch (e) {
         /* silent */
       }
