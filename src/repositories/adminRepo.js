@@ -128,8 +128,7 @@ async function getDlrTracker(filters = {}, limit = 50, offset = 0) {
     params.push(dateTo);
   }
 
-  sql += ' ORDER BY d.created_at DESC LIMIT ? OFFSET ?';
-  params.push(safeLimit, safeOffset);
+  sql += ` ORDER BY d.created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`;
 
   return query(sql, params);
 }
@@ -231,8 +230,7 @@ async function getMessages(filters = {}, limit = 50, offset = 0) {
     params.push(dateTo); countParams.push(dateTo);
   }
 
-  sql += ' ORDER BY m.created_at DESC LIMIT ? OFFSET ?';
-  params.push(safeLimit, safeOffset);
+  sql += ` ORDER BY m.created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`;
 
   const [rows, countRow] = await Promise.all([
     query(sql, params),
