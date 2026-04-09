@@ -118,18 +118,19 @@ export default function DlrEventsPage() {
                     </div>
                   </td>
                 </tr>
-              ) : events.map(ev => {
-                const isFail = ev.sparc_status.includes('FAIL') || ev.sparc_status.includes('REJECT');
+              ) : (events || []).map(ev => {
+                const sparcStatus = ev.sparc_status || 'UNKNOWN';
+                const isFail = sparcStatus.includes('FAIL') || sparcStatus.includes('REJECT');
                 return (
                   <tr key={ev.id}>
-                    <td><span className="mono">{truncate(ev.seq_id, 24)}</span></td>
+                    <td><span className="mono">{truncate(ev.seq_id || '', 24)}</span></td>
                     <td style={{ color: '#8b95a8' }}>{ev.client_name || '—'}</td>
                     <td>
                       <span style={{ color: isFail ? 'var(--danger)' : 'var(--text-primary)', fontWeight: 500 }}>
-                        {ev.sparc_status}
+                        {sparcStatus}
                       </span>
                     </td>
-                    <td>{ev.moe_status}</td>
+                    <td>{ev.moe_status || '—'}</td>
                     <td>
                       <span className={`badge ${ev.forwarded ? 'badge-delivered' : 'badge-failed'}`}>
                         {ev.forwarded ? 'Yes' : 'Stuck'}

@@ -300,6 +300,7 @@ body:not(.light) .main-content-wrapper { border-radius: 0; border: none; box-sha
 .form-input::placeholder { color: var(--text-muted); }
 
 .filter-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
 
 /* ── Date Picker Enhancements ────────────────────────────── */
 .date-select-wrapper {

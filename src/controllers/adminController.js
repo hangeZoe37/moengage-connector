@@ -161,13 +161,9 @@ async function getDlrTracker(req, res) {
       dateTo:   req.query.dateTo,
     };
 
-    // Both queries run in parallel at the DB level
-    const [events, total] = await Promise.all([
-      adminRepo.getDlrTracker(filters, limit, offset),
-      adminRepo.countDlrTracker(filters),
-    ]);
+    const data = await adminRepo.getDlrTracker(filters, limit, offset);
 
-    res.json({ events, total, limit, offset });
+    res.json({ ...data, limit, offset });
   } catch (error) {
     logger.error('Admin getDlrTracker failed', { error: error.message });
     res.status(500).json({ error: 'Internal server error' });

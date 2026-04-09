@@ -13,7 +13,7 @@ const navItems = [
   { to: '/',           label: 'Overview',    icon: LayoutDashboard, section: '' },
   { to: '/clients',    label: 'Clients',     icon: Users,           section: '' },
   { to: '/messages',   label: 'Messages',    icon: MessageSquare,   section: '' },
-  { to: '/dlr-events', label: 'DLR Tracker', icon: Radio,           section: '', badgeKey: 'dlr_pending' },
+  { to: '/dlr-events', label: 'DLR Tracker', icon: Radio,           section: '' },
 ];
 
 const pageTitles: Record<string, string> = {
@@ -30,7 +30,6 @@ export default function Layout() {
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDark, setIsDark] = useState(false); // Defaulting to light mode to match the reference image
-  const [dlrPending, setDlrPending] = useState(0);
 
   useEffect(() => {
     if (isDark) {
@@ -40,20 +39,6 @@ export default function Layout() {
     }
   }, [isDark]);
 
-  useEffect(() => {
-    const checkPending = async () => {
-      try {
-        // Fetch only stuck DLRs (callback_dispatched = 0) — page size 1 is enough, we just need the total
-        const res = await api.getDlrEvents(1, 0, undefined, 'stuck');
-        setDlrPending(res.total || 0);
-      } catch (e) {
-        /* silent */
-      }
-    };
-    checkPending();
-    const interval = setInterval(checkPending, 30_000);
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <div className={`app-layout ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
@@ -84,14 +69,6 @@ export default function Layout() {
               >
                 <item.icon size={18} />
                 {!isCollapsed && <span>{item.label}</span>}
-                {!isCollapsed && 
-                  item.badgeKey === 'dlr_pending' && 
-                  dlrPending > 0 && 
-                  location.pathname !== '/dlr-events' && (
-                  <span className="badge-danger" style={{ marginLeft: 'auto' }}>
-                    {dlrPending}
-                  </span>
-                )}
               </NavLink>
             </div>
           ))}

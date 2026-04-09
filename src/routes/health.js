@@ -50,12 +50,11 @@ router.post('/test/moengage-dlr', (req, res) => {
   
   // Make it extremely visible in the terminal
   console.log('\n' + '='.repeat(80));
-  console.log('🚀 MOCK MOENGAGE RECEIVED DLR CALLBACK');
-  console.log('='.repeat(80));
+  console.log('MOENGAGE RECEIVED DLR CALLBACK');
   console.log(JSON.stringify(req.body, null, 2));
   console.log('='.repeat(80) + '\n');
 
-  logger.info('MOCK MOENGAGE RECEIVED DLR', { payload: req.body });
+  logger.info('MOENGAGE RECEIVED DLR', { payload: req.body });
   res.status(200).json({ status: 'success', received: true });
 });
 

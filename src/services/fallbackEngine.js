@@ -88,11 +88,21 @@ async function processMessage(message, client) {
 
       await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.RCS_SENT, submissionId || messageId);
 
-      // Fire RCS_SENT callback to MoEngage immediately
+      // Fire RCS_SENT callback to MoEngage after 5 seconds
       const sentPayload = buildMoeStatusPayload(MESSAGE_STATUSES.RCS_SENT, callback_data);
-      await callbackDispatcher.dispatchStatus(dlrUrl, sentPayload, callback_data);
+      
+      setTimeout(async () => {
+        try {
+          await callbackDispatcher.dispatchStatus(dlrUrl, sentPayload, callback_data);
+          const timestamp = Math.floor(Date.now() / 1000);
+          console.log(`rcs sent | callback_data: ${callback_data} | timestamp: ${timestamp}`);
+          logger.info(`rcs sent | callback_data: ${callback_data} | timestamp: ${timestamp}`);
+        } catch (err) {
+          logger.error('Delayed RCS_SENT callback failed', { callbackData: callback_data, error: err.message });
+        }
+      }, 5000);
 
-      logger.info('RCS message sent successfully, waiting for DLR', {
+      logger.info('RCS message submission successful, SENT callback queued (5s delay)', {
         callbackData: callback_data,
         messageId,
         submissionId
@@ -187,7 +197,17 @@ async function attemptSms(message, client, dlrUrl, assistantId = null) {
     }
 
     const smsPayload = buildMoeStatusPayload(MESSAGE_STATUSES.SMS_SENT, callback_data);
-    await callbackDispatcher.dispatchStatus(dlrUrl, smsPayload, callback_data);
+    
+    setTimeout(async () => {
+      try {
+        await callbackDispatcher.dispatchStatus(dlrUrl, smsPayload, callback_data);
+        const timestamp = Math.floor(Date.now() / 1000);
+        console.log(`sms sent | callback_data: ${callback_data} | timestamp: ${timestamp}`);
+        logger.info(`sms sent | callback_data: ${callback_data} | timestamp: ${timestamp}`);
+      } catch (err) {
+        logger.error('Delayed SMS_SENT callback failed', { callbackData: callback_data, error: err.message });
+      }
+    }, 5000);
 
   } catch (smsError) {
     logger.error('SMS fallback also failed', {

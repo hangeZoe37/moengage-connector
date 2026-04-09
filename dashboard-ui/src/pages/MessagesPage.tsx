@@ -170,8 +170,7 @@ export default function MessagesPage() {
                   </td>
                 </tr>
               ) : logs.map((log: any) => {
-                const channel = getChannelFromStatus(log.status); // fallback 
-                const channelDisplay = log.message_type === 'SMS' ? 'SMS' : 'RCS'; 
+                const channelDisplay = getChannelFromStatus(log.status); 
                 
                 const rcvd = log.total_dlrs > 0;
                 const fwd = log.forwarded_dlrs > 0;
