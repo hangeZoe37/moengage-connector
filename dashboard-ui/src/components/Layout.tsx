@@ -84,7 +84,10 @@ export default function Layout() {
               >
                 <item.icon size={18} />
                 {!isCollapsed && <span>{item.label}</span>}
-                {!isCollapsed && item.badgeKey === 'dlr_pending' && dlrPending > 0 && (
+                {!isCollapsed && 
+                  item.badgeKey === 'dlr_pending' && 
+                  dlrPending > 0 && 
+                  location.pathname !== '/dlr-events' && (
                   <span className="badge-danger" style={{ marginLeft: 'auto' }}>
                     {dlrPending}
                   </span>
