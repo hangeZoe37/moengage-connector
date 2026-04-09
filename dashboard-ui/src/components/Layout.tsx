@@ -41,16 +41,17 @@ export default function Layout() {
   }, [isDark]);
 
   useEffect(() => {
-    const checkMetrics = async () => {
+    const checkPending = async () => {
       try {
-        const res = await api.getMetrics();
-        setDlrPending(Math.max(0, res.stats.total_received - res.stats.dlrs_received));
+        // Fetch only stuck DLRs (callback_dispatched = 0) — page size 1 is enough, we just need the total
+        const res = await api.getDlrEvents(1, 0, undefined, 'stuck');
+        setDlrPending(res.total || 0);
       } catch (e) {
         /* silent */
       }
     };
-    checkMetrics();
-    const interval = setInterval(checkMetrics, 30_000);
+    checkPending();
+    const interval = setInterval(checkPending, 30_000);
     return () => clearInterval(interval);
   }, []);
 
