@@ -131,7 +131,12 @@ export interface MessageDetailResponse {
 /* ── Exported API functions ───────────────────────────────────── */
 
 export const api = {
-  getMetrics: () => request<any>('/stats/overview'),
+  getMetrics: (dateFrom?: string, dateTo?: string) => {
+    let qs = '';
+    if (dateFrom && dateTo) qs = `?dateFrom=${dateFrom}&dateTo=${dateTo}`;
+    else if (dateFrom) qs = `?dateFrom=${dateFrom}`;
+    return request<MetricsResponse>(`/stats/overview${qs}`);
+  },
 
   getLogs: (limit = 30, offset = 0, clientId?: number, status?: string, channel?: string) => {
     let qs = `?limit=${limit}&offset=${offset}`;

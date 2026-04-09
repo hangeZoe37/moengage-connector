@@ -11,21 +11,35 @@ const { query } = require('../config/db');
  * Get the 5 top-level stats for today.
  * @returns {Promise<object>}
  */
-async function getTodayStats() {
+async function getTodayStats(dateFrom = null, dateTo = null) {
+  let dlrDateCondition = 'DATE(e.created_at) = CURDATE()';
+  let logDateCondition = 'DATE(created_at) = CURDATE()';
+  const params = [];
+
+  if (dateFrom && dateTo) {
+    dlrDateCondition = 'DATE(e.created_at) >= ? AND DATE(e.created_at) <= ?';
+    logDateCondition = 'DATE(created_at) >= ? AND DATE(created_at) <= ?';
+    params.push(dateFrom, dateTo, dateFrom, dateTo);
+  } else if (dateFrom) {
+    dlrDateCondition = 'DATE(e.created_at) = ?';
+    logDateCondition = 'DATE(created_at) = ?';
+    params.push(dateFrom, dateFrom);
+  }
+
   const sql = `
     SELECT
       COUNT(*) as total_received,
       SUM(CASE WHEN status IN ('RCS_SENT', 'RCS_DELIVERED', 'RCS_READ') AND message_type != 'SMS' THEN 1 ELSE 0 END) as rcs_sent,
       SUM(CASE WHEN channel = 'SMS' OR status LIKE 'SMS_%' THEN 1 ELSE 0 END) as sms_fallback,
-      (SELECT COUNT(*) FROM dlr_events e WHERE DATE(e.created_at) = CURDATE()) as dlrs_received,
+      (SELECT COUNT(*) FROM dlr_events e WHERE ${dlrDateCondition}) as dlrs_received,
       SUM(CASE WHEN status IN ('FAILED', 'RCS_SENT_FAILED', 'RCS_DELIVERY_FAILED', 'SMS_SENT_FAILED', 'SMS_DELIVERY_FAILED') THEN 1 ELSE 0 END) as terminal_failures
     FROM (
       SELECT *, CASE WHEN status LIKE 'SMS_%' THEN 'SMS' ELSE 'RCS' END as channel
       FROM message_logs
-      WHERE DATE(created_at) = CURDATE()
-    ) sub
+      WHERE ${logDateCondition}
+    ) sub;
   `;
-  const rows = await query(sql);
+  const rows = await query(sql, params);
   return rows[0] || {
     total_received:    0,
     rcs_sent:          0,
@@ -39,7 +53,21 @@ async function getTodayStats() {
  * Get today's stats per client.
  * @returns {Promise<Array>}
  */
-async function getClientStatsToday() {
+async function getClientStatsToday(dateFrom = null, dateTo = null) {
+  let dlrDateCondition = 'DATE(e.created_at) = CURDATE()';
+  let logDateCondition = 'DATE(m.created_at) = CURDATE()';
+  const params = [];
+
+  if (dateFrom && dateTo) {
+    dlrDateCondition = 'DATE(e.created_at) >= ? AND DATE(e.created_at) <= ?';
+    logDateCondition = 'DATE(m.created_at) >= ? AND DATE(m.created_at) <= ?';
+    params.push(dateFrom, dateTo, dateFrom, dateTo);
+  } else if (dateFrom) {
+    dlrDateCondition = 'DATE(e.created_at) = ?';
+    logDateCondition = 'DATE(m.created_at) = ?';
+    params.push(dateFrom, dateFrom);
+  }
+
   const sql = `
     SELECT
       c.id as client_id,
@@ -47,14 +75,14 @@ async function getClientStatsToday() {
       SUM(CASE WHEN m.status IN ('RCS_SENT', 'RCS_DELIVERED', 'RCS_READ') AND m.message_type != 'SMS' THEN 1 ELSE 0 END) as rcs_sent,
       SUM(CASE WHEN (m.status LIKE 'SMS_%' OR m.message_type = 'SMS') THEN 1 ELSE 0 END) as sms_fallback,
       SUM(CASE WHEN m.status IN ('FAILED', 'RCS_SENT_FAILED', 'RCS_DELIVERY_FAILED', 'SMS_SENT_FAILED', 'SMS_DELIVERY_FAILED') THEN 1 ELSE 0 END) as failed,
-      (SELECT COUNT(*) FROM dlr_events e JOIN message_logs m2 ON e.callback_data = m2.callback_data WHERE m2.client_id = c.id AND DATE(e.created_at) = CURDATE()) as dlrs_received,
+      (SELECT COUNT(*) FROM dlr_events e JOIN message_logs m2 ON e.callback_data = m2.callback_data WHERE m2.client_id = c.id AND ${dlrDateCondition}) as dlrs_received,
       COUNT(m.id) as total
     FROM clients c
-    LEFT JOIN message_logs m ON c.id = m.client_id AND DATE(m.created_at) = CURDATE()
+    LEFT JOIN message_logs m ON c.id = m.client_id AND ${logDateCondition}
     GROUP BY c.id, c.client_name
     ORDER BY c.client_name ASC
   `;
-  return query(sql);
+  return query(sql, params);
 }
 
 /**

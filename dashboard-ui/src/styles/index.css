@@ -236,6 +236,7 @@ body:not(.light) .main-content-wrapper { border-radius: 0; border: none; box-sha
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .kpi-card:hover {
@@ -244,14 +245,12 @@ body:not(.light) .main-content-wrapper { border-radius: 0; border: none; box-sha
 }
 
 .kpi-label {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.3;
 }
 
 .kpi-value {
@@ -302,6 +301,36 @@ body:not(.light) .main-content-wrapper { border-radius: 0; border: none; box-sha
 
 .filter-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
 
+/* ── Date Picker Enhancements ────────────────────────────── */
+.date-select-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.date-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 32px !important;
+  cursor: pointer;
+  min-width: 140px;
+}
+
+.date-select-wrapper .calendar-icon {
+  position: absolute;
+  right: 12px;
+  pointer-events: none;
+  color: var(--text-secondary);
+  opacity: 0.8;
+  transition: all var(--transition-fast);
+}
+
+.date-select-wrapper:hover .calendar-icon {
+  color: var(--accent-violet);
+  opacity: 1;
+}
+
 /* ── Buttons ─────────────────────────────────────────────────── */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -322,12 +351,25 @@ body:not(.light) .main-content-wrapper { border-radius: 0; border: none; box-sha
 .btn-icon { width: 36px; height: 36px; padding: 0; display: inline-flex; border-radius: var(--radius-md); }
 
 /* ── Tables ──────────────────────────────────────────────────── */
-.data-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.data-table { 
+  width: 100%; 
+  border-collapse: separate; 
+  border-spacing: 0; 
+}
 .data-table th {
   padding: 16px 24px; text-align: left; font-size: 0.75rem; font-weight: 600;
   color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;
   border-bottom: 1px solid var(--border-subtle); position: sticky; top: 0;
   background: var(--bg-card); z-index: 2;
+}
+
+body:not(.light) .data-table {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+body:not(.light) .data-table th {
+  background: var(--bg-secondary);
 }
 .data-table td {
   padding: 16px 24px; font-size: 0.9rem; color: var(--text-primary);

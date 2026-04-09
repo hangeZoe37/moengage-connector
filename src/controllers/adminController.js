@@ -16,9 +16,10 @@ const crypto      = require('crypto');
 
 async function getOverviewStats(req, res) {
   try {
-    const stats = await adminRepo.getTodayStats();
-    let clients = await adminRepo.getClientStatsToday();
-
+    const dateFrom = req.query.dateFrom || req.query.date || null;
+    const dateTo = req.query.dateTo || null;
+    const stats = await adminRepo.getTodayStats(dateFrom, dateTo);
+    let clients = await adminRepo.getClientStatsToday(dateFrom, dateTo);
     // Calculate fallback_rate
     clients = clients.map(c => {
       const fallback_rate = c.total > 0 ? (c.sms_fallback / c.total) * 100 : 0;

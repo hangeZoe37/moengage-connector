@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api, MetricsResponse } from '../api';
 import { formatTimestamp } from '../utils';
@@ -8,11 +8,41 @@ export default function OverviewPage() {
   const [metrics, setMetrics] = useState<MetricsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [datePreset, setDatePreset] = useState('today');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
   const navigate = useNavigate();
 
   const load = async () => {
     try {
-      const metricsRes = await api.getMetrics();
+      let from: string | undefined = undefined;
+      let to: string | undefined = undefined;
+
+      const format = (d: Date) => {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+      };
+
+      const today = new Date();
+
+      if (datePreset === '30days') {
+        const p = new Date(today);
+        p.setDate(p.getDate() - 30);
+        from = format(p);
+        to = format(today);
+      } else if (datePreset === '60days') {
+        const p = new Date(today);
+        p.setDate(p.getDate() - 60);
+        from = format(p);
+        to = format(today);
+      } else if (datePreset === 'custom') {
+        from = customFrom || undefined;
+        to = customTo || undefined;
+      }
+
+      const metricsRes = await api.getMetrics(from, to);
       // Due to the type casting in api.ts, it returns the correct shape
       setMetrics(metricsRes as unknown as MetricsResponse);
       setLastRefresh(new Date());
@@ -27,7 +57,7 @@ export default function OverviewPage() {
     load();
     const interval = setInterval(load, 30_000);
     return () => clearInterval(interval);
-  }, []);
+  }, [datePreset, customFrom, customTo]);
 
   if (loading && !metrics) {
     return (
@@ -40,6 +70,47 @@ export default function OverviewPage() {
 
   return (
     <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '24px', gap: '8px' }}>
+        <div className="date-select-wrapper">
+          <select 
+            className="form-input date-select" 
+            value={datePreset}
+            onChange={e => setDatePreset(e.target.value)}
+            style={{ padding: '6px 32px 6px 12px', fontSize: '0.85rem' }}
+          >
+            <option value="today">Today</option>
+            <option value="30days">Last 30 Days</option>
+            <option value="60days">Last 60 Days</option>
+            <option value="custom">Custom Range</option>
+          </select>
+          <Calendar className="calendar-icon" size={14} />
+        </div>
+
+        {datePreset === 'custom' && (
+          <>
+            <input 
+              type="date" 
+              className="form-input" 
+              value={customFrom} 
+              onChange={e => setCustomFrom(e.target.value)}
+              style={{ padding: '6px 12px', fontSize: '0.85rem' }}
+            />
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>to</span>
+            <input 
+              type="date" 
+              className="form-input" 
+              value={customTo} 
+              onChange={e => setCustomTo(e.target.value)}
+              style={{ padding: '6px 12px', fontSize: '0.85rem' }}
+            />
+          </>
+        )}
+        
+        <button className="btn btn-secondary btn-sm" onClick={load} style={{ marginLeft: '4px' }}>
+          <RefreshCw size={14} /> Refresh
+        </button>
+      </div>
+
       {/* 5 Stat Cards */}
       {metrics && (
         <div className="kpi-grid">
@@ -56,7 +127,7 @@ export default function OverviewPage() {
             <div className="kpi-value amber">{(metrics.stats.sms_fallback ?? 0).toLocaleString()}</div>
           </div>
           <div className="kpi-card cyan">
-            <div className="kpi-label">DLRs Received Today</div>
+            <div className="kpi-label">DLRs Received</div>
             <div className="kpi-value cyan">{(metrics.stats.dlrs_received ?? 0).toLocaleString()}</div>
           </div>
           <div className="kpi-card red">
@@ -74,12 +145,9 @@ export default function OverviewPage() {
                 Client Overview
               </h1>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                Today's numbers per client · Last refresh: {formatTimestamp(lastRefresh.toISOString())}
+                Numbers per client · Last refresh: {formatTimestamp(lastRefresh.toISOString())}
               </p>
             </div>
-            <button className="btn btn-secondary btn-sm" onClick={load}>
-              <RefreshCw size={14} /> Refresh
-            </button>
           </div>
         </div>
         <div style={{ overflowX: 'auto', padding: '0 24px 24px' }}>
@@ -127,7 +195,7 @@ export default function OverviewPage() {
               {metrics?.clients.length === 0 && (
                 <tr>
                   <td colSpan={6} style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-                    No operations today.
+                    No operations on the selected date.
                   </td>
                 </tr>
               )}
