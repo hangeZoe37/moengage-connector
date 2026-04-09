@@ -54,11 +54,11 @@ function mapDlrEvent(sparcEvent) {
   const eventRoot = sparcEvent.eventData || sparcEvent;
   const entity = eventRoot.entity || {};
 
-  const sparcStatus = (entity.eventType || '').toUpperCase();
+  // Support both nested SPARC format AND flat Postman formats
+  const sparcStatus = (entity.eventType || eventRoot.status || sparcEvent.status || '').toUpperCase();
   const moeStatus = STATUS_MAP[sparcStatus] || 'UNKNOWN';
   
-  // SeqId is often at root of sparcEvent, check both root and child just in case
-  const callbackData = sparcEvent.seqId || sparcEvent.seq_id || eventRoot.seqId;
+  const callbackData = sparcEvent.seq_id || sparcEvent.seqId || eventRoot.seqId || sparcEvent.callback_data;
 
   // Convert SPARC ISO 8601 (e.g. 2026-03-28T15:21...) to MoEngage Epoch Seconds
   let timestampSeconds = Math.floor(Date.now() / 1000);

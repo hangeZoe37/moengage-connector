@@ -1,4 +1,4 @@
-'use strict';
+'use strict'; // Force restart to pick up .env changes for local DLR testing
 
 /**
  * server.js — ENTRY POINT ONLY

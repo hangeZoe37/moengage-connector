@@ -31,8 +31,8 @@ async function handleDlrEvent(sparcEvent) {
   const eventRoot  = sparcEvent.eventData || sparcEvent;
   const entity     = eventRoot.entity || {};
 
-  const callbackData = sparcEvent.seqId || sparcEvent.seq_id || eventRoot.seqId;
-  const sparcStatus  = (entity.eventType || '').toUpperCase();
+  const callbackData = sparcEvent.seq_id || sparcEvent.seqId || eventRoot.seqId || sparcEvent.callback_data;
+  const sparcStatus  = (entity.eventType || eventRoot.status || sparcEvent.status || '').toUpperCase();
   const moeStatus    = translateStatus(sparcStatus);
 
   logger.info('Processing DLR event', { callbackData, sparcStatus, moeStatus });

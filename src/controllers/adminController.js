@@ -156,7 +156,7 @@ async function getDlrTracker(req, res) {
 
     const filters = {
       clientId: req.query.clientId,
-      state:    req.query.state || 'stuck',
+      state:    req.query.state || 'all',
       dateFrom: req.query.dateFrom,
       dateTo:   req.query.dateTo,
     };

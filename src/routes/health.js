@@ -40,4 +40,23 @@ router.get('/health', async (req, res) => {
   res.status(dbHealthy ? 200 : 503).json(status);
 });
 
+/**
+ * POST /test/moengage-dlr
+ * MOCK endpoint to simulate MoEngage receiving a DLR.
+ * Usage: Point MOENGAGE_DLR_URL to http://localhost:3000/test/moengage-dlr in .env
+ */
+router.post('/test/moengage-dlr', (req, res) => {
+  const logger = require('../config/logger');
+  
+  // Make it extremely visible in the terminal
+  console.log('\n' + '='.repeat(80));
+  console.log('🚀 MOCK MOENGAGE RECEIVED DLR CALLBACK');
+  console.log('='.repeat(80));
+  console.log(JSON.stringify(req.body, null, 2));
+  console.log('='.repeat(80) + '\n');
+
+  logger.info('MOCK MOENGAGE RECEIVED DLR', { payload: req.body });
+  res.status(200).json({ status: 'success', received: true });
+});
+
 module.exports = router;
