@@ -399,6 +399,7 @@ body:not(.light) .data-table th {
 .badge-danger { background: var(--danger); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 700; }
 .badge-rcs { background: var(--accent-violet-dim); color: var(--accent-violet); }
 .badge-sms-channel { background: rgba(245, 158, 11, 0.15); color: var(--status-sms); }
+.badge-fallback { background: rgba(245, 158, 11, 0.25); color: #F59E0B; border: 1px solid rgba(245, 158, 11, 0.3); font-size: 0.65rem; margin-left: 8px; }
 
 .mono { font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-secondary); }
 

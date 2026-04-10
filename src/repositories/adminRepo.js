@@ -192,7 +192,8 @@ async function getMessages(filters = {}, limit = 50, offset = 0) {
     SELECT m.id, m.callback_data, c.client_name, m.message_type, m.status,
            m.created_at, m.bot_id, m.destination,
            (SELECT COUNT(*) FROM dlr_events d WHERE d.callback_data = m.callback_data) as total_dlrs,
-           (SELECT COUNT(*) FROM dlr_events d WHERE d.callback_data = m.callback_data AND d.callback_dispatched = 1) as forwarded_dlrs
+           (SELECT COUNT(*) FROM dlr_events d WHERE d.callback_data = m.callback_data AND d.callback_dispatched = 1) as forwarded_dlrs,
+           (SELECT COUNT(*) FROM dlr_events d WHERE d.callback_data = m.callback_data AND d.moe_status IN ('RCS_DELIVERY_FAILED', 'RCS_SENT_FAILED')) as has_fallback
     FROM message_logs m
     LEFT JOIN clients c ON m.client_id = c.id
     WHERE 1=1

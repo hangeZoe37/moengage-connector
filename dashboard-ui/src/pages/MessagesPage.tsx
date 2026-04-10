@@ -113,12 +113,12 @@ export default function MessagesPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <select className="form-input" value={selectedStatus} onChange={e => setSelectedStatus(e.target.value)}>
                   <option value="">All Statuses</option>
-                  <option value="QUEUED">QUEUED</option>
                   <option value="RCS_SENT">RCS SENT</option>
                   <option value="RCS_DELIVERED">RCS DELIVERED</option>
+                  <option value="RCS_DELIVERY_FAILED">RCS DELIVERY FAILED</option>
                   <option value="SMS_SENT">SMS SENT</option>
                   <option value="SMS_DELIVERED">SMS DELIVERED</option>
-                  <option value="FAILED">FAILED</option>
+                  <option value="SMS_DELIVERY_FAILED">SMS DELIVERY FAILED</option>
                 </select>
               </div>
 
@@ -189,6 +189,11 @@ export default function MessagesPage() {
                       <div className="status-indicator">
                         <span className={`status-dot ${getStatusDot(log.status)}`} />
                         {log.status?.replace(/_/g, ' ') || '—'}
+                        {log.has_fallback > 0 && channelDisplay === 'SMS' && (
+                          <span className="badge badge-fallback" title="RCS failed, message was sent via SMS">
+                            Fallback
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td>{rcvd ? 'Yes' : 'No'}</td>

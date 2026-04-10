@@ -40,9 +40,7 @@ const STATUS_MAP = Object.freeze({
  */
 const FAILED_STATUSES = new Set([
   'RCS_DELIVERY_FAILED',
-  'RCS_SENT_FAILED',
   'SMS_DELIVERY_FAILED',
-  'SMS_SENT_FAILED',
 ]);
 
 /**

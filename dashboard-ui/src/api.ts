@@ -56,6 +56,7 @@ export interface MessageLog {
   sparc_message_id: string | null;
   raw_payload: unknown;
   error_message?: string;
+  has_fallback?: number;
   created_at: string;
   updated_at: string;
 }

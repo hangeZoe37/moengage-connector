@@ -23,7 +23,7 @@ const MESSAGE_STATUSES = Object.freeze({
 
   // ── RCS send outcomes (reported by SPARC on submission) ─────
   RCS_SENT: 'RCS_SENT',           // Accepted by RCS network
-  RCS_SENT_FAILED: 'RCS_SENT_FAILED', // Rejected at send time (invalid number, etc.)
+  RCS_SENT_FAILED: 'RCS_DELIVERY_FAILED', // Rejected at send time (invalid number, etc.)
 
   // ── RCS delivery / engagement (DLR callbacks from SPARC) ────
   RCS_DELIVERED: 'RCS_DELIVERED', // Handset confirmed receipt
@@ -32,7 +32,7 @@ const MESSAGE_STATUSES = Object.freeze({
 
   // ── SMS fallback send outcomes ───────────────────────────────
   SMS_SENT: 'SMS_SENT',           // Accepted by SMS network
-  SMS_SENT_FAILED: 'SMS_SENT_FAILED', // Rejected at send time
+  SMS_SENT_FAILED: 'SMS_DELIVERY_FAILED', // Rejected at send time
 
   // ── SMS delivery (DLR callbacks from SPARC) ──────────────────
   SMS_DELIVERED: 'SMS_DELIVERED', // Handset confirmed receipt
