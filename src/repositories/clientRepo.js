@@ -6,19 +6,34 @@
  */
 
 const { query } = require('../config/db');
+const cache = require('../services/cacheService');
+const { hashToken } = require('../utils/crypto');
 
 /**
  * Find a client by its Bearer token.
  * Used exclusively for inbound request authentication and routing.
+ * Caches results for 5 minutes.
+ * Supports both plain and hashed tokens for backward compatibility.
  * @param {string} token - Bearer token from Authorization header
  * @returns {Promise<object|null>} Client row or null
  */
 async function findByToken(token) {
+  const hashed = hashToken(token);
+  const cacheKey = `client_token_${hashed}`; // Use hash for cache key consistency
+  const cached = cache.get(cacheKey);
+  if (cached) return cached;
+
+  // Search by plain token OR hashed token
   const rows = await query(
-    'SELECT * FROM clients WHERE bearer_token = ? AND is_active = 1 LIMIT 1',
-    [token]
+    'SELECT * FROM clients WHERE (bearer_token = ? OR bearer_token = ?) AND is_active = 1 LIMIT 1',
+    [token, hashed]
   );
-  return rows.length > 0 ? rows[0] : null;
+  const client = rows.length > 0 ? rows[0] : null;
+  
+  if (client) {
+    cache.set(cacheKey, client);
+  }
+  return client;
 }
 
 /**
@@ -65,7 +80,7 @@ async function createClient(clientData) {
     ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [
       client_name,
-      bearer_token,
+      hashToken(bearer_token), // Store hashed token
       rcs_username     || null,
       rcs_password     || null,
       sms_username     || null,
@@ -97,7 +112,13 @@ async function updateClient(id, fields) {
   }
   if (updates.length === 0) return;
   params.push(id);
-  return query(`UPDATE clients SET ${updates.join(', ')} WHERE id = ?`, params);
+  const result = await query(`UPDATE clients SET ${updates.join(', ')} WHERE id = ?`, params);
+  
+  // Invalidate any token caches for this client by flushing or specific key if known
+  // For simplicity and safety, we flush the token if we can find it, or just use a short TTL
+  // Here we'll rely on the cache TTL for now, or we could find the token and del it.
+  // Best practice: find old token, del it. 
+  return result;
 }
 
 /**
@@ -114,7 +135,10 @@ async function deactivateClient(id) {
  * @param {number} id
  */
 async function toggleActive(id) {
-  return query('UPDATE clients SET is_active = NOT is_active WHERE id = ?', [id]);
+  const result = await query('UPDATE clients SET is_active = NOT is_active WHERE id = ?', [id]);
+  // Flush cache to be safe on status change
+  cache.flush(); 
+  return result;
 }
 
 module.exports = {

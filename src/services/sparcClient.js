@@ -6,9 +6,28 @@
  */
 
 const axios = require('axios');
+const axiosRetry = require('axios-retry').default;
 const { env } = require('../config/env');
 const { SPARC_REQUEST_TIMEOUT_MS } = require('../config/constants');
 const logger = require('../config/logger');
+
+// Global Axios configuration for retries
+axiosRetry(axios, {
+  retries: 3,
+  retryDelay: axiosRetry.exponentialDelay,
+  retryCondition: (error) => {
+    // Retry on network errors and 5xx status codes
+    return axiosRetry.isNetworkOrIdempotentRequestError(error) || 
+           (error.response && error.response.status >= 500);
+  },
+  onRetry: (retryCount, error, requestConfig) => {
+    logger.warn('Retrying SPARC API call', {
+      retryCount,
+      url: requestConfig.url,
+      error: error.message
+    });
+  }
+});
 
 /**
  * Create an Axios instance pre-configured with SPARC auth headers for a client.
@@ -136,6 +155,65 @@ async function sendSMS(clientData, smsData, destination) {
 }
 
 /**
+ * Send an SMS message containing tracked links via SPARC.
+ * POST https://pgapi.sparc.smartping.io/fe/api/v1/sendLink?username=...&trackLinkId=...
+ * 
+ * @param {object} clientData - Client row from DB
+ * @param {object} smsData    - sms{} block from MoEngage payload
+ * @param {string} destination - Phone number
+ * @param {string} trackLinkIds - Comma separated trackLinkIds
+ * @returns {Promise<object>}
+ */
+async function sendLinkSMS(clientData, smsData, destination, trackLinkIds) {
+  const smsBaseUrl = env.SPARC_SMS_API_BASE_URL;
+  const username   = clientData.sms_username || env.SPARC_SMS_USERNAME;
+  const password   = clientData.sms_password || env.SPARC_SMS_PASSWORD;
+  const toNumber   = destination.replace(/^\+/, '');
+
+  const params = {
+    username,
+    password,
+    unicode: true,
+    from: smsData.sender,
+    text: smsData.message, // This should already be processed with placeholders
+    to: toNumber,
+    trackLinkId: trackLinkIds
+  };
+
+  if (smsData.template_id) {
+    params.dltContentId = smsData.template_id;
+  }
+
+  logger.info('Calling SPARC SMS sendLink API', {
+    clientId: clientData.id,
+    to: toNumber,
+    trackLinkIds,
+  });
+
+  try {
+    const response = await axios.post(
+      `${smsBaseUrl}/api/v1/sendLink`,
+      null,
+      {
+        params,
+        timeout: SPARC_REQUEST_TIMEOUT_MS,
+        headers: { accept: 'application/json' },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    logger.error('SPARC SMS sendLink failed', {
+      clientId: clientData.id,
+      to: toNumber,
+      error: error.message,
+      data: error.response?.data,
+    });
+    throw error;
+  }
+}
+
+/**
  * Fetch assistants from SPARC.
  * GET {SPARC_API_BASE_URL}/rcs/fetchassistants
  *
@@ -157,4 +235,4 @@ async function fetchAssistants(clientData) {
   }
 }
 
-module.exports = { sendRCS, sendSMS, fetchAssistants, createClient };
+module.exports = { sendRCS, sendSMS, sendLinkSMS, fetchAssistants, createClient };

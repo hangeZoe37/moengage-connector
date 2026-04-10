@@ -7,7 +7,7 @@
  * Returns DB status, memory usage, uptime, and event loop responsiveness.
  */
 
-const { Router }    = require('express');
+const { Router } = require('express');
 const { healthCheck } = require('../config/db');
 
 const router = Router();
@@ -20,19 +20,19 @@ router.get('/health', async (req, res) => {
   const memMB = process.memoryUsage();
 
   const status = {
-    status:    dbHealthy ? 'ok' : 'degraded',
-    uptime:    Math.floor(process.uptime()),
+    status: dbHealthy ? 'ok' : 'degraded',
+    uptime: Math.floor(process.uptime()),
     timestamp: new Date().toISOString(),
-    pid:       process.pid,
+    pid: process.pid,
     database: {
-      connected:  dbHealthy,
+      connected: dbHealthy,
       latency_ms: Math.round(dbLatencyMs),
     },
     memory: {
-      rss_mb:        Math.round(memMB.rss          / 1024 / 1024),
-      heap_used_mb:  Math.round(memMB.heapUsed     / 1024 / 1024),
-      heap_total_mb: Math.round(memMB.heapTotal    / 1024 / 1024),
-      external_mb:   Math.round(memMB.external     / 1024 / 1024),
+      rss_mb: Math.round(memMB.rss / 1024 / 1024),
+      heap_used_mb: Math.round(memMB.heapUsed / 1024 / 1024),
+      heap_total_mb: Math.round(memMB.heapTotal / 1024 / 1024),
+      external_mb: Math.round(memMB.external / 1024 / 1024),
     },
     node_version: process.version,
   };
@@ -47,7 +47,7 @@ router.get('/health', async (req, res) => {
  */
 router.post('/test/moengage-dlr', (req, res) => {
   const logger = require('../config/logger');
-  
+
   // Make it extremely visible in the terminal
   console.log('\n' + '='.repeat(80));
   console.log('MOENGAGE RECEIVED DLR CALLBACK');

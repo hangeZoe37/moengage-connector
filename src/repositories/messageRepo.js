@@ -28,8 +28,8 @@ async function create(params) {
   const result = await query(
     `INSERT INTO message_logs
       (callback_data, client_id, destination, bot_id, template_name,
-       message_type, fallback_order, sparc_message_id, status, raw_payload)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'QUEUED', ?)`,
+       message_type, fallback_order, sparc_message_id, status, raw_payload, has_url)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'QUEUED', ?, ?)`,
     [
       callback_data,
       client_id,
@@ -40,6 +40,7 @@ async function create(params) {
       JSON.stringify(fallback_order || ['rcs']),
       sparc_message_id || null,
       JSON.stringify(raw_payload   || {}),
+      params.has_url || 0,
     ]
   );
   return result;

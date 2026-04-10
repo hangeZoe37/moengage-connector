@@ -21,6 +21,8 @@ const { mapMessageToSparc } = require('../mappers/inboundMapper');
 // For immediate confirmations (sent/failed) we build the MoEngage payload directly.
 const { FAILED_STATUSES } = require('../mappers/dlrMapper');
 const messageRepo = require('../repositories/messageRepo');
+const trackLinkRepo = require('../repositories/trackLinkRepo');
+const { processMessageLinks } = require('../utils/urlProcessor');
 const { CHANNELS, MESSAGE_STATUSES } = require('../config/constants');
 const { env } = require('../config/env');
 const logger = require('../config/logger');
@@ -36,10 +38,10 @@ async function processMessage(message, client) {
   const destination = message.destination;
   const rcs = message.rcs;
   const sms = message.sms;
-  
+
   const rawOrder = message.fallback_order || [CHANNELS.RCS];
   const fallbackOrder = rawOrder.map(channel => String(channel).toLowerCase());
-  
+
   // Temp override: always use .env MOENGAGE_DLR_URL for mock testing
   // so we skip the webhook.site URL configured in the local database.
   const dlrUrl = env.MOENGAGE_DLR_URL; // env.MOENGAGE_DLR_URL;
@@ -90,7 +92,7 @@ async function processMessage(message, client) {
 
       // Fire RCS_SENT callback to MoEngage after 5 seconds
       const sentPayload = buildMoeStatusPayload(MESSAGE_STATUSES.RCS_SENT, callback_data);
-      
+
       setTimeout(async () => {
         try {
           await callbackDispatcher.dispatchStatus(dlrUrl, sentPayload, callback_data);
@@ -170,12 +172,26 @@ async function attemptSms(message, client, dlrUrl, assistantId = null) {
   }
 
   try {
-    const smsResponse = await sparcClient.sendSMS(
-      client,
-      sms,
-      destination,
-      resolvedAssistantId
-    );
+    // --- URL Tracking Upgradation ---
+    const mappings = await trackLinkRepo.getMappingsByClient(client.id);
+    const { modifiedText, trackLinkIds, hasUrl } = processMessageLinks(sms.message || sms.text, mappings);
+
+    let smsResponse;
+    if (hasUrl) {
+      smsResponse = await sparcClient.sendLinkSMS(
+        client,
+        { ...sms, message: modifiedText },
+        destination,
+        trackLinkIds
+      );
+    } else {
+      smsResponse = await sparcClient.sendSMS(
+        client,
+        sms,
+        destination,
+        resolvedAssistantId
+      );
+    }
 
     logger.info('SMS fallback sent successfully', {
       callbackData: callback_data,
@@ -197,7 +213,7 @@ async function attemptSms(message, client, dlrUrl, assistantId = null) {
     }
 
     const smsPayload = buildMoeStatusPayload(MESSAGE_STATUSES.SMS_SENT, callback_data);
-    
+
     setTimeout(async () => {
       try {
         await callbackDispatcher.dispatchStatus(dlrUrl, smsPayload, callback_data);

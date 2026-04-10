@@ -7,12 +7,38 @@
 
 const winston = require('winston');
 
+// --- PII Redaction Format ---
+const redactPii = winston.format((info) => {
+  const redact = (obj) => {
+    if (typeof obj !== 'object' || obj === null) return obj;
+    
+    // Create a new object to avoid mutating the original
+    const newObj = Array.isArray(obj) ? [...obj] : { ...obj };
+    
+    for (const key in newObj) {
+      if (typeof newObj[key] === 'object') {
+        newObj[key] = redact(newObj[key]);
+      } else if (typeof newObj[key] === 'string') {
+        // Redact values for specific sensitive keys
+        const sensitiveKeys = ['destination', 'to', 'phone', 'mobile', 'toNumber'];
+        if (sensitiveKeys.includes(key)) {
+          newObj[key] = newObj[key].replace(/(\d{2})(\d+)(\d{2})/, '$1******$3');
+        }
+      }
+    }
+    return newObj;
+  };
+
+  return redact(info);
+});
+
 const logLevel = process.env.LOG_LEVEL || 'info';
 
 const logger = winston.createLogger({
   level: logLevel,
   format: winston.format.combine(
-    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
+    redactPii(), // Apply redaction before serialization
+    winston.format.timestamp({ format: 'YYYY-DD-MM HH:mm:ss.SSS' }),
     winston.format.errors({ stack: true }),
     winston.format.json()
   ),

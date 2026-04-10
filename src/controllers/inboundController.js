@@ -8,29 +8,53 @@
 
 const fallbackEngine  = require('../services/fallbackEngine');
 const messageRepo     = require('../repositories/messageRepo');
+const trackLinkRepo   = require('../repositories/trackLinkRepo');
+const { processMessageLinks } = require('../utils/urlProcessor');
 const { notifyUpdate } = require('../services/dashboardService');
 const logger          = require('../config/logger');
 
+// Parallel processing concurrency limit
+let pLimit = require('p-limit');
+if (pLimit && pLimit.default) {
+  pLimit = pLimit.default;
+}
+const limit = pLimit(5); // Process 5 messages at a time
+
 /**
  * Process all messages from an inbound MoEngage request.
- * Called AFTER res.json() has been sent (via setImmediate).
+ * Optimized with caching, single-lookup mappings, and parallel processing.
  *
  * @param {Array<object>} messages - Array of message items from MoEngage payload
  * @param {object} client  - Client row from DB
  */
 async function processMessages(messages, client) {
-  for (const message of messages) {
+  // 1. Pre-fetch mappings once per batch (optimization)
+  let mappings = [];
+  try {
+    mappings = await trackLinkRepo.getMappingsByClient(client.id);
+  } catch (err) {
+    logger.error('Failed to pre-fetch URL mappings', { clientId: client.id, error: err.message });
+  }
+
+  // 2. Define the processing task for a single message
+  const processTask = async (message) => {
     try {
-      // Safe-read message_type: MoEngage can send it as message.content.type
-      // OR nested under message.rcs.message_content.type
+      // Safe-read message_type
       const messageType =
         message.rcs?.message_content?.type ||
         message.content?.type             ||
         'UNKNOWN';
 
-      // Safe-read bot_id — may come from rcs.bot_id
       const botId = message.rcs?.bot_id || null;
 
+      // --- URL Tracking Optimization ---
+      let hasUrlFlag = 0;
+      if (message.sms?.text) {
+        const { hasUrl } = processMessageLinks(message.sms.text, mappings);
+        hasUrlFlag = hasUrl ? 1 : 0;
+      }
+
+      // Create log entry in DB
       await messageRepo.create({
         callback_data:   message.callback_data,
         client_id:       client.id,
@@ -40,17 +64,17 @@ async function processMessages(messages, client) {
         message_type:    messageType,
         fallback_order:  message.fallback_order || ['rcs'],
         raw_payload:     message,
+        has_url:         hasUrlFlag,
       });
 
       // Process through fallback engine (RCS → SMS)
       await fallbackEngine.processMessage(message, client);
 
-      // Notify dashboard of new message
+      // Notify dashboard
       notifyUpdate('message', {
         callback_data: message.callback_data,
         destination:   message.destination,
-        // Use same safe read as above — avoids TypeError if content is undefined
-        message_type:  message.content?.type || message.rcs?.message_content?.type || 'UNKNOWN',
+        message_type:  messageType,
         status:        'QUEUED',
         client_name:   client.name || client.client_name,
         created_at:    new Date().toISOString(),
@@ -60,10 +84,12 @@ async function processMessages(messages, client) {
         callbackData: message.callback_data,
         client_id:    client.id,
         error:        error.message,
-        stack:        error.stack,
       });
     }
-  }
+  };
+
+  // 3. Execute tasks in parallel with concurrency limit
+  await Promise.all(messages.map(msg => limit(() => processTask(msg))));
 }
 
 module.exports = { processMessages };
