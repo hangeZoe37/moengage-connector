@@ -5,3 +5,6 @@ export { default as ClientsPage } from './ClientsPage';
 export { default as DlrEventsPage } from './DlrEventsPage';
 export { default as SettingsPage } from './SettingsPage';
 export { default as LoginPage } from './LoginPage';
+export { default as ConnectorSelectionPage } from './ConnectorSelectionPage';
+export { default as ChannelSelectionPage } from './ChannelSelectionPage';
+export { default as WabaDashboardPage } from './WabaDashboardPage';

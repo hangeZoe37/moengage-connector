@@ -8,6 +8,9 @@ import {
   DlrEventsPage,
   SettingsPage,
   LoginPage,
+  ConnectorSelectionPage,
+  ChannelSelectionPage,
+  WabaDashboardPage,
 } from './pages';
 import { getToken } from './api';
 import { Navigate } from 'react-router-dom';
@@ -20,6 +23,9 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/connectors" element={<PrivateRoute><ConnectorSelectionPage /></PrivateRoute>} />
+      <Route path="/channels" element={<PrivateRoute><ChannelSelectionPage /></PrivateRoute>} />
+      <Route path="/waba" element={<PrivateRoute><WabaDashboardPage /></PrivateRoute>} />
       <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route path="/" element={<OverviewPage />} />
         <Route path="/messages" element={<MessagesPage />} />

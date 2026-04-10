@@ -18,7 +18,7 @@ export default function LoginPage() {
       const response = await api.login({ username, password });
       if (response.token) {
         setToken(response.token);
-        navigate('/');
+        navigate('/connectors');
       } else {
         setError('Login failed: Token not received.');
       }
@@ -37,11 +37,11 @@ export default function LoginPage() {
           <div style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             width: '64px', height: '64px', borderRadius: '16px', background: 'var(--accent-violet)',
-            color: 'white', marginBottom: '16px', fontWeight: 'bold', fontSize: '24px'
+            color: 'white', marginBottom: '16px', fontWeight: 'bold', fontSize: '32px'
           }}>
-            M
+            ⚡
           </div>
-          <h1 style={{ fontSize: '1.8rem', color: 'var(--text-primary)', fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em', margin: 0 }}>MoEngage SPARC</h1>
+          <h1 style={{ fontSize: '1.8rem', color: 'var(--text-primary)', fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em', margin: 0 }}>Universal Connector Hub</h1>
           <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>Log in to Admin Dashboard</p>
         </div>
 
@@ -101,7 +101,7 @@ export default function LoginPage() {
         </div>
         
         <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '32px' }}>
-          MoEngage RCS Connector System
+          SPARC Omnichannel Connector System
         </p>
       </div>
     </div>
