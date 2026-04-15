@@ -2,13 +2,25 @@
 
 /**
  * src/repositories/dispatchRepo.js
- * SQL operations for callback_dispatch_log table.
+ * SQL operations for connector-specific callback_dispatch_log table.
  */
 
 const { query } = require('../config/db');
 
 /**
- * Log a callback dispatch attempt.
+ * Resolve the connector-specific table name based on payload type.
+ * @param {string} payloadType
+ * @returns {string}
+ */
+function dispatchTable(payloadType) {
+  if (typeof payloadType === 'string' && payloadType.includes('CLEVERTAP')) {
+    return 'clevertap_callback_dispatch_log';
+  }
+  return 'moengage_callback_dispatch_log';
+}
+
+/**
+ * Insert a callback dispatch log entry directly into the connector table ONLY.
  * @param {object} params
  * @returns {Promise<object>}
  */
@@ -22,14 +34,16 @@ async function create(params) {
     error_message,
   } = params;
 
+  const specificTable = dispatchTable(payload_type);
+
   return query(
-    `INSERT INTO callback_dispatch_log
-      (callback_data, payload_type, attempt_number, http_status, success, error_message)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO ${specificTable}
+      (callback_data, payload_type, attempt_number, http_status, success, error_message, dispatched_at)
+     VALUES (?, ?, ?, ?, ?, ?, NOW())`,
     [
       callback_data,
-      payload_type,
-      attempt_number,
+      payload_type || 'STATUS',
+      attempt_number || 1,
       http_status || null,
       success ? 1 : 0,
       error_message || null,
@@ -37,16 +51,4 @@ async function create(params) {
   );
 }
 
-/**
- * Find dispatch logs by callback_data.
- * @param {string} callbackData
- * @returns {Promise<Array>}
- */
-async function findByCallbackData(callbackData) {
-  return query(
-    'SELECT * FROM callback_dispatch_log WHERE callback_data = ? ORDER BY dispatched_at ASC',
-    [callbackData]
-  );
-}
-
-module.exports = { create, findByCallbackData };
+module.exports = { create };

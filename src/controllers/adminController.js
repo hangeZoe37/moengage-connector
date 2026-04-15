@@ -18,8 +18,9 @@ async function getOverviewStats(req, res) {
   try {
     const dateFrom = req.query.dateFrom || req.query.date || null;
     const dateTo = req.query.dateTo || null;
-    const stats = await adminRepo.getTodayStats(dateFrom, dateTo);
-    let clients = await adminRepo.getClientStatsToday(dateFrom, dateTo);
+    const connector = req.query.connector || null;
+    const stats = await adminRepo.getTodayStats(dateFrom, dateTo, connector);
+    let clients = await adminRepo.getClientStatsToday(dateFrom, dateTo, connector);
     // Calculate fallback_rate
     clients = clients.map(c => {
       const fallback_rate = c.total > 0 ? (c.sms_fallback / c.total) * 100 : 0;
@@ -123,6 +124,7 @@ async function getMessages(req, res) {
       channel:  req.query.channel,
       dateFrom: req.query.dateFrom,
       dateTo:   req.query.dateTo,
+      connector: req.query.connector,
     };
 
     const data = await adminRepo.getMessages(filters, limit, offset);
@@ -159,6 +161,7 @@ async function getDlrTracker(req, res) {
       state:    req.query.state || 'all',
       dateFrom: req.query.dateFrom,
       dateTo:   req.query.dateTo,
+      connector: req.query.connector,
     };
 
     const data = await adminRepo.getDlrTracker(filters, limit, offset);

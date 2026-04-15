@@ -39,7 +39,7 @@ const MESSAGE_STATUSES = Object.freeze({
   SMS_DELIVERY_FAILED: 'SMS_DELIVERY_FAILED', // Handset unreachable / expired
 
   // ── Terminal state ───────────────────────────────────────────
-  DONE: 'DONE',                   // Final callback sent back to MoEngage successfully
+  DONE: 'DONE',                   // Final callback sent back successfully
 });
 
 /** Callback dispatch payload types */
@@ -61,10 +61,10 @@ const RETRY_CONFIG = Object.freeze({
 });
 
 /** HTTP timeout for SPARC API calls (ms) */
-const SPARC_REQUEST_TIMEOUT_MS = 4000; // must be < 5s MoEngage timeout
+const SPARC_REQUEST_TIMEOUT_MS = 10000; // must be < 5s MoEngage timeout (actually CleverTap/MoEngage can often wait longer, 10s is safer for RCS)
 
-/** HTTP timeout for MoEngage callback (ms) */
-const MOE_CALLBACK_TIMEOUT_MS = 15000;
+/** Timeout for HTTP callbacks to MoEngage/CleverTap webhooks */
+const CONNECTOR_CALLBACK_TIMEOUT_MS = 15000;
 
 module.exports = {
   MESSAGE_TYPES,
@@ -73,5 +73,5 @@ module.exports = {
   CHANNELS,
   RETRY_CONFIG,
   SPARC_REQUEST_TIMEOUT_MS,
-  MOE_CALLBACK_TIMEOUT_MS,
+  CONNECTOR_CALLBACK_TIMEOUT_MS,
 };

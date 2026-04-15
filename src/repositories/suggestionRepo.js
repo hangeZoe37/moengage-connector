@@ -2,17 +2,30 @@
 
 /**
  * src/repositories/suggestionRepo.js
- * SQL operations for suggestion_events table.
+ * SQL operations for connector-specific suggestion_events tables.
  */
 
 const { query } = require('../config/db');
+const logger = require('../config/logger');
 
 /**
- * Insert a suggestion click event.
+ * Resolve the connector-specific suggestion event table name.
+ * @param {string} connectorType
+ * @returns {string}
+ */
+function suggestionTable(connectorType) {
+  return connectorType === 'CLEVERTAP'
+    ? 'clevertap_suggestion_events'
+    : 'moengage_suggestion_events';
+}
+
+/**
+ * Insert a suggestion click event directly into the connector-specific table ONLY.
  * @param {object} params
+ * @param {string} [connectorType='MOENGAGE']
  * @returns {Promise<object>}
  */
-async function create(params) {
+async function create(params, connectorType = 'MOENGAGE') {
   const {
     callback_data,
     suggestion_text,
@@ -20,24 +33,25 @@ async function create(params) {
     event_timestamp,
   } = params;
 
+  const specificTable = suggestionTable(connectorType);
+
   return query(
-    `INSERT INTO suggestion_events 
-      (callback_data, suggestion_text, postback_data, event_timestamp)
-     VALUES (?, ?, ?, ?)`,
+    `INSERT INTO ${specificTable}
+      (callback_data, suggestion_text, postback_data, event_timestamp, callback_dispatched, created_at)
+     VALUES (?, ?, ?, ?, 0, NOW())`,
     [callback_data, suggestion_text || null, postback_data || null, event_timestamp || null]
   );
 }
 
 /**
- * Mark a suggestion event as dispatched.
+ * Mark a suggestion event as dispatched in the specific connector table.
  * @param {number} eventId
+ * @param {string} [connectorType='MOENGAGE']
  * @returns {Promise<object>}
  */
-async function markDispatched(eventId) {
-  return query(
-    'UPDATE suggestion_events SET callback_dispatched = 1 WHERE id = ?',
-    [eventId]
-  );
+async function markDispatched(eventId, connectorType = 'MOENGAGE') {
+  const specificTable = suggestionTable(connectorType);
+  return query(`UPDATE ${specificTable} SET callback_dispatched = 1 WHERE id = ?`, [eventId]);
 }
 
 module.exports = { create, markDispatched };

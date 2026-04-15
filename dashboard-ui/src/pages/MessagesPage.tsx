@@ -252,21 +252,26 @@ export default function MessagesPage() {
               {loadingDetail ? (
                 <div style={{ textAlign: 'center', marginTop: 40, color: 'var(--text-muted)' }}>Loading...</div>
               ) : msgDetail ? (
-                <div className="timeline">
-                  {/* Fake a timeline for the entire lifecycle as requested */}
-                  <div className="timeline-item">
-                    <span className="timeline-dot slate" />
-                    <div className="timeline-content">
-                      <div style={{ fontWeight: 600 }}>MoEngage Request Received</div>
-                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{formatTimestamp(msgDetail.message.created_at)}</p>
-                    </div>
-                  </div>
+                (() => {
+                  const connector = localStorage.getItem('currentConnector') || 'MOENGAGE';
+                  const connectorName = connector === 'MOENGAGE' ? 'MoEngage' : 'CleverTap';
+
+                  return (
+                    <div className="timeline">
+                      {/* Fake a timeline for the entire lifecycle as requested */}
+                      <div className="timeline-item">
+                        <span className="timeline-dot slate" />
+                        <div className="timeline-content">
+                          <div style={{ fontWeight: 600 }}>{connectorName} Request Received</div>
+                          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{formatTimestamp(msgDetail.message.created_at)}</p>
+                        </div>
+                      </div>
                   
                   <div className="timeline-item">
                     <span className="timeline-dot blue" />
                     <div className="timeline-content">
                       <div style={{ fontWeight: 600 }}>Queued & Accepted</div>
-                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>(200 OK returned to MoEngage)</p>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>(200 OK returned to {connectorName})</p>
                     </div>
                   </div>
 
@@ -298,7 +303,7 @@ export default function MessagesPage() {
                           
                           <div style={{ marginTop: 12, padding: '12px', background: 'var(--bg-elevated)', borderRadius: 6, border: '1px solid var(--border-subtle)' }}>
                             <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 4 }}>
-                              Forwarded to MoEngage: {ev.callback_dispatched ? '✓ Yes' : '✕ No'}
+                              Forwarded to {connectorName}: {ev.callback_dispatched ? '✓ Yes' : '✕ No'}
                             </div>
                             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                               Mapped Status: {ev.moe_status}
@@ -325,7 +330,9 @@ export default function MessagesPage() {
                   </div>
                   
                 </div>
-              ) : (
+              );
+            })()
+          ) : (
                 <div style={{ color: 'var(--danger)' }}>Failed to load message details.</div>
               )}
             </div>

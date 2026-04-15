@@ -2,17 +2,29 @@
 
 /**
  * src/repositories/dlrRepo.js
- * SQL operations for dlr_events table.
+ * SQL operations for connector-specific dlr_events table.
  */
 
 const { query } = require('../config/db');
 
 /**
- * Insert a DLR event record.
+ * Resolve the connector-specific table name for DLR events.
+ * @param {string} connectorType
+ * @returns {string}
+ */
+function dlrTable(connectorType) {
+  return connectorType === 'CLEVERTAP'
+    ? 'clevertap_dlr_events'
+    : 'moengage_dlr_events';
+}
+
+/**
+ * Insert a DLR raw event into the specific connector table ONLY.
  * @param {object} params
+ * @param {string} [connectorType='MOENGAGE']
  * @returns {Promise<object>}
  */
-async function create(params) {
+async function create(params, connectorType = 'MOENGAGE') {
   const {
     callback_data,
     sparc_status,
@@ -21,87 +33,52 @@ async function create(params) {
     event_timestamp,
   } = params;
 
+  const specificTable = dlrTable(connectorType);
+
   return query(
-    `INSERT INTO dlr_events
-      (callback_data, sparc_status, moe_status, error_message, event_timestamp)
-     VALUES (?, ?, ?, ?, ?)`,
-    [callback_data, sparc_status, moe_status, error_message || null, event_timestamp || null]
+    `INSERT INTO ${specificTable}
+      (callback_data, sparc_status, moe_status, error_message, event_timestamp, callback_dispatched, created_at)
+     VALUES (?, ?, ?, ?, ?, 0, NOW())`,
+    [
+      callback_data,
+      sparc_status  || null,
+      moe_status    || null,
+      error_message || null,
+      event_timestamp || null,
+    ]
   );
 }
 
 /**
- * Mark a DLR event as dispatched (callback sent to MoEngage successfully).
- * @param {number} dlrEventId
+ * Mark a DLR event as dispatched for MoEngage callback.
+ * Needs to map exactly to the connector.
+ * @param {number} eventId The internal numeric DB ID of the DLR
+ * @param {string} [connectorType='MOENGAGE']
  * @returns {Promise<object>}
  */
-async function markDispatched(dlrEventId) {
-  return query(
-    'UPDATE dlr_events SET callback_dispatched = 1 WHERE id = ?',
-    [dlrEventId]
-  );
+async function markDispatched(eventId, connectorType = 'MOENGAGE') {
+  const specificTable = dlrTable(connectorType);
+
+  return query(`UPDATE ${specificTable} SET callback_dispatched = 1 WHERE id = ?`, [eventId]);
 }
 
 /**
- * Find DLR events by callback_data.
+ * Check if a recent generic DLR has arrived for a callback_data.
+ * Reads from the view.
  * @param {string} callbackData
- * @returns {Promise<Array>}
+ * @param {number} withinMinutes
+ * @returns {Promise<boolean>}
  */
-async function findByCallbackData(callbackData) {
-  return query(
-    'SELECT * FROM dlr_events WHERE callback_data = ? ORDER BY created_at ASC',
-    [callbackData]
+async function hasRecentGenericDlr(callbackData, withinMinutes = 10) {
+  const [rows] = await query(
+    `SELECT COUNT(*) as count 
+     FROM dlr_events 
+     WHERE callback_data = ? 
+       AND (sparc_status IN ('SENT', 'DELIVERED') OR moe_status IN ('RCS_SENT', 'RCS_DELIVERED', 'SMS_SENT', 'SMS_DELIVERED'))
+       AND created_at >= NOW() - INTERVAL ? MINUTE`,
+    [callbackData, withinMinutes]
   );
+  return rows?.count > 0;
 }
 
-/**
- * Get recent DLR events across all messages, paginated.
- * Uses fully parameterized LIMIT/OFFSET — no string interpolation.
- * @param {number} limit
- * @param {number} offset
- * @param {number|null} clientId
- * @returns {Promise<Array>}
- */
-async function getRecent(limit = 50, offset = 0, clientId = null) {
-  const safeLimit  = Math.min(Math.max(parseInt(limit,  10) || 50,  1), 200);
-  const safeOffset = Math.max(parseInt(offset, 10) || 0, 0);
-
-  let sql    = `
-    SELECT d.*, m.destination, m.message_type, c.client_name
-    FROM dlr_events d
-    LEFT JOIN message_logs m ON d.callback_data = m.callback_data
-    LEFT JOIN clients c ON m.client_id = c.id
-  `;
-  const params = [];
-
-  if (clientId) {
-    sql += ' WHERE m.client_id = ?';
-    params.push(clientId);
-  }
-
-  sql += ' ORDER BY d.created_at DESC LIMIT ? OFFSET ?';
-  params.push(safeLimit, safeOffset);
-
-  return query(sql, params);
-}
-
-/**
- * Count total DLR events.
- * @param {number|null} clientId
- * @returns {Promise<number>}
- */
-async function countEvents(clientId = null) {
-  let sql = `
-    SELECT COUNT(d.id) as total
-    FROM dlr_events d
-    LEFT JOIN message_logs m ON d.callback_data = m.callback_data
-  `;
-  const params = [];
-  if (clientId) {
-    sql += ' WHERE m.client_id = ?';
-    params.push(clientId);
-  }
-  const rows = await query(sql, params);
-  return rows[0]?.total || 0;
-}
-
-module.exports = { create, markDispatched, findByCallbackData, getRecent, countEvents };
+module.exports = { create, markDispatched, hasRecentGenericDlr };

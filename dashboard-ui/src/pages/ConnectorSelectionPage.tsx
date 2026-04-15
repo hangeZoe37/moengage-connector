@@ -1,7 +1,14 @@
 import { useNavigate } from 'react-router-dom';
+import MoEngageLogo from '../assets/moengage.png';
+import CleverTapLogo from '../assets/clevertap.png';
 
 export default function ConnectorSelectionPage() {
   const navigate = useNavigate();
+
+  const selectConnector = (id: string) => {
+    localStorage.setItem('currentConnector', id);
+    navigate('/channels');
+  };
 
   return (
     <div className="app-layout" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -13,33 +20,25 @@ export default function ConnectorSelectionPage() {
           <div 
             className="card" 
             style={{ cursor: 'pointer', padding: '40px 24px', transition: 'all 0.2s ease', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}
-            onClick={() => navigate('/channels')}
+            onClick={() => selectConnector('MOENGAGE')}
             onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
             onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
           >
-            <div style={{ 
-              width: '64px', height: '64px', borderRadius: '16px', 
-              background: 'var(--accent-violet)', display: 'flex', 
-              alignItems: 'center', justifyContent: 'center', 
-              fontSize: '28px', fontWeight: 'bold', color: 'white' 
-            }}>
-              M
+            <div style={{ width: '64px', height: '64px', borderRadius: '16px', overflow: 'hidden' }}>
+              <img src={MoEngageLogo} alt="MoEngage" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
             <h2 style={{ margin: 0, fontSize: '1.4rem' }}>MoEngage</h2>
           </div>
           
           <div 
             className="card" 
-            style={{ cursor: 'pointer', padding: '40px 24px', opacity: 0.6, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}
-            onClick={() => alert('CleverTap integration coming soon!')}
+            style={{ cursor: 'pointer', padding: '40px 24px', transition: 'all 0.2s ease', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}
+            onClick={() => selectConnector('CLEVERTAP')}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
           >
-            <div style={{ 
-              width: '64px', height: '64px', borderRadius: '16px', 
-              background: '#ff6200', display: 'flex', 
-              alignItems: 'center', justifyContent: 'center', 
-              fontSize: '28px', fontWeight: 'bold', color: 'white' 
-            }}>
-              C
+            <div style={{ width: '64px', height: '64px', borderRadius: '16px', overflow: 'hidden' }}>
+              <img src={CleverTapLogo} alt="CleverTap" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
             <h2 style={{ margin: 0, fontSize: '1.4rem' }}>CleverTap</h2>
           </div>

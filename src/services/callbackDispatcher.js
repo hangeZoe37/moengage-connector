@@ -8,7 +8,7 @@
 
 const axios = require('axios');
 const logger = require('../config/logger');
-const { RETRY_CONFIG, MOE_CALLBACK_TIMEOUT_MS, PAYLOAD_TYPES } = require('../config/constants');
+const { RETRY_CONFIG, CONNECTOR_CALLBACK_TIMEOUT_MS, PAYLOAD_TYPES } = require('../config/constants');
 const dispatchRepo = require('../repositories/dispatchRepo');
 
 /**
@@ -30,17 +30,26 @@ function sleep(ms) {
  * @returns {Promise<boolean>} true if MoEngage accepted (2xx), false if all retries failed
  */
 async function dispatch(dlrUrl, payload, callbackData, payloadType) {
+  const connectorName = (payloadType && payloadType.includes('CLEVERTAP')) ? 'CleverTap' : 'MoEngage';
+
   for (let attempt = 1; attempt <= RETRY_CONFIG.MAX_ATTEMPTS; attempt++) {
     try {
-      logger.info('Dispatching callback to MoEngage', {
+      logger.info(`Dispatching callback to ${connectorName}`, {
         callbackData,
         payloadType,
         attempt,
         url: dlrUrl,
       });
 
+      // --- CONNECTOR CALLBACK PAYLOAD START ---
+      if (payloadType && payloadType.includes('CLEVERTAP')) {
+        logger.info(`--- [${connectorName.toUpperCase()} CALLBACK PAYLOAD START] ---`);
+        logger.info(JSON.stringify(payload, null, 2));
+        logger.info(`--- [${connectorName.toUpperCase()} CALLBACK PAYLOAD END] ---`);
+      }
+
       const response = await axios.post(dlrUrl, payload, {
-        timeout: MOE_CALLBACK_TIMEOUT_MS,
+        timeout: CONNECTOR_CALLBACK_TIMEOUT_MS,
         headers: { 'Content-Type': 'application/json' },
       });
 
@@ -57,7 +66,7 @@ async function dispatch(dlrUrl, payload, callbackData, payloadType) {
       });
 
       if (success) {
-        logger.info('MoEngage callback dispatched successfully', {
+        logger.info(`${connectorName} callback dispatched successfully`, {
           callbackData,
           payloadType,
           attempt,
@@ -66,7 +75,7 @@ async function dispatch(dlrUrl, payload, callbackData, payloadType) {
         return true;
       }
 
-      logger.warn('MoEngage callback returned non-2xx', {
+      logger.warn(`${connectorName} callback returned non-2xx`, {
         callbackData,
         payloadType,
         attempt,
@@ -75,7 +84,7 @@ async function dispatch(dlrUrl, payload, callbackData, payloadType) {
     } catch (error) {
       const errorMsg = error.message || 'Unknown error';
 
-      logger.warn('MoEngage callback dispatch failed', {
+      logger.warn(`${connectorName} callback dispatch failed`, {
         callbackData,
         payloadType,
         attempt,
@@ -105,7 +114,7 @@ async function dispatch(dlrUrl, payload, callbackData, payloadType) {
     }
   }
 
-  logger.error('All MoEngage callback dispatch attempts failed', {
+  logger.error(`All ${connectorName} callback dispatch attempts failed`, {
     callbackData,
     payloadType,
     totalAttempts: RETRY_CONFIG.MAX_ATTEMPTS,

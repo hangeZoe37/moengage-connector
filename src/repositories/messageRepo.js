@@ -2,13 +2,25 @@
 
 /**
  * src/repositories/messageRepo.js
- * SQL operations for message_logs table.
+ * SQL operations for connector-specific message_logs tables.
  */
 
 const { query } = require('../config/db');
+const logger = require('../config/logger');
 
 /**
- * Insert a new message log entry.
+ * Resolve the connector-specific table name for message logs.
+ * @param {string} connectorType
+ * @returns {string}
+ */
+function msgTable(connectorType) {
+  return connectorType === 'CLEVERTAP'
+    ? 'clevertap_message_logs'
+    : 'moengage_message_logs';
+}
+
+/**
+ * Insert a new message log entry directly into the connector-specific table.
  * @param {object} params
  * @returns {Promise<object>} Insert result
  */
@@ -23,41 +35,80 @@ async function create(params) {
     fallback_order,
     sparc_message_id,
     raw_payload,
+    connector_type = 'MOENGAGE',
+    callback_url = null
   } = params;
 
-  const result = await query(
-    `INSERT INTO message_logs
+  const specificTable = msgTable(connector_type);
+
+  const values = [
+    callback_data,
+    client_id,
+    destination,
+    bot_id,
+    template_name    || null,
+    message_type,
+    JSON.stringify(fallback_order || ['rcs']),
+    sparc_message_id || null,
+    JSON.stringify(raw_payload   || {}),
+    params.has_url || 0,
+    connector_type,
+    callback_url
+  ];
+
+  return query(
+    `INSERT INTO ${specificTable}
       (callback_data, client_id, destination, bot_id, template_name,
-       message_type, fallback_order, sparc_message_id, status, raw_payload, has_url)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'QUEUED', ?, ?)`,
-    [
-      callback_data,
-      client_id,
-      destination,
-      bot_id,
-      template_name    || null,
-      message_type,
-      JSON.stringify(fallback_order || ['rcs']),
-      sparc_message_id || null,
-      JSON.stringify(raw_payload   || {}),
-      params.has_url || 0,
-    ]
+       message_type, fallback_order, sparc_message_id, status, raw_payload,
+       has_url, connector_type, callback_url, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'QUEUED', ?, ?, ?, ?, NOW(), NOW())`,
+    values
   );
-  return result;
 }
 
 /**
  * Update message status.
+ * Updates the view (which updates underlying tables if MySQL supports it, 
+ * but safer to just update the specific table if connector_type is known).
+ * When connector_type is unknown, we have to assume the view handles it or update both.
+ * MySQL views with UNION ALL are NOT updatable. We must update the physical tables.
  * @param {string} callbackData
  * @param {string} status
  * @param {string} [sparcMessageId]
  * @returns {Promise<object>}
  */
 async function updateStatus(callbackData, status, sparcMessageId = null) {
-  const sql = sparcMessageId
-    ? 'UPDATE message_logs SET status = ?, sparc_message_id = ? WHERE callback_data = ?'
-    : 'UPDATE message_logs SET status = ? WHERE callback_data = ?';
+  // Since we don't know the connector here, we must try both physical tables
+  // as the UNION view is not updatable in MySQL.
+  const params = sparcMessageId
+    ? [status, sparcMessageId, callbackData]
+    : [status, callbackData];
 
+  const sqlTemplate = sparcMessageId
+    ? 'SET status = ?, sparc_message_id = ? WHERE callback_data = ?'
+    : 'SET status = ? WHERE callback_data = ?';
+
+  const [res1, res2] = await Promise.all([
+    query(`UPDATE moengage_message_logs ${sqlTemplate}`, params),
+    query(`UPDATE clevertap_message_logs ${sqlTemplate}`, params)
+  ]);
+  
+  return res1.affectedRows > 0 ? res1 : res2;
+}
+
+/**
+ * Update message status when connector_type is known.
+ * @param {string} callbackData
+ * @param {string} status
+ * @param {string} connectorType
+ * @param {string} [sparcMessageId]
+ * @returns {Promise<object>}
+ */
+async function updateStatusInBoth(callbackData, status, connectorType, sparcMessageId = null) {
+  const specificTable = msgTable(connectorType);
+  const sql = sparcMessageId
+    ? `UPDATE ${specificTable} SET status = ?, sparc_message_id = ? WHERE callback_data = ?`
+    : `UPDATE ${specificTable} SET status = ? WHERE callback_data = ?`;
   const params = sparcMessageId
     ? [status, sparcMessageId, callbackData]
     : [status, callbackData];
@@ -66,20 +117,23 @@ async function updateStatus(callbackData, status, sparcMessageId = null) {
 }
 
 /**
- * Store the SPARC SMS transactionId so SMS DLRs can be correlated.
+ * Store the SPARC SMS transactionId.
  * @param {string} callbackData
  * @param {string} transactionId
  * @returns {Promise<object>}
  */
 async function updateSparcTransactionId(callbackData, transactionId) {
-  return query(
-    'UPDATE message_logs SET sparc_transaction_id = ? WHERE callback_data = ?',
-    [String(transactionId), callbackData]
-  );
+  const params = [String(transactionId), callbackData];
+  const [res1, res2] = await Promise.all([
+    query('UPDATE moengage_message_logs SET sparc_transaction_id = ? WHERE callback_data = ?', params),
+    query('UPDATE clevertap_message_logs SET sparc_transaction_id = ? WHERE callback_data = ?', params)
+  ]);
+  return res1.affectedRows > 0 ? res1 : res2;
 }
 
 /**
- * Find a message by the SPARC SMS transactionId (used to correlate SMS DLR webhooks).
+ * Find a message by the SPARC SMS transactionId.
+ * Queries the view.
  * @param {string} transactionId
  * @returns {Promise<object|null>}
  */
@@ -93,6 +147,7 @@ async function findBySparcTransactionId(transactionId) {
 
 /**
  * Find a message by callback_data.
+ * Queries the view.
  * @param {string} callbackData
  * @returns {Promise<object|null>}
  */
@@ -106,6 +161,7 @@ async function findByCallbackData(callbackData) {
 
 /**
  * Find a message by its numeric DB id.
+ * Queries the view.
  * @param {number} id
  * @returns {Promise<object|null>}
  */
@@ -121,6 +177,7 @@ async function findById(id) {
 
 /**
  * Get aggregated statistics grouped by status.
+ * Queries the view.
  * @returns {Promise<object>}
  */
 async function getStats() {
@@ -139,7 +196,7 @@ async function getStats() {
 
 /**
  * Get recent logs for the dashboard table.
- * Uses fully parameterized LIMIT/OFFSET to prevent SQL injection.
+ * Queries the view.
  * @param {number} limit
  * @param {number} offset
  * @param {number|null} clientId
@@ -157,14 +214,14 @@ async function getRecentLogs(limit = 50, offset = 0, clientId = null) {
     params.push(clientId);
   }
 
-  sql += ' ORDER BY m.created_at DESC LIMIT ? OFFSET ?';
-  params.push(safeLimit, safeOffset);
+  sql += ` ORDER BY m.created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`;
 
   return query(sql, params);
 }
 
 /**
  * Get hourly message volume stats for the last 24 hours.
+ * Queries the view.
  * @returns {Promise<Array>}
  */
 async function getTimelineStats() {
@@ -182,6 +239,7 @@ async function getTimelineStats() {
 
 /**
  * Get RCS vs SMS channel breakdown counts.
+ * Queries the view.
  * @returns {Promise<object>}
  */
 async function getChannelStats() {
@@ -204,6 +262,7 @@ async function getChannelStats() {
 
 /**
  * Count total messages (optionally filtered by clientId).
+ * Queries the view.
  * @param {number|null} clientId
  * @returns {Promise<number>}
  */
@@ -221,6 +280,7 @@ async function countMessages(clientId = null) {
 module.exports = {
   create,
   updateStatus,
+  updateStatusInBoth,
   findByCallbackData,
   findById,
   updateSparcTransactionId,

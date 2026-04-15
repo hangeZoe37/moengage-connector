@@ -62,7 +62,7 @@ function buildSparcVariables(parameters) {
   if (!parameters || typeof parameters !== 'object') {
     return [];
   }
-  
+
   // SPARC examples use {{1}}, {{2}} based mapping. 
   // We assume MoEngage passes them in order via Object.values()
   return Object.values(parameters).map((value, index) => ({
@@ -98,7 +98,7 @@ function buildSparcCardVariables(contentData) {
   if (contentData.description) {
     cardVars.push({ name: '{{1}}', value: contentData.description });
   }
-  
+
   // If parameters exist, append them as card_variables
   if (contentData.parameters && typeof contentData.parameters === 'object') {
     const startIdx = contentData.description ? 2 : 1;
@@ -106,9 +106,9 @@ function buildSparcCardVariables(contentData) {
       cardVars.push({ name: `{{${startIdx + idx}}}`, value: String(val) });
     });
   }
-  
+
   variables.card_variables = cardVars;
-  
+
   return variables;
 }
 
@@ -219,7 +219,7 @@ function buildAddressProperties(content) {
   // Defensive check for missing data
   const data = content.data || {};
   const baseProperties = {};
-  
+
   // MoEngage can send suggestions at the content level
   if (content.suggestions) {
     baseProperties.suggestions = mapSuggestions(content.suggestions);
@@ -229,24 +229,24 @@ function buildAddressProperties(content) {
     case MESSAGE_TYPES.TEXT:
       // TEXT type uses array of variables
       const textVars = buildSparcVariables(data.parameters);
-      return { 
+      return {
         ...baseProperties,
         ...(textVars.length > 0 ? { variables: textVars } : {})
       };
-      
+
     case MESSAGE_TYPES.CARD:
       // CARD type uses an object containing array of card_title_variables & card_variables
-      return { 
+      return {
         ...baseProperties,
-        variables: buildSparcCardVariables(data) 
+        variables: buildSparcCardVariables(data)
       };
 
     case MESSAGE_TYPES.MEDIA:
       // SPARC examples DO NOT explicitly show Media JSON payload.
       // Treating MEDIA like CARD with empty title/desc as fallback.
-      return { 
+      return {
         ...baseProperties,
-        variables: buildSparcCardVariables(data) 
+        variables: buildSparcCardVariables(data)
       };
 
     default:
@@ -287,13 +287,13 @@ function mapCustomSuggestions(suggestions) {
 
 function buildNonTemplatedContent(content) {
   const { type, data, suggestions } = content;
-  
+
   // MoEngage docs specify suggestions as an optional array, but sometimes it is an object
   // (e.g., in some Indian user payloads). Safely handle both cases here.
-  const suggestionsArray = Array.isArray(suggestions) 
-    ? suggestions 
+  const suggestionsArray = Array.isArray(suggestions)
+    ? suggestions
     : (suggestions ? [suggestions] : []);
-    
+
   // RCS Standard Limits: 4 suggestions per card, 11 for plain text. Exceeding this causes rejection.
   const limit = type === MESSAGE_TYPES.CARD ? 4 : 11;
   const mappedSuggestions = suggestionsArray.length > 0 ? mapCustomSuggestions(suggestionsArray).slice(0, limit) : [];
@@ -356,7 +356,7 @@ function buildNonTemplatedContent(content) {
     default:
       // If we are passed an already formatted SPARC custom content, just pass it through
       if (content.richCardDetails || content.textMessage || content.plainText) {
-         return content;
+        return content;
       }
       return {};
   }

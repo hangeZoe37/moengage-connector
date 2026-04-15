@@ -114,21 +114,34 @@ router.get('/sms-dlr', async (req, res) => {
       await messageRepo.updateStatus(callback_data, moeStatus);
       logger.info('SPARC SMS DLR: message status updated', { callback_data, moeStatus, transactionId });
 
-      // Build MoEngage payload and dispatch
-      const isFailed = moeStatus === MESSAGE_STATUSES.SMS_DELIVERY_FAILED;
-      const moePayload = {
-        statuses: [{
-          status: moeStatus,
-          callback_data,
-          timestamp: String(timestampSeconds),
-          ...(isFailed && { error_message: 'Mobile number is incorrect' }),
-        }],
-      };
+      // Dispatch callback based on connector type
+      let dispatched = false;
+      if (message.connector_type === 'CLEVERTAP' && message.callback_url) {
+        logger.info('SPARC SMS DLR: Forwarding to CleverTap', { callback_data, url: message.callback_url });
+        const { mapDlrToCleverTap } = require('../mappers/clevertapMapper');
+        const ctPayload = mapDlrToCleverTap(callback_data, moeStatus, description ? { code: "SMS", message: description } : null);
+        if (ctPayload) {
+          dispatched = await callbackDispatcher.dispatch(message.callback_url, ctPayload, callback_data, 'CLEVERTAP_SMS_DLR');
+        } else {
+          dispatched = true;
+        }
+      } else {
+        // Default MoEngage logic
+        const isFailed = moeStatus.includes('FAILED');
+        const moePayload = {
+          statuses: [{
+            status: moeStatus,
+            callback_data,
+            timestamp: String(timestampSeconds),
+            ...(isFailed && { error_message: description || 'Delivery failed' }),
+          }],
+        };
+        const dlrUrl = env.MOENGAGE_DLR_URL;
+        dispatched = await callbackDispatcher.dispatchStatus(dlrUrl, moePayload, callback_data);
+      }
 
-      const dlrUrl = env.MOENGAGE_DLR_URL;
-      const dispatched = await callbackDispatcher.dispatchStatus(dlrUrl, moePayload, callback_data);
       if (dispatched) {
-        logger.info('SPARC SMS DLR: SMS_DELIVERED dispatched to MoEngage', { callback_data, moeStatus });
+        logger.info('SPARC SMS DLR: Callback dispatched successfully', { callback_data, moeStatus, connector: message.connector_type });
       }
 
     } catch (err) {

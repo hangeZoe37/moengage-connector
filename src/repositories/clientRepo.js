@@ -37,6 +37,21 @@ async function findByToken(token) {
 }
 
 /**
+ * Find a client by SPARC RCS credentials (User ID and Password).
+ * Used for CleverTap Basic Auth.
+ * @param {string} username - rcs_username
+ * @param {string} password - rcs_password
+ * @returns {Promise<object|null>}
+ */
+async function findByCredentials(username, password) {
+  const rows = await query(
+    'SELECT * FROM clients WHERE rcs_username = ? AND rcs_password = ? AND is_active = 1 LIMIT 1',
+    [username, password]
+  );
+  return rows.length > 0 ? rows[0] : null;
+}
+
+/**
  * Find a client by ID.
  * @param {number} clientId
  * @returns {Promise<object|null>}
@@ -149,4 +164,5 @@ module.exports = {
   updateClient,
   deactivateClient,
   toggleActive,
+  findByCredentials,
 };

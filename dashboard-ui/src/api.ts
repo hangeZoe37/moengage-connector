@@ -17,7 +17,17 @@ export const onUnauthorized = () => {
 };
 
 async function request<T>(path: string, options?: RequestInit, overrideBase = API_BASE): Promise<T> {
-  const url = `${overrideBase}${path}`;
+  let url = `${overrideBase}${path}`;
+  
+  // Automagically append connector filter for non-auth paths
+  if (overrideBase === API_BASE) {
+    const connector = localStorage.getItem('currentConnector');
+    if (connector) {
+      const sep = url.includes('?') ? '&' : '?';
+      url += `${sep}connector=${connector}`;
+    }
+  }
+
   const token = getToken();
 
   const headers: Record<string, string> = {

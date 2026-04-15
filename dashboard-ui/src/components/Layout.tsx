@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   MessageSquare,
@@ -7,7 +7,9 @@ import {
   Radio,
   Zap,
 } from 'lucide-react';
-import { api, clearToken } from '../api';
+import MoEngageLogo from '../assets/moengage.png';
+import CleverTapLogo from '../assets/clevertap.png';
+import { clearToken } from '../api';
 
 const navItems = [
   { to: '/',           label: 'Overview',    icon: LayoutDashboard, section: '' },
@@ -24,6 +26,12 @@ const pageTitles: Record<string, string> = {
 };
 
 export default function Layout() {
+  const navigate = useNavigate();
+  const connector = localStorage.getItem('currentConnector') || 'MOENGAGE';
+  const isMoEngage = connector === 'MOENGAGE';
+  const connectorLogo = isMoEngage ? MoEngageLogo : CleverTapLogo;
+  const connectorName = isMoEngage ? 'MoEngage' : 'CleverTap';
+
   const location = useLocation();
   const pathKey = location.pathname;
   const title = pageTitles[pathKey] ?? (pathKey.startsWith('/messages/') ? 'Message Detail' : 'Dashboard');
@@ -46,8 +54,10 @@ export default function Layout() {
       <aside className="sidebar">
         <div className="sidebar-brand" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {!isCollapsed && <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 32, height: 32, background: 'var(--accent-violet)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: 'white' }}>M</div>
-            <h1 style={{ fontSize: '1.2rem', fontWeight: 600, margin: 0, color: 'white' }}>MoEngage</h1>
+            <div style={{ width: 32, height: 32, borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src={connectorLogo} alt={connectorName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+            <h1 style={{ fontSize: '1.2rem', fontWeight: 600, margin: 0, color: 'white' }}>{connectorName}</h1>
           </div>}
           <button 
             className="btn btn-icon" 
@@ -72,6 +82,17 @@ export default function Layout() {
               </NavLink>
             </div>
           ))}
+          
+          <div style={{ marginTop: 'auto', paddingTop: '24px' }}>
+            <button 
+              className="nav-item" 
+              style={{ width: '100%', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '12px' }}
+              onClick={() => navigate('/connectors')}
+            >
+              <Zap size={18} />
+              {!isCollapsed && <span>Switch Connector</span>}
+            </button>
+          </div>
         </nav>
       </aside>
 

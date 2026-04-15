@@ -1,24 +1,29 @@
 import { useNavigate } from 'react-router-dom';
 import WhatsAppLogo from '../assets/whatsapp.png';
 import MessagesLogo from '../assets/messages.png';
+import MoEngageLogo from '../assets/moengage.png';
+import CleverTapLogo from '../assets/clevertap.png';
 
 export default function ChannelSelectionPage() {
   const navigate = useNavigate();
+  const connector = localStorage.getItem('currentConnector') || 'MOENGAGE';
+  const isMoEngage = connector === 'MOENGAGE';
+  
+  const connectorLogo = isMoEngage ? MoEngageLogo : CleverTapLogo;
+  const connectorName = isMoEngage ? 'MoEngage' : 'CleverTap';
 
   return (
     <div className="app-layout" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ width: '100%', maxWidth: '600px', padding: '16px', textAlign: 'center' }}>
         <div style={{ 
-          width: '48px', height: '48px', borderRadius: '12px', 
-          background: 'var(--accent-violet)', display: 'inline-flex', 
-          alignItems: 'center', justifyContent: 'center', 
-          fontSize: '20px', fontWeight: 'bold', color: 'white',
+          width: '64px', height: '64px', borderRadius: '16px', overflow: 'hidden',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center', 
           marginBottom: '24px'
         }}>
-          M
+          <img src={connectorLogo} alt={connectorName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
         <h1 style={{ fontSize: '2.5rem', color: 'var(--text-primary)', marginBottom: '8px' }}>Select Channel</h1>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '48px', fontSize: '1.1rem' }}>Choose communication channel for MoEngage</p>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '48px', fontSize: '1.1rem' }}>Choose communication channel for {connectorName}</p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }}>
           <div 

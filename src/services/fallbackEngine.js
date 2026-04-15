@@ -42,9 +42,8 @@ async function processMessage(message, client) {
   const rawOrder = message.fallback_order || [CHANNELS.RCS];
   const fallbackOrder = rawOrder.map(channel => String(channel).toLowerCase());
 
-  // Temp override: always use .env MOENGAGE_DLR_URL for mock testing
-  // so we skip the webhook.site URL configured in the local database.
-  const dlrUrl = env.MOENGAGE_DLR_URL; // env.MOENGAGE_DLR_URL;
+  // Use the client's DLR URL or fall back to the global MoEngage DLR URL from .env
+  const dlrUrl = env.DEFAULT_CONNECTOR_URL;
 
   const includesRcs = fallbackOrder.includes(CHANNELS.RCS);
   const includesSms = fallbackOrder.includes(CHANNELS.SMS);
@@ -52,7 +51,7 @@ async function processMessage(message, client) {
   if (includesRcs) {
     // --- Try RCS first ---
     try {
-      const sparcPayload = mapMessageToSparc(message, env.SPARC_WEBHOOK_URL);
+      const sparcPayload = mapMessageToSparc(message, env.SPARC_WEBHOOK_URL, client.rcs_assistant_id);
       const sparcResponse = await sparcClient.sendRCS(client, sparcPayload);
 
       // Log raw SPARC response so we can see exactly what came back

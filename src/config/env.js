@@ -62,7 +62,7 @@ function validateEnv() {
 
     SPARC_WEBHOOK_URL:      process.env.SPARC_WEBHOOK_URL,
 
-    MOENGAGE_DLR_URL:       process.env.MOENGAGE_DLR_URL,
+    DEFAULT_CONNECTOR_URL:  process.env.MOENGAGE_DLR_URL,
 
     DB_HOST:      process.env.DB_HOST,
     DB_PORT:      parseInt(process.env.DB_PORT, 10),

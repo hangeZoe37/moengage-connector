@@ -12,6 +12,8 @@ const messageRepo         = require('../repositories/messageRepo');
 const clientRepo          = require('../repositories/clientRepo');
 const callbackDispatcher  = require('../services/callbackDispatcher');
 const { attemptSms }      = require('../services/fallbackEngine');
+const clevertapService    = require('../services/clevertapService');
+const { mapDlrToCleverTap } = require('../mappers/clevertapMapper');
 const { notifyUpdate }    = require('../services/dashboardService');
 const { CHANNELS, MESSAGE_STATUSES } = require('../config/constants');
 const { env }             = require('../config/env');
@@ -33,9 +35,9 @@ async function handleDlrEvent(sparcEvent) {
 
   const callbackData = sparcEvent.seq_id || sparcEvent.seqId || eventRoot.seqId || sparcEvent.callback_data;
   const sparcStatus  = (entity.eventType || eventRoot.status || sparcEvent.status || '').toUpperCase();
-  const moeStatus    = translateStatus(sparcStatus);
+  const internalStatus = translateStatus(sparcStatus);
 
-  logger.info('Processing DLR event', { callbackData, sparcStatus, moeStatus });
+  logger.info('Processing DLR event', { callbackData, sparcStatus, internalStatus });
 
   // Save DLR event to DB
   let eventTimestamp = null;
@@ -44,36 +46,62 @@ async function handleDlrEvent(sparcEvent) {
     if (!isNaN(parsed)) eventTimestamp = parsed;
   }
 
-  const dlrResult = await dlrRepo.create({
-    callback_data:   callbackData,
-    sparc_status:    sparcStatus,
-    moe_status:      moeStatus,
-    error_message:   entity.error?.message || null,
-    event_timestamp: eventTimestamp,
-  });
-
-  // Look up the original message to find the client_id
+  // Look up the original message FIRST so we can pass connector_type to the DLR repo
   const message = await messageRepo.findByCallbackData(callbackData);
 
   if (!message) {
     logger.warn('DLR event received for unknown callback_data', { callbackData });
+    // Still record the DLR in the shared table even if parent message not found
+    await dlrRepo.create({
+      callback_data:   callbackData,
+      sparc_status:    sparcStatus,
+      moe_status:      internalStatus,
+      error_message:   entity.error?.message || null,
+      event_timestamp: eventTimestamp,
+    }, 'MOENGAGE');
     return;
   }
 
-  // Update message status
-  await messageRepo.updateStatus(callbackData, moeStatus);
+  const connectorType = message.connector_type || 'MOENGAGE';
 
-  // Map to MoEngage format and dispatch
-  const dlrUrl    = env.MOENGAGE_DLR_URL;
-  const moePayload = mapDlrEvent(sparcEvent);
-  const dispatched = await callbackDispatcher.dispatchStatus(dlrUrl, moePayload, callbackData);
+  // Insert DLR into shared table AND the appropriate connector-specific table
+  const dlrResult = await dlrRepo.create({
+    callback_data:   callbackData,
+    sparc_status:    sparcStatus,
+    moe_status:      internalStatus,
+    error_message:   entity.error?.message || null,
+    event_timestamp: eventTimestamp,
+  }, connectorType);
+
+  // Update message status in shared table AND connector-specific table
+  await messageRepo.updateStatusInBoth(callbackData, internalStatus, connectorType);
+
+  // 1. Determine DLR URL and payload format
+  const callbackUrl = env.DEFAULT_CONNECTOR_URL;
+  let dispatched = false;
+
+  if (connectorType === 'CLEVERTAP' && message.callback_url) {
+    logger.info('Forwarding DLR to CleverTap', { callbackData, url: message.callback_url });
+    const ctPayload = mapDlrToCleverTap(callbackData, internalStatus, entity.error);
+    if (ctPayload) {
+      dispatched = await callbackDispatcher.dispatch(message.callback_url, ctPayload, callbackData, 'CLEVERTAP_STATUS');
+    } else {
+      // If null, it's a non-final status we don't send to CT
+      dispatched = true;
+    }
+  } else {
+    // Default MoEngage logic
+    const moePayload = mapDlrEvent(sparcEvent);
+    dispatched = await callbackDispatcher.dispatchStatus(callbackUrl, moePayload, callbackData);
+  }
 
   if (dispatched) {
-    await dlrRepo.markDispatched(dlrResult.insertId);
+    // markDispatched now updates both shared and connector-specific tables
+    await dlrRepo.markDispatched(dlrResult.insertId, connectorType);
   }
 
   // ── SMS Fallback on RCS failure ───────────────────────────────────────────
-  if (RCS_FAILED_STATUSES.has(moeStatus)) {
+  if (RCS_FAILED_STATUSES.has(internalStatus)) {
     try {
       const rawPayload = typeof message.raw_payload === 'string'
         ? JSON.parse(message.raw_payload)
@@ -84,13 +112,18 @@ async function handleDlrEvent(sparcEvent) {
       const smsBlock = rawPayload?.sms;
 
       if (fallbackOrder.includes(CHANNELS.SMS) && smsBlock) {
-        logger.info('RCS DLR failure — triggering SMS fallback', { callbackData, moeStatus });
+        logger.info('RCS DLR failure — triggering SMS fallback', { callbackData, internalStatus });
 
         const client = await clientRepo.findById(message.client_id);
         if (client) {
-          const fullMessage  = { ...rawPayload, callback_data: callbackData };
-          const assistantId  = rawPayload?.rcs?.bot_id || client.rcs_assistant_id || null;
-          await attemptSms(fullMessage, client, dlrUrl, assistantId);
+          if (connectorType === 'CLEVERTAP') {
+             // Use cleverTapService for fallback
+             await clevertapService.processMessage(rawPayload, client);
+          } else {
+             const fullMessage  = { ...rawPayload, callback_data: callbackData };
+             const assistantId  = rawPayload?.rcs?.bot_id || client.rcs_assistant_id || null;
+             await attemptSms(fullMessage, client, callbackUrl, assistantId);
+          }
         } else {
           logger.warn('Could not find client for SMS fallback', {
             callbackData,
@@ -115,7 +148,7 @@ async function handleDlrEvent(sparcEvent) {
   // Notify dashboard of status update
   notifyUpdate('message', {
     ...message,
-    status:     moeStatus,
+    status:     internalStatus,
     updated_at: new Date().toISOString(),
   });
 }

@@ -34,29 +34,48 @@ async function handleInteraction(sparcEvent) {
     if (!isNaN(parsed)) timestampSeconds = parsed;
   }
 
-  // Save suggestion event to DB
+  // Look up original message for client info BEFORE creating the event
+  // so we know which connector-specific table to write to.
+  const message = await messageRepo.findByCallbackData(callbackData);
+
+  if (!message) {
+    logger.warn('Interaction event received for unknown callback_data', { callbackData });
+    // Keep it in the shared DB just in case, default to MoEngage
+    await suggestionRepo.create({
+      callback_data:   callbackData,
+      suggestion_text: sparcEvent.suggestion_text || sparcEvent.text,
+      postback_data:   sparcEvent.postback_data   || sparcEvent.postback,
+      event_timestamp: timestampSeconds,
+    }, 'MOENGAGE');
+    return;
+  }
+
+  const connectorType = message.connector_type || 'MOENGAGE';
+
+  // Save suggestion event to DB (dual-write to shared and connector-specific)
   const result = await suggestionRepo.create({
     callback_data:   callbackData,
     suggestion_text: sparcEvent.suggestion_text || sparcEvent.text,
     postback_data:   sparcEvent.postback_data   || sparcEvent.postback,
     event_timestamp: timestampSeconds,
-  });
+  }, connectorType);
 
-  // Look up original message for client info
-  const message = await messageRepo.findByCallbackData(callbackData);
-
-  if (!message) {
-    logger.warn('Interaction event received for unknown callback_data', { callbackData });
-    return;
+  // 1. Determine DLR URL and payload format
+  let dispatched = false;
+  if (connectorType === 'CLEVERTAP' && message.callback_url) {
+    const { mapInteractionToCleverTap } = require('../mappers/clevertapMapper');
+    logger.info('Forwarding Interaction to CleverTap', { callbackData, url: message.callback_url });
+    const ctPayload = mapInteractionToCleverTap(callbackData, sparcEvent, message);
+    dispatched = await callbackDispatcher.dispatch(message.callback_url, ctPayload, callbackData, 'CLEVERTAP_INTERACTION');
+  } else {
+    // Default MoEngage logic
+    const callbackUrl = env.DEFAULT_CONNECTOR_URL;
+    const callbackPayload = mapInteractionEvent(sparcEvent);
+    dispatched = await callbackDispatcher.dispatchSuggestion(callbackUrl, callbackPayload, callbackData);
   }
 
-  // Map to MoEngage format and dispatch
-  const dlrUrl    = env.MOENGAGE_DLR_URL;
-  const moePayload = mapInteractionEvent(sparcEvent);
-  const dispatched = await callbackDispatcher.dispatchSuggestion(dlrUrl, moePayload, callbackData);
-
   if (dispatched) {
-    await suggestionRepo.markDispatched(result.insertId);
+    await suggestionRepo.markDispatched(result.insertId, connectorType);
   }
 
   // Notify dashboard of interaction

@@ -4,11 +4,24 @@
 
 -- ============================================================
 -- 0. CLEANUP (Start Fresh)
+-- Includes connector-specific tables created by migration 006.
 -- ============================================================
 DROP TABLE IF EXISTS admins;
+-- Connector-specific dispatch logs
+DROP TABLE IF EXISTS moengage_callback_dispatch_log;
+DROP TABLE IF EXISTS clevertap_callback_dispatch_log;
 DROP TABLE IF EXISTS callback_dispatch_log;
+-- Connector-specific suggestion events
+DROP TABLE IF EXISTS moengage_suggestion_events;
+DROP TABLE IF EXISTS clevertap_suggestion_events;
 DROP TABLE IF EXISTS suggestion_events;
+-- Connector-specific DLR events
+DROP TABLE IF EXISTS moengage_dlr_events;
+DROP TABLE IF EXISTS clevertap_dlr_events;
 DROP TABLE IF EXISTS dlr_events;
+-- Connector-specific message logs
+DROP TABLE IF EXISTS moengage_message_logs;
+DROP TABLE IF EXISTS clevertap_message_logs;
 DROP TABLE IF EXISTS message_logs;
 DROP TABLE IF EXISTS workspace_tokens; -- Old format
 DROP TABLE IF EXISTS clients;          -- New format

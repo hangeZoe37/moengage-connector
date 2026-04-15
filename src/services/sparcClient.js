@@ -17,8 +17,8 @@ axiosRetry(axios, {
   retryDelay: axiosRetry.exponentialDelay,
   retryCondition: (error) => {
     // Retry on network errors and 5xx status codes
-    return axiosRetry.isNetworkOrIdempotentRequestError(error) || 
-           (error.response && error.response.status >= 500);
+    return axiosRetry.isNetworkOrIdempotentRequestError(error) ||
+      (error.response && error.response.status >= 500);
   },
   onRetry: (retryCount, error, requestConfig) => {
     logger.warn('Retrying SPARC API call', {
@@ -96,8 +96,8 @@ async function sendRCS(clientData, sparcPayload) {
 async function sendSMS(clientData, smsData, destination) {
   // SPARC SMS uses a completely different base URL + credentials from RCS
   const smsBaseUrl = env.SPARC_SMS_API_BASE_URL;
-  const username   = clientData.sms_username || env.SPARC_SMS_USERNAME;
-  const password   = clientData.sms_password || env.SPARC_SMS_PASSWORD;
+  const username = clientData.sms_username || env.SPARC_SMS_USERNAME;
+  const password = clientData.sms_password || env.SPARC_SMS_PASSWORD;
 
   // Normalise phone: SPARC SMS wants digits only (no + prefix), e.g. 919876543210
   const toNumber = destination.replace(/^\+/, '');
@@ -106,10 +106,11 @@ async function sendSMS(clientData, smsData, destination) {
   const params = {
     username,
     password,
-    unicode: true,    // SPARC account requires unicode:true — safe for all content types
-    from:    smsData.sender,
-    text:    smsData.message,
-    to:      toNumber,
+    unicode: 1,    // SPARC SMS API requires integer 1, not boolean true
+
+    from: smsData.sender,
+    text: smsData.message,
+    to: toNumber,
   };
 
   // Attach DLT template ID if present (mandatory for Indian numbers)
@@ -166,9 +167,9 @@ async function sendSMS(clientData, smsData, destination) {
  */
 async function sendLinkSMS(clientData, smsData, destination, trackLinkIds) {
   const smsBaseUrl = env.SPARC_SMS_API_BASE_URL;
-  const username   = clientData.sms_username || env.SPARC_SMS_USERNAME;
-  const password   = clientData.sms_password || env.SPARC_SMS_PASSWORD;
-  const toNumber   = destination.replace(/^\+/, '');
+  const username = clientData.sms_username || env.SPARC_SMS_USERNAME;
+  const password = clientData.sms_password || env.SPARC_SMS_PASSWORD;
+  const toNumber = destination.replace(/^\+/, '');
 
   const params = {
     username,

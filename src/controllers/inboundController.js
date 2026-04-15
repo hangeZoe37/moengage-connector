@@ -18,13 +18,13 @@ let pLimit = require('p-limit');
 if (pLimit && pLimit.default) {
   pLimit = pLimit.default;
 }
-const limit = pLimit(5); // Process 5 messages at a time
+const limit = pLimit(50); // Process 50 messages at a time
 
 /**
- * Process all messages from an inbound MoEngage request.
+ * Process all messages from an inbound connector request.
  * Optimized with caching, single-lookup mappings, and parallel processing.
  *
- * @param {Array<object>} messages - Array of message items from MoEngage payload
+ * @param {Array<object>} messages - Array of message items from the connector payload
  * @param {object} client  - Client row from DB
  */
 async function processMessages(messages, client) {
@@ -67,7 +67,11 @@ async function processMessages(messages, client) {
         has_url:         hasUrlFlag,
       });
 
-      // Process through fallback engine (RCS → SMS)
+      // No fallback content provided, notify of failure
+      logger.info('No fallback content provided for message', { callbackData: message.callback_data });
+      // We don't dispatch failure here, usually we wait for DLR or handle it in callbackDispatcher
+
+      // Process through fallback engine
       await fallbackEngine.processMessage(message, client);
 
       // Notify dashboard
