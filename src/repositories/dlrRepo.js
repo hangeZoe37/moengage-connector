@@ -81,4 +81,18 @@ async function hasRecentGenericDlr(callbackData, withinMinutes = 10) {
   return rows?.count > 0;
 }
 
-module.exports = { create, markDispatched, hasRecentGenericDlr };
+/**
+ * Find all DLR events for a given callback_data.
+ * Queries the view to get across all connectors.
+ * @param {string} callbackData
+ * @returns {Promise<Array>}
+ */
+async function findByCallbackData(callbackData) {
+  return query(
+    'SELECT * FROM dlr_events WHERE callback_data = ? ORDER BY created_at ASC',
+    [callbackData]
+  );
+}
+
+module.exports = { create, markDispatched, hasRecentGenericDlr, findByCallbackData };
+
