@@ -85,6 +85,16 @@ export interface DlrEvent {
   created_at: string;
 }
 
+export interface SuggestionEvent {
+  id: number;
+  callback_data: string;
+  suggestion_text: string | null;
+  postback_data: string | null;
+  event_timestamp: number | null;
+  callback_dispatched: number;
+  created_at: string;
+}
+
 export interface Client {
   id: number;
   client_name: string;
@@ -137,6 +147,7 @@ export interface DlrEventsResponse {
 export interface MessageDetailResponse {
   message: MessageLog;
   dlrEvents: DlrEvent[];
+  suggestionEvents?: SuggestionEvent[];
 }
 
 /* ── Exported API functions ───────────────────────────────────── */

@@ -54,4 +54,18 @@ async function markDispatched(eventId, connectorType = 'MOENGAGE') {
   return query(`UPDATE ${specificTable} SET callback_dispatched = 1 WHERE id = ?`, [eventId]);
 }
 
-module.exports = { create, markDispatched };
+/**
+ * Find all suggestion events for a given callback_data.
+ * Queries the view to get across all connectors.
+ * @param {string} callbackData
+ * @returns {Promise<Array>}
+ */
+async function findByCallbackData(callbackData) {
+  const rows = await query(
+    'SELECT * FROM suggestion_events WHERE callback_data = ? ORDER BY created_at ASC',
+    [callbackData]
+  );
+  return rows;
+}
+
+module.exports = { create, markDispatched, findByCallbackData };

@@ -24,13 +24,13 @@ const { query } = require('../config/db');
  */
 function getTables(connector) {
   if (connector === 'CLEVERTAP') {
-    return { msgTable: 'clevertap_message_logs', dlrTable: 'clevertap_dlr_events' };
+    return { msgTable: 'clevertap_message_logs', dlrTable: 'clevertap_dlr_events', sugTable: 'clevertap_suggestion_events' };
   }
   if (connector === 'MOENGAGE') {
-    return { msgTable: 'moengage_message_logs', dlrTable: 'moengage_dlr_events' };
+    return { msgTable: 'moengage_message_logs', dlrTable: 'moengage_dlr_events', sugTable: 'moengage_suggestion_events' };
   }
   // Default: original shared tables (all connectors combined)
-  return { msgTable: 'message_logs', dlrTable: 'dlr_events' };
+  return { msgTable: 'message_logs', dlrTable: 'dlr_events', sugTable: 'suggestion_events' };
 }
 
 /**
@@ -132,42 +132,55 @@ async function getClientStatsToday(dateFrom = null, dateTo = null, connector = n
  */
 async function getDlrTracker(filters = {}, limit = 50, offset = 0) {
   const { clientId, state, dateFrom, dateTo, connector } = filters;
-  const { msgTable, dlrTable } = getTables(connector);
+  const { msgTable, dlrTable, sugTable } = getTables(connector);
 
   const safeLimit  = Math.min(Math.max(parseInt(limit,  10) || 50,  1), 200);
   const safeOffset = Math.max(parseInt(offset, 10) || 0, 0);
 
-  let sql = `
-    SELECT d.id, d.callback_data as seq_id, c.client_name, d.sparc_status, d.moe_status,
-           d.callback_dispatched as forwarded, d.created_at, d.event_timestamp
-    FROM ${dlrTable} d
-    LEFT JOIN ${msgTable} m ON d.callback_data = m.callback_data
-    LEFT JOIN clients c ON m.client_id = c.id
-    WHERE 1=1
-  `;
+  let whereClause = '';
   const params = [];
 
   if (clientId) {
-    sql += ' AND m.client_id = ?';
+    whereClause += ' AND m.client_id = ?';
     params.push(clientId);
   }
 
   if (state === 'stuck') {
-    sql += ' AND d.callback_dispatched = 0';
+    whereClause += ' AND forwarded = 0';
   }
 
   if (dateFrom) {
-    sql += ' AND d.created_at >= ?';
+    whereClause += ' AND created_at >= ?';
     params.push(dateFrom);
   }
 
   if (dateTo) {
-    sql += ' AND d.created_at <= ?';
+    whereClause += ' AND created_at <= ?';
     params.push(dateTo);
   }
 
-  sql += ` ORDER BY d.created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`;
+  const sql = `
+    SELECT * FROM (
+      SELECT d.id, d.callback_data as seq_id, c.client_name, d.sparc_status, d.moe_status,
+             d.callback_dispatched as forwarded, d.created_at, d.event_timestamp, m.client_id
+      FROM ${dlrTable} d
+      LEFT JOIN ${msgTable} m ON d.callback_data = m.callback_data
+      LEFT JOIN clients c ON m.client_id = c.id
+      UNION ALL
+      SELECT s.id, s.callback_data as seq_id, c.client_name, 'SUGGEST_CLICK' as sparc_status, s.suggestion_text as moe_status,
+             s.callback_dispatched as forwarded, s.created_at, s.event_timestamp, m.client_id
+      FROM ${sugTable} s
+      LEFT JOIN ${msgTable} m ON s.callback_data = m.callback_data
+      LEFT JOIN clients c ON m.client_id = c.id
+    ) as combined
+    WHERE 1=1 ${whereClause}
+    ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}
+  `;
 
+  // Repeat params twice for UNION combined params?
+  // Wait, I wrap it in `FROM ( ... UNION ALL ... ) as combined WHERE 1=1 ${whereClause}`
+  // So the whereClause applies to `combined` and params are only needed once!
+  
   const [rows, total] = await Promise.all([
     query(sql, params),
     countDlrTracker(filters),
@@ -183,32 +196,39 @@ async function getDlrTracker(filters = {}, limit = 50, offset = 0) {
  */
 async function countDlrTracker(filters = {}) {
   const { clientId, state, dateFrom, dateTo, connector } = filters;
-  const { msgTable, dlrTable } = getTables(connector);
+  const { msgTable, dlrTable, sugTable } = getTables(connector);
 
-  let sql = `
-    SELECT COUNT(d.id) as total
-    FROM ${dlrTable} d
-    LEFT JOIN ${msgTable} m ON d.callback_data = m.callback_data
-    LEFT JOIN clients c ON m.client_id = c.id
-    WHERE 1=1
-  `;
+  let whereClause = '';
   const params = [];
 
   if (clientId) {
-    sql += ' AND m.client_id = ?';
+    whereClause += ' AND client_id = ?';
     params.push(clientId);
   }
   if (state === 'stuck') {
-    sql += ' AND d.callback_dispatched = 0';
+    whereClause += ' AND forwarded = 0';
   }
   if (dateFrom) {
-    sql += ' AND d.created_at >= ?';
+    whereClause += ' AND created_at >= ?';
     params.push(dateFrom);
   }
   if (dateTo) {
-    sql += ' AND d.created_at <= ?';
+    whereClause += ' AND created_at <= ?';
     params.push(dateTo);
   }
+
+  const sql = `
+    SELECT COUNT(*) as total FROM (
+      SELECT d.id, d.callback_dispatched as forwarded, d.created_at, m.client_id
+      FROM ${dlrTable} d
+      LEFT JOIN ${msgTable} m ON d.callback_data = m.callback_data
+      UNION ALL
+      SELECT s.id, s.callback_dispatched as forwarded, s.created_at, m.client_id
+      FROM ${sugTable} s
+      LEFT JOIN ${msgTable} m ON s.callback_data = m.callback_data
+    ) as combined
+    WHERE 1=1 ${whereClause}
+  `;
 
   const rows = await query(sql, params);
   return rows[0]?.total || 0;

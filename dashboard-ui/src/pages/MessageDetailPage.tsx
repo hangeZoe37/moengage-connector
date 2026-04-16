@@ -53,7 +53,7 @@ export default function MessageDetailPage() {
     );
   }
 
-  const { message: msg, dlrEvents } = data;
+  const { message: msg, dlrEvents, suggestionEvents = [] } = data;
   const channel = getChannelFromStatus(msg.status);
 
   return (
@@ -172,6 +172,45 @@ export default function MessageDetailPage() {
             )}
           </div>
         </div>
+
+        {/* Right column: Interaction/Suggestion Events below DLR */}
+        {suggestionEvents && suggestionEvents.length > 0 && (
+          <div className="card" style={{ height: 'fit-content', marginTop: '20px' }}>
+            <div className="card-header">
+              <h2>User Interactions</h2>
+              <span style={{ fontSize: '0.8rem', color: '#5c6678' }}>{suggestionEvents.length} events</span>
+            </div>
+            <div className="card-body">
+              <div className="timeline">
+                {suggestionEvents.map((ev) => (
+                  <div key={`sug-${ev.id}`} className="timeline-item">
+                    <span className="timeline-dot bg-cyan" />
+                    <div className="timeline-content">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <div className="status-indicator">
+                          <span className="status-dot bg-cyan" />
+                          <span style={{ fontWeight: 600 }}>REPLY / CLICK</span>
+                        </div>
+                      </div>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        Text: <span className="mono">{ev.suggestion_text || '—'}</span>
+                      </p>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                        Postback: <span className="mono">{ev.postback_data || '—'}</span>
+                      </p>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                        Dispatched: {ev.callback_dispatched ? 'Yes' : 'No'}
+                      </p>
+                      <p style={{ marginTop: 6, color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                        {formatTimestamp(ev.created_at)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

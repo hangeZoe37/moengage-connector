@@ -18,6 +18,7 @@ DROP TABLE IF EXISTS moengage_dlr_events;
 DROP TABLE IF EXISTS clevertap_dlr_events;
 DROP TABLE IF EXISTS moengage_message_logs;
 DROP TABLE IF EXISTS clevertap_message_logs;
+DROP TABLE IF EXISTS sms_track_links;
 DROP TABLE IF EXISTS admins;
 DROP TABLE IF EXISTS clients;
 
@@ -55,6 +56,17 @@ VALUES (
   NULL,
   NULL
 );
+
+CREATE TABLE IF NOT EXISTS sms_track_links (
+  id             INT AUTO_INCREMENT PRIMARY KEY,
+  client_id      INT,
+  target_url     VARCHAR(512) NOT NULL,
+  track_link_id  VARCHAR(100) NOT NULL,
+  created_at     TIMESTAMP DEFAULT NOW(),
+  
+  INDEX idx_client_id (client_id),
+  CONSTRAINT fk_sms_track_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
 -- 2. MOENGAGE TABLES

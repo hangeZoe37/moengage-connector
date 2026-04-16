@@ -132,6 +132,21 @@ async function updateSparcTransactionId(callbackData, transactionId) {
 }
 
 /**
+ * Store whether the message contains a tracked short URL.
+ * @param {string} callbackData
+ * @param {number} hasUrlFlag (1 or 0)
+ * @returns {Promise<object>}
+ */
+async function updateHasUrl(callbackData, hasUrlFlag) {
+  const params = [hasUrlFlag, callbackData];
+  const [res1, res2] = await Promise.all([
+    query('UPDATE moengage_message_logs SET has_url = ? WHERE callback_data = ?', params),
+    query('UPDATE clevertap_message_logs SET has_url = ? WHERE callback_data = ?', params)
+  ]);
+  return res1.affectedRows > 0 ? res1 : res2;
+}
+
+/**
  * Find a message by the SPARC SMS transactionId.
  * Queries the view.
  * @param {string} transactionId
@@ -284,6 +299,7 @@ module.exports = {
   findByCallbackData,
   findById,
   updateSparcTransactionId,
+  updateHasUrl,
   findBySparcTransactionId,
   getStats,
   getRecentLogs,

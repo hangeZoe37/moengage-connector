@@ -74,6 +74,7 @@ async function attemptSms(payload, client) {
 
     let smsResponse;
     if (hasUrl) {
+      await messageRepo.updateHasUrl(msgId, 1);
       smsResponse = await sparcClient.sendLinkSMS(
         client,
         { 
@@ -85,6 +86,7 @@ async function attemptSms(payload, client) {
         trackLinkIds
       );
     } else {
+      await messageRepo.updateHasUrl(msgId, 0);
       smsResponse = await sparcClient.sendSMS(
         client,
         { 

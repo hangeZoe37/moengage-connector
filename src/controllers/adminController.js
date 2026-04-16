@@ -10,6 +10,7 @@ const adminRepo   = require('../repositories/adminRepo');
 const clientRepo  = require('../repositories/clientRepo');
 const messageRepo = require('../repositories/messageRepo');
 const dlrRepo     = require('../repositories/dlrRepo');
+const suggestionRepo = require('../repositories/suggestionRepo');
 const { query }   = require('../config/db');
 const logger      = require('../config/logger');
 const crypto      = require('crypto');
@@ -144,7 +145,8 @@ async function getMessageDetail(req, res) {
     if (!message) return res.status(404).json({ error: 'Message not found' });
 
     const events = await dlrRepo.findByCallbackData(message.callback_data);
-    res.json({ message, dlrEvents: events });
+    const suggestionEvents = await suggestionRepo.findByCallbackData(message.callback_data);
+    res.json({ message, dlrEvents: events, suggestionEvents });
   } catch (error) {
     logger.error('Admin getMessageDetail failed', { error: error.message });
     res.status(500).json({ error: 'Internal server error' });
