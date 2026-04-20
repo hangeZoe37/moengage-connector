@@ -68,9 +68,10 @@ function mapDlrEvent(sparcEvent) {
 
   const statusItem = {
     status: moeStatus,
-    callback_data: callbackData,
+    callback_data: callbackData ? String(callbackData).replace(/^moe_/, '') : callbackData,
     timestamp: String(timestampSeconds),
   };
+
 
   // Only include error_message for failed statuses
   if (FAILED_STATUSES.has(moeStatus) && entity.error && entity.error.message) {

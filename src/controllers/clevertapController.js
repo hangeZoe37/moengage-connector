@@ -11,7 +11,14 @@ const logger = require('../config/logger');
 
 async function handleInbound(req, res) {
   const { body, client } = req;
-  const { msgId, to, rcsContent, callbackURL } = body;
+  let { msgId, to, rcsContent, callbackURL } = body;
+
+  // Automatic Prefixing for Bifurcation
+  if (msgId && !msgId.startsWith('cl_')) {
+    msgId = `cl_${msgId}`;
+    body.msgId = msgId; // Sync back to body for consistent downstream usage
+  }
+
 
   logger.info('Received CleverTap RCS request', {
     msgId,

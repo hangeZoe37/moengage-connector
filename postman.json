@@ -17,12 +17,12 @@
     },
     {
       "key": "bearer_token",
-      "value": "YOUR_BEARER_TOKEN_HERE",
+      "value": "REPLACE_WITH_SECURE_BEARER_TOKEN",
       "type": "string"
     },
     {
       "key": "test_destination",
-      "value": "+919990927990",
+      "value": "+918287902252",
       "type": "string"
     },
     {
@@ -58,12 +58,12 @@
     },
     {
       "key": "sparc_user",
-      "value": "YOUR_SPARC_USER",
+      "value": "tstrcs444",
       "type": "string"
     },
     {
       "key": "sparc_pass",
-      "value": "YOUR_SPARC_PASS",
+      "value": "6?aRp2xyk@Zw%(<b3",
       "type": "string"
     }
   ],
@@ -91,7 +91,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -99,8 +102,14 @@
             },
             "url": {
               "raw": "{{base_url}}/api/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           }
         }
@@ -119,7 +128,7 @@
                 "exec": [
                   "const reqData = JSON.parse(pm.request.body.raw);",
                   "const cbData = reqData.messages[0].callback_data;",
-                  "pm.collectionVariables.set(\"last_msg_id\", cbData);"
+                  "pm.collectionVariables.set(\"last_msg_id\", \"moe_\" + cbData);"
                 ],
                 "type": "text/javascript"
               }
@@ -128,18 +137,35 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authentication", "value": "Bearer {{bearer_token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authentication",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
-              "options": { "raw": { "language": "json" } },
-              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"moe_text_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\", \"SMS\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"template_id\": \"test15\",\n        \"message_content\": {\n          \"type\": \"TEXT\",\n          \"data\": {\n            \"text\": \"Hello John!\",\n            \"parameters\": { \"name\": \"John\", \"company\": \"MoEngage\" }\n          }\n        }\n      },\n      \"sms\": {\n        \"sender\": \"{{sms_sender}}\",\n        \"message\": \"Thanks for sharing your documents with Smartping. Our team is reviewing them as part of the verification process. We’ll notify you once it’s complete or if any more details are needed. For support, reach us at gracee– Smartping\",\n        \"template_id\": \"{{sms_template_id}}\"\n      }\n    }\n  ]\n}"
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"text_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\", \"SMS\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"template_id\": \"test15\",\n        \"message_content\": {\n          \"type\": \"TEXT\",\n          \"data\": {\n            \"text\": \"Hello John!\",\n            \"parameters\": { \"name\": \"John\", \"company\": \"MoEngage\" }\n          }\n        }\n      },\n      \"sms\": {\n        \"sender\": \"{{sms_sender}}\",\n        \"message\": \"Thanks for sharing your documents with Smartping. Our team is reviewing them as part of the verification process. We’ll notify you once it’s complete or if any more details are needed. For support, reach us at gracee– Smartping\",\n        \"template_id\": \"{{sms_template_id}}\"\n      }\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{base_url}}/integrations/moengage/rcs/send",
-              "host": ["{{base_url}}"],
-              "path": ["integrations", "moengage", "rcs", "send"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "integrations",
+                "moengage",
+                "rcs",
+                "send"
+              ]
             }
           }
         },
@@ -152,7 +178,7 @@
                 "exec": [
                   "const reqData = JSON.parse(pm.request.body.raw);",
                   "const cbData = reqData.messages[0].callback_data;",
-                  "pm.collectionVariables.set(\"last_msg_id\", cbData);"
+                  "pm.collectionVariables.set(\"last_msg_id\", \"moe_\" + cbData);"
                 ],
                 "type": "text/javascript"
               }
@@ -161,18 +187,35 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authentication", "value": "Bearer {{bearer_token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authentication",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
-              "options": { "raw": { "language": "json" } },
-              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"moe_card_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\", \"SMS\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"template_id\": null,\n        \"message_content\": {\n          \"type\": \"CARD\",\n          \"data\": {\n            \"media\": {\n              \"media_url\": \"https://www.w3schools.com/html/mov_bbb.mp4\",\n              \"content_type\": \"VIDEO\"\n            },\n            \"title\": \"Discover Nature\",\n            \"description\": \"A sample ad-hoc card message.\",\n            \"orientation\": \"VERTICAL\",\n            \"height\": \"MEDIUM\"\n          },\n          \"suggestions\": {\n            \"type\": \"REPLY\",\n            \"text\": \"Watch Video\",\n            \"postback_data\": \"VIDEO_OK\"\n          }\n        }\n      },\n      \"sms\": {\n        \"sender\": \"{{sms_sender}}\",\n        \"message\": \"Thanks for sharing your documents with Smartping. Our team is reviewing them as part of the verification process. We’ll notify you once it’s complete or if any more details are needed. For support, reach us at gracee– Smartping\",\n        \"template_id\": \"{{sms_template_id}}\"\n      }\n    }\n  ]\n}"
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"card_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\", \"SMS\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"template_id\": null,\n        \"message_content\": {\n          \"type\": \"CARD\",\n          \"data\": {\n            \"media\": {\n              \"media_url\": \"https://www.w3schools.com/html/mov_bbb.mp4\",\n              \"content_type\": \"VIDEO\"\n            },\n            \"title\": \"Discover Nature\",\n            \"description\": \"A sample ad-hoc card message.\",\n            \"orientation\": \"VERTICAL\",\n            \"height\": \"MEDIUM\"\n          },\n          \"suggestions\": {\n            \"type\": \"REPLY\",\n            \"text\": \"Watch Video\",\n            \"postback_data\": \"VIDEO_OK\"\n          }\n        }\n      },\n      \"sms\": {\n        \"sender\": \"{{sms_sender}}\",\n        \"message\": \"Thanks for sharing your documents with Smartping. Our team is reviewing them as part of the verification process. We’ll notify you once it’s complete or if any more details are needed. For support, reach us at gracee– Smartping\",\n        \"template_id\": \"{{sms_template_id}}\"\n      }\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{base_url}}/integrations/moengage/rcs/send",
-              "host": ["{{base_url}}"],
-              "path": ["integrations", "moengage", "rcs", "send"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "integrations",
+                "moengage",
+                "rcs",
+                "send"
+              ]
             }
           }
         },
@@ -185,7 +228,7 @@
                 "exec": [
                   "const reqData = JSON.parse(pm.request.body.raw);",
                   "const cbData = reqData.messages[0].callback_data;",
-                  "pm.collectionVariables.set(\"last_msg_id\", cbData);"
+                  "pm.collectionVariables.set(\"last_msg_id\", \"moe_\" + cbData);"
                 ],
                 "type": "text/javascript"
               }
@@ -194,23 +237,40 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authentication", "value": "Bearer {{bearer_token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authentication",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
-              "options": { "raw": { "language": "json" } },
-              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"moe_media_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\", \"SMS\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"template_id\": null,\n        \"message_content\": {\n          \"type\": \"MEDIA\",\n          \"data\": {\n            \"media_url\": \"https://i.pinimg.com/736x/57/3a/57/573a573683e5a79390d021688a043048.jpg\",\n            \"content_type\": \"IMAGE\"\n          },\n          \"suggestions\": [\n            {\n              \"type\": \"OPEN_URL\",\n              \"text\": \"Learn More\",\n              \"postback_data\": \"URL_CLICKED\",\n              \"url\": \"https://moengage.com\"\n            },\n            {\n              \"type\": \"DIAL_PHONE\",\n              \"text\": \"Call Support\",\n              \"postback_data\": \"DIAL_CLICKED\",\n              \"phone\": \"+919999999999\"\n            }\n          ]\n        }\n      },\n      \"sms\": {\n        \"sender\": \"{{sms_sender}}\",\n        \"message\": \"Thanks for sharing your documents with Smartping. Our team is reviewing them as part of the verification process. We’ll notify you once it’s complete or if any more details are needed. For support, reach us at gracee– Smartping\",\n        \"template_id\": \"{{sms_template_id}}\"\n      }\n    }\n  ]\n}"
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"media_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\", \"SMS\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"template_id\": null,\n        \"message_content\": {\n          \"type\": \"MEDIA\",\n          \"data\": {\n            \"media_url\": \"https://i.pinimg.com/736x/57/3a/57/573a573683e5a79390d021688a043048.jpg\",\n            \"content_type\": \"IMAGE\"\n          },\n          \"suggestions\": [\n            {\n              \"type\": \"OPEN_URL\",\n              \"text\": \"Learn More\",\n              \"postback_data\": \"URL_CLICKED\",\n              \"url\": \"https://moengage.com\"\n            },\n            {\n              \"type\": \"DIAL_PHONE\",\n              \"text\": \"Call Support\",\n              \"postback_data\": \"DIAL_CLICKED\",\n              \"phone\": \"+919999999999\"\n            }\n          ]\n        }\n      },\n      \"sms\": {\n        \"sender\": \"{{sms_sender}}\",\n        \"message\": \"Thanks for sharing your documents with Smartping. Our team is reviewing them as part of the verification process. We’ll notify you once it’s complete or if any more details are needed. For support, reach us at gracee– Smartping\",\n        \"template_id\": \"{{sms_template_id}}\"\n      }\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{base_url}}/integrations/moengage/rcs/send",
-              "host": ["{{base_url}}"],
-              "path": ["integrations", "moengage", "rcs", "send"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "integrations",
+                "moengage",
+                "rcs",
+                "send"
+              ]
             }
           }
         },
         {
-          "name": "1.4 TEST: Force RCS Failure → SMS Fallback (Invalid Bot ID)",
+          "name": "1.4 TEST: Force RCS Failure \u2192 SMS Fallback (Invalid Bot ID)",
           "description": "Uses an invalid bot_id so SPARC immediately rejects RCS. SMS fallback should fire automatically.",
           "event": [
             {
@@ -219,7 +279,7 @@
                 "exec": [
                   "const reqData = JSON.parse(pm.request.body.raw);",
                   "const cbData = reqData.messages[0].callback_data;",
-                  "pm.collectionVariables.set(\"last_msg_id\", cbData);"
+                  "pm.collectionVariables.set(\"last_msg_id\", \"moe_\" + cbData);"
                 ],
                 "type": "text/javascript"
               }
@@ -228,18 +288,35 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authentication", "value": "Bearer {{bearer_token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authentication",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
-              "options": { "raw": { "language": "json" } },
-              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"moe_failtest_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\", \"SMS\"],\n      \"rcs\": {\n        \"bot_id\": \"INVALID_BOT_FORCE_FAILURE\",\n        \"message_content\": {\n          \"type\": \"TEXT\",\n          \"data\": {\n            \"text\": \"This RCS will fail and SMS fallback will fire.\"\n          }\n        }\n      },\n      \"sms\": {\n        \"sender\": \"{{sms_sender}}\",\n        \"message\": \"Thanks for sharing your documents with Smartping. Our team is reviewing them as part of the verification process. We’ll notify you once it’s complete or if any more details are needed. For support, reach us at gracee– Smartping\",\n        \"template_id\": \"{{sms_template_id}}\"\n      }\n    }\n  ]\n}"
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"failtest_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\", \"SMS\"],\n      \"rcs\": {\n        \"bot_id\": \"INVALID_BOT_FORCE_FAILURE\",\n        \"message_content\": {\n          \"type\": \"TEXT\",\n          \"data\": {\n            \"text\": \"This RCS will fail and SMS fallback will fire.\"\n          }\n        }\n      },\n      \"sms\": {\n        \"sender\": \"{{sms_sender}}\",\n        \"message\": \"Thanks for sharing your documents with Smartping. Our team is reviewing them as part of the verification process. We\u2019ll notify you once it\u2019s complete or if any more details are needed. For support, reach us at gracee\u2013 Smartping\",\n        \"template_id\": \"{{sms_template_id}}\"\n      }\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{base_url}}/integrations/moengage/rcs/send",
-              "host": ["{{base_url}}"],
-              "path": ["integrations", "moengage", "rcs", "send"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "integrations",
+                "moengage",
+                "rcs",
+                "send"
+              ]
             }
           }
         }
@@ -253,16 +330,30 @@
           "name": "2.1 WEBHOOK: Message Delivered (Auto-ID)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "options": { "raw": { "language": "json" } },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
               "raw": "{\n    \"eventData\": {\n        \"userPhoneNumber\": \"{{test_destination}}\",\n        \"entity\": {\n            \"eventType\": \"MESSAGE_DELIVERED\",\n            \"sendTime\": \"{{$isoTimestamp}}\"\n        }\n    },\n    \"seqId\": \"{{last_msg_id}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/sparc/webhook",
-              "host": ["{{base_url}}"],
-              "path": ["sparc", "webhook"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sparc",
+                "webhook"
+              ]
             }
           }
         },
@@ -270,34 +361,62 @@
           "name": "2.2 WEBHOOK: Suggestion Click (Auto-ID)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "options": { "raw": { "language": "json" } },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
               "raw": "{\n    \"interactionType\": \"REPLY\",\n    \"seq_id\": \"{{last_msg_id}}\",\n    \"suggestion_text\": \"Watch Video\",\n    \"postback_data\": \"VIDEO_OK\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/sparc/webhook",
-              "host": ["{{base_url}}"],
-              "path": ["sparc", "webhook"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sparc",
+                "webhook"
+              ]
             }
           }
         },
         {
-          "name": "2.3 WEBHOOK: Manual RCS Failure DLR → Triggers SMS Fallback (Auto-ID)",
+          "name": "2.3 WEBHOOK: Manual RCS Failure DLR \u2192 Triggers SMS Fallback (Auto-ID)",
           "description": "Simulates SPARC sending a delivery failure. If the original message had fallback_order: [RCS, SMS], the connector will automatically send the SMS. Uses last_msg_id set by any send request.",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "options": { "raw": { "language": "json" } },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
               "raw": "{\n    \"eventData\": {\n        \"userPhoneNumber\": \"{{test_destination}}\",\n        \"entity\": {\n            \"eventType\": \"SEND_MESSAGE_FAILURE\",\n            \"sendTime\": \"{{$isoTimestamp}}\",\n            \"error\": {\n                \"message\": \"RCS not supported on this device\"\n            }\n        }\n    },\n    \"seqId\": \"{{last_msg_id}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/sparc/webhook",
-              "host": ["{{base_url}}"],
-              "path": ["sparc", "webhook"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sparc",
+                "webhook"
+              ]
             }
           }
         },
@@ -306,16 +425,30 @@
           "description": "Simulates SPARC SMS gateway sending a delivery receipt for a successfully delivered SMS.",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "options": { "raw": { "language": "json" } },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
               "raw": "{\n    \"eventData\": {\n        \"userPhoneNumber\": \"{{test_destination}}\",\n        \"entity\": {\n            \"eventType\": \"SMS_DELIVERED\",\n            \"sendTime\": \"{{$isoTimestamp}}\"\n        }\n    },\n    \"seqId\": \"{{last_msg_id}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/sparc/webhook",
-              "host": ["{{base_url}}"],
-              "path": ["sparc", "webhook"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sparc",
+                "webhook"
+              ]
             }
           }
         }
@@ -326,7 +459,11 @@
       "auth": {
         "type": "bearer",
         "bearer": [
-          { "key": "token", "value": "{{dashboard_token}}", "type": "string" }
+          {
+            "key": "token",
+            "value": "{{dashboard_token}}",
+            "type": "string"
+          }
         ]
       },
       "item": [
@@ -336,8 +473,14 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/dashboard/metrics",
-              "host": ["{{base_url}}"],
-              "path": ["api", "dashboard", "metrics"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "metrics"
+              ]
             }
           }
         },
@@ -347,8 +490,14 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/dashboard/logs",
-              "host": ["{{base_url}}"],
-              "path": ["api", "dashboard", "logs"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "logs"
+              ]
             }
           }
         },
@@ -358,8 +507,15 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/dashboard/logs/stream",
-              "host": ["{{base_url}}"],
-              "path": ["api", "dashboard", "logs", "stream"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "logs",
+                "stream"
+              ]
             }
           }
         }
@@ -377,7 +533,7 @@
               "script": {
                 "exec": [
                   "const reqData = JSON.parse(pm.request.body.raw);",
-                  "pm.collectionVariables.set(\"last_msg_id\", reqData.msgId);"
+                  "pm.collectionVariables.set(\"last_msg_id\", \"cl_\" + reqData.msgId);"
                 ],
                 "type": "text/javascript"
               }
@@ -385,25 +541,41 @@
           ],
           "request": {
             "auth": {
-                "type": "basic",
-                "basic": [
-                  { "key": "username", "value": "{{sparc_user}}", "type": "string" },
-                  { "key": "password", "value": "{{sparc_pass}}", "type": "string" }
-                ]
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{sparc_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{sparc_pass}}",
+                  "type": "string"
+                }
+              ]
             },
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
-              "options": { "raw": { "language": "json" } },
-              "raw": "{\n  \"msgId\": \"ct_text_{{$timestamp}}\",\n  \"to\": \"{{test_destination}}\",\n  \"callbackURL\": \"https://webhook.site/YOUR_ID\",\n  \"rcsContent\": {\n    \"senderId\": \"{{bot_id}}\",\n    \"content\": {\n      \"type\": \"TEXT\",\n      \"text\": \"Hello from CleverTap!\",\n      \"suggestions\": [\n        { \"type\": \"REPLY\", \"text\": \"Explore Premium\", \"postbackData\": \"explore_premium\" },\n        { \"type\": \"REPLY\", \"text\": \"Help Me\", \"postbackData\": \"help_me\" },\n        { \"type\": \"REPLY\", \"text\": \"Store Locator\", \"postbackData\": \"store_locator\" },\n        { \"type\": \"REPLY\", \"text\": \"Feedback\", \"postbackData\": \"feedback\" }\n      ]\n    }\n  },\n  \"smsContent\": {\n    \"senderId\": \"{{sms_sender}}\",\n    \"body\": \"Hi! Check out our premium services at CleverTap.\",\n    \"templateId\": \"{{sms_template_id}}\"\n  }\n}"
+              "raw": "{\n  \"msgId\": \"text_{{$timestamp}}\",\n  \"to\": \"{{test_destination}}\",\n  \"callbackURL\": \"http://localhost:3000/test/clevertap-callback\",\n  \"rcsContent\": {\n    \"senderId\": \"{{bot_id}}\",\n    \"content\": {\n      \"type\": \"TEXT\",\n      \"text\": \"Hello from CleverTap!\",\n      \"suggestions\": [\n        { \"type\": \"REPLY\", \"text\": \"Explore Premium\", \"postbackData\": \"explore_premium\" },\n        { \"type\": \"REPLY\", \"text\": \"Help Me\", \"postbackData\": \"help_me\" },\n        { \"type\": \"REPLY\", \"text\": \"Store Locator\", \"postbackData\": \"store_locator\" },\n        { \"type\": \"REPLY\", \"text\": \"Feedback\", \"postbackData\": \"feedback\" }\n      ]\n    }\n  },\n  \"smsContent\": {\n    \"senderId\": \"{{sms_sender}}\",\n    \"body\": \"Hi! Check out our premium services at CleverTap.\",\n    \"templateId\": \"{{sms_template_id}}\"\n  }\n}"
             },
             "url": {
               "raw": "{{base_url}}/integrations/clevertap/rcs",
-              "host": ["{{base_url}}"],
-              "path": ["integrations", "clevertap", "rcs"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "integrations",
+                "clevertap",
+                "rcs"
+              ]
             }
           }
         },
@@ -415,7 +587,7 @@
               "script": {
                 "exec": [
                   "const reqData = JSON.parse(pm.request.body.raw);",
-                  "pm.collectionVariables.set(\"last_msg_id\", reqData.msgId);"
+                  "pm.collectionVariables.set(\"last_msg_id\", \"cl_\" + reqData.msgId);"
                 ],
                 "type": "text/javascript"
               }
@@ -423,25 +595,46 @@
           ],
           "request": {
             "auth": {
-                "type": "basic",
-                "basic": [
-                  { "key": "username", "value": "{{sparc_user}}", "type": "string" },
-                  { "key": "password", "value": "{{sparc_pass}}", "type": "string" }
-                ]
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{sparc_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{sparc_pass}}",
+                  "type": "string"
+                }
+              ]
             },
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
-              "options": { "raw": { "language": "json" } },
-              "raw": "{\n  \"msgId\": \"ct_card_{{$timestamp}}\",\n  \"to\": \"{{test_destination}}\",\n  \"callbackURL\": \"https://webhook.site/YOUR_ID\",\n  \"rcsContent\": {\n    \"senderId\": \"{{bot_id}}\",\n    \"content\": {\n      \"type\": \"CARD\",\n      \"title\": \"Premium Smartphone\",\n      \"description\": \"The latest flagship with 200MP camera.\",\n      \"media\": {\n        \"type\": \"IMAGE\",\n        \"mediaUrl\": \"https://i.pinimg.com/736x/57/3a/57/573a573683e5a79390d021688a043048.jpg\",\n        \"height\": \"MEDIUM\"\n      },\n      \"suggestions\": [\n        { \"type\": \"REPLY\", \"text\": \"Buy Now\", \"postbackData\": \"BUY_CLICKED\" },\n        { \"type\": \"OPEN_URL\", \"text\": \"Spec Sheet\", \"url\": \"https://example.com/specs\" },\n        { \"type\": \"DIAL_PHONE\", \"text\": \"Call Sales\", \"phone\": \"+919999999999\" },\n        { \"type\": \"REPLY\", \"text\": \"Check Colors\", \"postbackData\": \"COLORS\" }\n      ]\n    }\n  },\n  \"smsContent\": {\n    \"senderId\": \"{{sms_sender}}\",\n    \"body\": \"New Flagship Launch! 200MP Camera. Buy now at Smartping.\",\n    \"templateId\": \"{{sms_template_id}}\"\n  }\n}"
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"msgId\": \"card_{{$timestamp}}\",\n  \"to\": \"{{test_destination}}\",\n  \"callbackURL\": \"http://localhost:3000/test/clevertap-callback\",\n  \"rcsContent\": {\n    \"senderId\": \"{{bot_id}}\",\n    \"content\": {\n      \"type\": \"CARD\",\n      \"title\": \"Premium Smartphone\",\n      \"description\": \"The latest flagship with 200MP camera.\",\n      \"media\": {\n        \"type\": \"IMAGE\",\n        \"mediaUrl\": \"https://i.pinimg.com/736x/57/3a/57/573a573683e5a79390d021688a043048.jpg\",\n        \"height\": \"MEDIUM\"\n      },\n      \"suggestions\": [\n        { \"type\": \"REPLY\", \"text\": \"Buy Now\", \"postbackData\": \"BUY_CLICKED\" },\n        { \"type\": \"OPEN_URL\", \"text\": \"Spec Sheet\", \"url\": \"https://example.com/specs\" },\n        { \"type\": \"DIAL_PHONE\", \"text\": \"Call Sales\", \"phone\": \"+919999999999\" },\n        { \"type\": \"REPLY\", \"text\": \"Check Colors\", \"postbackData\": \"COLORS\" }\n      ]\n    }\n  },\n  \"smsContent\": {\n    \"senderId\": \"{{sms_sender}}\",\n    \"body\": \"New Flagship Launch! 200MP Camera. Buy now at Smartping.\",\n    \"templateId\": \"{{sms_template_id}}\"\n  }\n}"
             },
             "url": {
               "raw": "{{base_url}}/integrations/clevertap/rcs",
-              "host": ["{{base_url}}"],
-              "path": ["integrations", "clevertap", "rcs"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "integrations",
+                "clevertap",
+                "rcs"
+              ]
             }
           }
         },
@@ -453,7 +646,7 @@
               "script": {
                 "exec": [
                   "const reqData = JSON.parse(pm.request.body.raw);",
-                  "pm.collectionVariables.set(\"last_msg_id\", reqData.msgId);"
+                  "pm.collectionVariables.set(\"last_msg_id\", \"cl_\" + reqData.msgId);"
                 ],
                 "type": "text/javascript"
               }
@@ -461,25 +654,46 @@
           ],
           "request": {
             "auth": {
-                "type": "basic",
-                "basic": [
-                  { "key": "username", "value": "{{sparc_user}}", "type": "string" },
-                  { "key": "password", "value": "{{sparc_pass}}", "type": "string" }
-                ]
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{sparc_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{sparc_pass}}",
+                  "type": "string"
+                }
+              ]
             },
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
-              "options": { "raw": { "language": "json" } },
-              "raw": "{\n  \"msgId\": \"ct_caro_{{$timestamp}}\",\n  \"to\": \"{{test_destination}}\",\n  \"callbackURL\": \"https://webhook.site/YOUR_ID\",\n  \"rcsContent\": {\n    \"senderId\": \"{{bot_id}}\",\n    \"content\": {\n      \"type\": \"CAROUSEL\",\n      \"cardWidth\": \"MEDIUM\",\n      \"cardContents\": [\n        {\n          \"title\": \"Laptop Pro\",\n          \"description\": \"Upto 40% OFF\",\n          \"media\": { \"type\": \"IMAGE\", \"mediaUrl\": \"https://i.pinimg.com/736x/57/3a/57/573a573683e5a79390d021688a043048.jpg\" },\n          \"suggestions\": [\n            { \"type\": \"REPLY\", \"text\": \"View Specs\", \"postbackData\": \"SPECS_1\" },\n            { \"type\": \"REPLY\", \"text\": \"Compare\", \"postbackData\": \"COMP_1\" },\n            { \"type\": \"REPLY\", \"text\": \"Buy\", \"postbackData\": \"BUY_1\" },\n            { \"type\": \"REPLY\", \"text\": \"In Stock?\", \"postbackData\": \"STOCK_1\" }\n          ]\n        },\n        {\n          \"title\": \"Tablet Ultra\",\n          \"description\": \"Save ₹10,000\",\n          \"media\": { \"type\": \"IMAGE\", \"mediaUrl\": \"https://i.pinimg.com/736x/57/3a/57/573a573683e5a79390d021688a043048.jpg\" },\n          \"suggestions\": [\n            { \"type\": \"REPLY\", \"text\": \"Features\", \"postbackData\": \"FEAT_2\" },\n            { \"type\": \"REPLY\", \"text\": \"Reviews\", \"postbackData\": \"REV_2\" },\n            { \"type\": \"REPLY\", \"text\": \"Order Now\", \"postbackData\": \"BUY_2\" },\n            { \"type\": \"REPLY\", \"text\": \"Accessories\", \"postbackData\": \"ACC_2\" }\n          ]\n        }\n      ]\n    }\n  },\n  \"smsContent\": {\n    \"senderId\": \"{{sms_sender}}\",\n    \"body\": \"Summer Gadget Sale! Laptops starting at 40% OFF. Visit Smartping.\",\n    \"templateId\": \"{{sms_template_id}}\"\n  }\n}"
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"msgId\": \"caro_{{$timestamp}}\",\n  \"to\": \"{{test_destination}}\",\n  \"callbackURL\": \"http://localhost:3000/test/clevertap-callback\",\n  \"rcsContent\": {\n    \"senderId\": \"{{bot_id}}\",\n    \"content\": {\n      \"type\": \"CAROUSEL\",\n      \"cardWidth\": \"MEDIUM\",\n      \"cardContents\": [\n        {\n          \"title\": \"Laptop Pro\",\n          \"description\": \"Upto 40% OFF\",\n          \"media\": { \"type\": \"IMAGE\", \"mediaUrl\": \"https://i.pinimg.com/736x/57/3a/57/573a573683e5a79390d021688a043048.jpg\" },\n          \"suggestions\": [\n            { \"type\": \"REPLY\", \"text\": \"View Specs\", \"postbackData\": \"SPECS_1\" },\n            { \"type\": \"REPLY\", \"text\": \"Compare\", \"postbackData\": \"COMP_1\" },\n            { \"type\": \"REPLY\", \"text\": \"Buy\", \"postbackData\": \"BUY_1\" },\n            { \"type\": \"REPLY\", \"text\": \"In Stock?\", \"postbackData\": \"STOCK_1\" }\n          ]\n        },\n        {\n          \"title\": \"Tablet Ultra\",\n          \"description\": \"Save \u20b910,000\",\n          \"media\": { \"type\": \"IMAGE\", \"mediaUrl\": \"https://i.pinimg.com/736x/57/3a/57/573a573683e5a79390d021688a043048.jpg\" },\n          \"suggestions\": [\n            { \"type\": \"REPLY\", \"text\": \"Features\", \"postbackData\": \"FEAT_2\" },\n            { \"type\": \"REPLY\", \"text\": \"Reviews\", \"postbackData\": \"REV_2\" },\n            { \"type\": \"REPLY\", \"text\": \"Order Now\", \"postbackData\": \"BUY_2\" },\n            { \"type\": \"REPLY\", \"text\": \"Accessories\", \"postbackData\": \"ACC_2\" }\n          ]\n        }\n      ]\n    }\n  },\n  \"smsContent\": {\n    \"senderId\": \"{{sms_sender}}\",\n    \"body\": \"Summer Gadget Sale! Laptops starting at 40% OFF. Visit Smartping.\",\n    \"templateId\": \"{{sms_template_id}}\"\n  }\n}"
             },
             "url": {
               "raw": "{{base_url}}/integrations/clevertap/rcs",
-              "host": ["{{base_url}}"],
-              "path": ["integrations", "clevertap", "rcs"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "integrations",
+                "clevertap",
+                "rcs"
+              ]
             }
           }
         },
@@ -492,7 +706,7 @@
               "script": {
                 "exec": [
                   "const reqData = JSON.parse(pm.request.body.raw);",
-                  "pm.collectionVariables.set(\"last_msg_id\", reqData.msgId);"
+                  "pm.collectionVariables.set(\"last_msg_id\", \"cl_\" + reqData.msgId);"
                 ],
                 "type": "text/javascript"
               }
@@ -500,25 +714,46 @@
           ],
           "request": {
             "auth": {
-                "type": "basic",
-                "basic": [
-                  { "key": "username", "value": "{{sparc_user}}", "type": "string" },
-                  { "key": "password", "value": "{{sparc_pass}}", "type": "string" }
-                ]
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{sparc_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{sparc_pass}}",
+                  "type": "string"
+                }
+              ]
             },
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
-              "options": { "raw": { "language": "json" } },
-              "raw": "{\n  \"msgId\": \"ct_temp_{{$timestamp}}\",\n  \"to\": \"{{test_destination}}\",\n  \"callbackURL\": \"https://webhook.site/YOUR_ID\",\n  \"rcsContent\": {\n    \"senderId\": \"{{bot_id}}\",\n    \"content\": {\n      \"type\": \"TEMPLATE\",\n      \"templateId\": \"test_template_01\",\n      \"parameters\": [\"Customer\", \"20%\"],\n      \"suggestions\": [\n        { \"type\": \"REPLY\", \"text\": \"Claim Now\", \"postbackData\": \"CLAIM\" },\n        { \"type\": \"REPLY\", \"text\": \"Valid Store?\", \"postbackData\": \"STORE_CHECK\" },\n        { \"type\": \"REPLY\", \"text\": \"Terms\", \"postbackData\": \"TERMS\" },\n        { \"type\": \"REPLY\", \"text\": \"Unsubscribe\", \"postbackData\": \"UNSUB\" }\n      ]\n    }\n  },\n  \"smsContent\": {\n    \"senderId\": \"{{sms_sender}}\",\n    \"body\": \"Hi Customer, get 20% flat discount on your next purchase!\",\n    \"templateId\": \"{{sms_template_id}}\"\n  }\n}"
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"msgId\": \"temp_{{$timestamp}}\",\n  \"to\": \"{{test_destination}}\",\n  \"callbackURL\": \"http://localhost:3000/test/clevertap-callback\",\n  \"rcsContent\": {\n    \"senderId\": \"{{bot_id}}\",\n    \"content\": {\n      \"type\": \"TEMPLATE\",\n      \"templateId\": \"test_template_01\",\n      \"parameters\": [\"Customer\", \"20%\"],\n      \"suggestions\": [\n        { \"type\": \"REPLY\", \"text\": \"Claim Now\", \"postbackData\": \"CLAIM\" },\n        { \"type\": \"REPLY\", \"text\": \"Valid Store?\", \"postbackData\": \"STORE_CHECK\" },\n        { \"type\": \"REPLY\", \"text\": \"Terms\", \"postbackData\": \"TERMS\" },\n        { \"type\": \"REPLY\", \"text\": \"Unsubscribe\", \"postbackData\": \"UNSUB\" }\n      ]\n    }\n  },\n  \"smsContent\": {\n    \"senderId\": \"{{sms_sender}}\",\n    \"body\": \"Hi Customer, get 20% flat discount on your next purchase!\",\n    \"templateId\": \"{{sms_template_id}}\"\n  }\n}"
             },
             "url": {
               "raw": "{{base_url}}/integrations/clevertap/rcs",
-              "host": ["{{base_url}}"],
-              "path": ["integrations", "clevertap", "rcs"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "integrations",
+                "clevertap",
+                "rcs"
+              ]
             }
           }
         }
@@ -532,16 +767,30 @@
           "name": "5.1 DLR: Delivered (RCS)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "options": { "raw": { "language": "json" } },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
               "raw": "{\n    \"eventData\": {\n        \"userPhoneNumber\": \"{{test_destination}}\",\n        \"entity\": {\n            \"eventType\": \"MESSAGE_DELIVERED\",\n            \"sendTime\": \"{{$isoTimestamp}}\"\n        }\n    },\n    \"seqId\": \"{{last_msg_id}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/sparc/webhook",
-              "host": ["{{base_url}}"],
-              "path": ["sparc", "webhook"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sparc",
+                "webhook"
+              ]
             }
           }
         },
@@ -549,16 +798,30 @@
           "name": "5.2 DLR: Failed (RCS)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "options": { "raw": { "language": "json" } },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
               "raw": "{\n    \"eventData\": {\n        \"userPhoneNumber\": \"{{test_destination}}\",\n        \"entity\": {\n            \"eventType\": \"MESSAGE_DELIVERY_FAILED\",\n            \"sendTime\": \"{{$isoTimestamp}}\",\n            \"error\": {\n                \"code\": \"2002\",\n                \"message\": \"Invalid Phone Number\"\n            }\n        }\n    },\n    \"seqId\": \"{{last_msg_id}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/sparc/webhook",
-              "host": ["{{base_url}}"],
-              "path": ["sparc", "webhook"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sparc",
+                "webhook"
+              ]
             }
           }
         },
@@ -566,16 +829,30 @@
           "name": "5.3 DLR: Viewed (RCS Read)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "options": { "raw": { "language": "json" } },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
               "raw": "{\n    \"eventData\": {\n        \"userPhoneNumber\": \"{{test_destination}}\",\n        \"entity\": {\n            \"eventType\": \"MESSAGE_READ\",\n            \"sendTime\": \"{{$isoTimestamp}}\"\n        }\n    },\n    \"seqId\": \"{{last_msg_id}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/sparc/webhook",
-              "host": ["{{base_url}}"],
-              "path": ["sparc", "webhook"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sparc",
+                "webhook"
+              ]
             }
           }
         },
@@ -583,16 +860,30 @@
           "name": "5.4 DLR: Delivered (SMS)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "options": { "raw": { "language": "json" } },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
               "raw": "{\n    \"eventData\": {\n        \"userPhoneNumber\": \"{{test_destination}}\",\n        \"entity\": {\n            \"eventType\": \"SMS_DELIVERED\",\n            \"sendTime\": \"{{$isoTimestamp}}\"\n        }\n    },\n    \"seqId\": \"{{last_msg_id}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/sparc/webhook",
-              "host": ["{{base_url}}"],
-              "path": ["sparc", "webhook"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sparc",
+                "webhook"
+              ]
             }
           }
         },
@@ -600,16 +891,30 @@
           "name": "5.5 DLR: Failed (SMS)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "options": { "raw": { "language": "json" } },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
               "raw": "{\n    \"eventData\": {\n        \"userPhoneNumber\": \"{{test_destination}}\",\n        \"entity\": {\n            \"eventType\": \"SMS_DELIVERY_FAILED\",\n            \"sendTime\": \"{{$isoTimestamp}}\",\n            \"error\": {\n                \"code\": \"2002\",\n                \"message\": \"No Balance\"\n            }\n        }\n    },\n    \"seqId\": \"{{last_msg_id}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/sparc/webhook",
-              "host": ["{{base_url}}"],
-              "path": ["sparc", "webhook"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sparc",
+                "webhook"
+              ]
             }
           }
         },
@@ -617,16 +922,30 @@
           "name": "5.6 INTERACTION: Clicked (URL)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "options": { "raw": { "language": "json" } },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
               "raw": "{\n    \"interactionType\": \"OPEN_URL\",\n    \"seq_id\": \"{{last_msg_id}}\",\n    \"url\": \"https://example.com/promo\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/sparc/webhook",
-              "host": ["{{base_url}}"],
-              "path": ["sparc", "webhook"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sparc",
+                "webhook"
+              ]
             }
           }
         },
@@ -634,16 +953,30 @@
           "name": "5.7 INTERACTION: Replied (Text)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "options": { "raw": { "language": "json" } },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
               "raw": "{\n    \"interactionType\": \"REPLY\",\n    \"seq_id\": \"{{last_msg_id}}\",\n    \"suggestion_text\": \"Explore Premium\",\n    \"postback_data\": \"explore_premium\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/sparc/webhook",
-              "host": ["{{base_url}}"],
-              "path": ["sparc", "webhook"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sparc",
+                "webhook"
+              ]
             }
           }
         }

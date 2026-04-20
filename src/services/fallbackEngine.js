@@ -255,9 +255,10 @@ async function attemptSms(message, client, dlrUrl, assistantId = null) {
 function buildMoeStatusPayload(moeStatus, callbackData, errorMessage) {
   const item = {
     status: moeStatus,
-    callback_data: callbackData,
+    callback_data: callbackData ? String(callbackData).replace(/^moe_/, '') : callbackData,
     timestamp: String(Math.floor(Date.now() / 1000)),
   };
+
   if (errorMessage && FAILED_STATUSES.has(moeStatus)) {
     item.error_message = errorMessage;
   }

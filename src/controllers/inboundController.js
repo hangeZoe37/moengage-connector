@@ -39,6 +39,11 @@ async function processMessages(messages, client) {
   // 2. Define the processing task for a single message
   const processTask = async (message) => {
     try {
+      // Automatic Prefixing for Bifurcation
+      if (message.callback_data && !message.callback_data.startsWith('moe_')) {
+        message.callback_data = `moe_${message.callback_data}`;
+      }
+
       // Safe-read message_type
       const messageType =
         message.rcs?.message_content?.type ||

@@ -33,7 +33,7 @@ async function handleDlrEvent(sparcEvent) {
   const eventRoot  = sparcEvent.eventData || sparcEvent;
   const entity     = eventRoot.entity || {};
 
-  const callbackData = sparcEvent.seq_id || sparcEvent.seqId || eventRoot.seqId || sparcEvent.callback_data;
+  let callbackData = sparcEvent.seq_id || sparcEvent.seqId || eventRoot.seqId || sparcEvent.callback_data;
   const sparcStatus  = (entity.eventType || eventRoot.status || sparcEvent.status || '').toUpperCase();
   const internalStatus = translateStatus(sparcStatus);
 
@@ -47,10 +47,38 @@ async function handleDlrEvent(sparcEvent) {
   }
 
   // Look up the original message FIRST so we can pass connector_type to the DLR repo
-  const message = await messageRepo.findByCallbackData(callbackData);
+  let message = await messageRepo.findByCallbackData(callbackData);
+
+  // Multi-Prefix Resilience: Try finding with 'moe_' or 'cl_' if direct match fails (handles manual simulations)
+  if (!message && callbackData) {
+    if (!callbackData.startsWith('moe_') && !callbackData.startsWith('cl_')) {
+      const moeId = `moe_${callbackData}`;
+      const clId = `cl_${callbackData}`;
+      
+      const moeMsg = await messageRepo.findByCallbackData(moeId);
+      if (moeMsg) {
+        message = moeMsg;
+        callbackData = moeId; // Update local variable for consistent downstream logging
+      } else {
+        const clMsg = await messageRepo.findByCallbackData(clId);
+        if (clMsg) {
+          message = clMsg;
+          callbackData = clId;
+        }
+      }
+    }
+  }
 
   if (!message) {
     logger.warn('DLR event received for unknown callback_data', { callbackData });
+
+    
+    // Attempt bifurcation based on prefix if message not found
+    let fallbackConnector = 'MOENGAGE';
+    if (callbackData && String(callbackData).startsWith('cl_')) {
+      fallbackConnector = 'CLEVERTAP';
+    }
+
     // Still record the DLR in the shared table even if parent message not found
     await dlrRepo.create({
       callback_data:   callbackData,
@@ -58,9 +86,10 @@ async function handleDlrEvent(sparcEvent) {
       moe_status:      internalStatus,
       error_message:   entity.error?.message || null,
       event_timestamp: eventTimestamp,
-    }, 'MOENGAGE');
+    }, fallbackConnector);
     return;
   }
+
 
   const connectorType = message.connector_type || 'MOENGAGE';
 

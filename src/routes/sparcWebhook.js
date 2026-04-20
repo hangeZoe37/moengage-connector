@@ -119,7 +119,9 @@ router.get('/sms-dlr', async (req, res) => {
       if (message.connector_type === 'CLEVERTAP' && message.callback_url) {
         logger.info('SPARC SMS DLR: Forwarding to CleverTap', { callback_data, url: message.callback_url });
         const { mapDlrToCleverTap } = require('../mappers/clevertapMapper');
-        const ctPayload = mapDlrToCleverTap(callback_data, moeStatus, description ? { code: "SMS", message: description } : null);
+        const cleanCallbackData = callback_data ? String(callback_data).replace(/^cl_/, '') : callback_data;
+        const ctPayload = mapDlrToCleverTap(cleanCallbackData, moeStatus, description ? { code: "SMS", message: description } : null);
+
         if (ctPayload) {
           dispatched = await callbackDispatcher.dispatch(message.callback_url, ctPayload, callback_data, 'CLEVERTAP_SMS_DLR');
         } else {
@@ -131,8 +133,9 @@ router.get('/sms-dlr', async (req, res) => {
         const moePayload = {
           statuses: [{
             status: moeStatus,
-            callback_data,
+            callback_data: callback_data ? String(callback_data).replace(/^moe_/, '') : callback_data,
             timestamp: String(timestampSeconds),
+
             ...(isFailed && { error_message: description || 'Delivery failed' }),
           }],
         };

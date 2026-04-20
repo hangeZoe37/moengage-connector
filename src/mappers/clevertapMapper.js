@@ -211,8 +211,9 @@ function mapDlrToCleverTap(msgId, status, errorDetails = null) {
 
   const item = {
     channel,
-    meta: msgId
+    meta: msgId ? String(msgId).replace(/^cl_/, '') : msgId
   };
+
 
   if (ctEvent === 'failed') {
     item.ts = Math.floor(Date.now() / 1000);
@@ -243,8 +244,9 @@ function mapInteractionToCleverTap(msgId, sparcEvent, message) {
 
   const item = {
     channel,
-    meta: msgId
+    meta: msgId ? String(msgId).replace(/^cl_/, '') : msgId
   };
+
 
   if (event === 'clicked') {
     item.ts = Math.floor(Date.now() / 1000);
