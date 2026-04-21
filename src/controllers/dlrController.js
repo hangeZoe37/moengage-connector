@@ -14,6 +14,7 @@ const callbackDispatcher  = require('../services/callbackDispatcher');
 const { attemptSms }      = require('../services/fallbackEngine');
 const clevertapService    = require('../services/clevertapService');
 const { mapDlrToCleverTap } = require('../mappers/clevertapMapper');
+const { mapDlrToWebEngage } = require('../mappers/webengageMapper');
 const { notifyUpdate }    = require('../services/dashboardService');
 const { CHANNELS, MESSAGE_STATUSES } = require('../config/constants');
 const { env }             = require('../config/env');
@@ -49,23 +50,33 @@ async function handleDlrEvent(sparcEvent) {
   // Look up the original message FIRST so we can pass connector_type to the DLR repo
   let message = await messageRepo.findByCallbackData(callbackData);
 
-  // Multi-Prefix Resilience: Try finding with 'moe_' or 'cl_' if direct match fails (handles manual simulations)
+  // Multi-Prefix Resilience: Handle mismatches between saved ID and incoming webhook ID
   if (!message && callbackData) {
-    if (!callbackData.startsWith('moe_') && !callbackData.startsWith('cl_')) {
-      const moeId = `moe_${callbackData}`;
-      const clId = `cl_${callbackData}`;
-      
-      const moeMsg = await messageRepo.findByCallbackData(moeId);
-      if (moeMsg) {
-        message = moeMsg;
-        callbackData = moeId; // Update local variable for consistent downstream logging
-      } else {
-        const clMsg = await messageRepo.findByCallbackData(clId);
-        if (clMsg) {
-          message = clMsg;
-          callbackData = clId;
+    const prefixes = ['moe_', 'cl_', 'web_'];
+    let unprefixedId = callbackData;
+    let foundPrefix = prefixes.find(p => callbackData.startsWith(p));
+    
+    if (foundPrefix) {
+      unprefixedId = callbackData.replace(foundPrefix, '');
+      // 1. Try finding without any prefix
+      message = await messageRepo.findByCallbackData(unprefixedId);
+    }
+    
+    // 2. If still not found, try all other prefixes
+    if (!message) {
+      for (const p of prefixes) {
+        if (foundPrefix && p === foundPrefix) continue;
+        const morphedId = `${p}${unprefixedId}`;
+        const morphedMsg = await messageRepo.findByCallbackData(morphedId);
+        if (morphedMsg) {
+          message = morphedMsg;
+          callbackData = morphedId;
+          break;
         }
       }
+    } else if (foundPrefix) {
+      // If we found it by stripping, update local callbackData to match DB for consistency
+      callbackData = unprefixedId;
     }
   }
 
@@ -118,6 +129,12 @@ async function handleDlrEvent(sparcEvent) {
       // If null, it's a non-final status we don't send to CT
       dispatched = true;
     }
+  } else if (connectorType === 'WEBENGAGE') {
+    // WebEngage uses region-specific static URLs
+    const weUrl = env.WEBENGAGE_DLR_URL || 'https://rt.in.webengage.com/tracking/events';
+    logger.info('Forwarding DLR to WebEngage', { callbackData, url: weUrl });
+    const wePayload = mapDlrToWebEngage(callbackData, internalStatus, message, entity.error?.message || 'Success');
+    dispatched = await callbackDispatcher.dispatch(weUrl, wePayload, callbackData, 'WEBENGAGE_STATUS');
   } else {
     // Default MoEngage logic
     const moePayload = mapDlrEvent(sparcEvent);

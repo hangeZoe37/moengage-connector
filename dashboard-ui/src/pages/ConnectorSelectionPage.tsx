@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import MoEngageLogo from '../assets/moengage.png';
 import CleverTapLogo from '../assets/clevertap.png';
+import WebEngageLogo from '../assets/webengage.png';
 
 export default function ConnectorSelectionPage() {
   const navigate = useNavigate();
@@ -45,16 +46,13 @@ export default function ConnectorSelectionPage() {
           
           <div 
             className="card" 
-            style={{ cursor: 'pointer', padding: '40px 24px', opacity: 0.6, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}
-            onClick={() => alert('WebEngage integration coming soon!')}
+            style={{ cursor: 'pointer', padding: '40px 24px', transition: 'all 0.2s ease', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}
+            onClick={() => selectConnector('WEBENGAGE')}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
           >
-            <div style={{ 
-              width: '64px', height: '64px', borderRadius: '16px', 
-              background: '#00c3ff', display: 'flex', 
-              alignItems: 'center', justifyContent: 'center', 
-              fontSize: '28px', fontWeight: 'bold', color: 'white' 
-            }}>
-              W
+            <div style={{ width: '64px', height: '64px', borderRadius: '16px', overflow: 'hidden' }}>
+              <img src={WebEngageLogo} alt="WebEngage" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
             <h2 style={{ margin: 0, fontSize: '1.4rem' }}>WebEngage</h2>
           </div>

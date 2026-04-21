@@ -25,10 +25,12 @@ const optionalVars = {
   SPARC_SMS_USERNAME:      '',
   SPARC_SMS_PASSWORD:      '',
   MOENGAGE_DLR_URL:        'https://api-01.moengage.com/rcs/dlr/sparc',
+  WEBENGAGE_DLR_URL:       'https://rt.in.webengage.com/tracking/events',
   DB_POOL_SIZE:            '20',    // Increased from 10 — supports PM2 cluster workloads
   LOG_LEVEL:               'info',
   RATE_LIMIT_WINDOW_MS:    '60000',
   RATE_LIMIT_MAX:          '500',
+  WEBENGAGE_AUTH_TOKEN:    '',
 };
 
 function validateEnv() {
@@ -63,6 +65,7 @@ function validateEnv() {
     SPARC_WEBHOOK_URL:      process.env.SPARC_WEBHOOK_URL,
 
     DEFAULT_CONNECTOR_URL:  process.env.MOENGAGE_DLR_URL,
+    WEBENGAGE_DLR_URL:     process.env.WEBENGAGE_DLR_URL,
 
     DB_HOST:      process.env.DB_HOST,
     DB_PORT:      parseInt(process.env.DB_PORT, 10),
@@ -77,6 +80,7 @@ function validateEnv() {
     RATE_LIMIT_MAX:       parseInt(process.env.RATE_LIMIT_MAX, 10),
 
     JWT_SECRET: process.env.JWT_SECRET,
+    WEBENGAGE_AUTH_TOKEN: process.env.WEBENGAGE_AUTH_TOKEN,
   };
 }
 

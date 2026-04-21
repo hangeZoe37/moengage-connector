@@ -13,9 +13,9 @@ const { query } = require('../config/db');
  * @returns {string}
  */
 function dlrTable(connectorType) {
-  return connectorType === 'CLEVERTAP'
-    ? 'clevertap_dlr_events'
-    : 'moengage_dlr_events';
+  if (connectorType === 'CLEVERTAP') return 'clevertap_dlr_events';
+  if (connectorType === 'WEBENGAGE')  return 'webengage_dlr_events';
+  return 'moengage_dlr_events';
 }
 
 /**

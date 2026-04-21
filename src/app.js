@@ -19,6 +19,7 @@ const healthRoutes       = require('./routes/health');
 const adminRoutes        = require('./routes/admin');
 const authRoutes         = require('./routes/auth');
 const clevertapRoutes     = require('./routes/clevertapRoutes');
+const webengageRoutes     = require('./routes/webengageRoutes');
 
 const app = express();
 
@@ -53,6 +54,9 @@ app.use('/integrations/moengage/rcs', inboundRoutes);
 
 // CleverTap inbound (Basic auth applied at route level)
 app.use('/integrations/clevertap/rcs', clevertapRoutes);
+
+// WebEngage inbound (Basic auth applied at route level)
+app.use('/integrations/webengage/rcs', webengageRoutes);
 
 // SPARC webhooks (NO Bearer auth — protected by Nginx IP allowlist)
 app.use('/sparc', sparcWebhookRoutes);

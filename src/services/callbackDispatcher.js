@@ -10,6 +10,7 @@ const axios = require('axios');
 const logger = require('../config/logger');
 const { RETRY_CONFIG, CONNECTOR_CALLBACK_TIMEOUT_MS, PAYLOAD_TYPES } = require('../config/constants');
 const dispatchRepo = require('../repositories/dispatchRepo');
+const { env } = require('../config/env');
 
 /**
  * Sleep for a given number of milliseconds.
@@ -30,7 +31,9 @@ function sleep(ms) {
  * @returns {Promise<boolean>} true if MoEngage accepted (2xx), false if all retries failed
  */
 async function dispatch(dlrUrl, payload, callbackData, payloadType) {
-  const connectorName = (payloadType && payloadType.includes('CLEVERTAP')) ? 'CleverTap' : 'MoEngage';
+  let connectorName = 'MoEngage';
+  if (payloadType && payloadType.includes('CLEVERTAP')) connectorName = 'CleverTap';
+  if (payloadType && payloadType.includes('WEBENGAGE')) connectorName = 'WebEngage';
 
   for (let attempt = 1; attempt <= RETRY_CONFIG.MAX_ATTEMPTS; attempt++) {
     try {
@@ -42,15 +45,18 @@ async function dispatch(dlrUrl, payload, callbackData, payloadType) {
       });
 
       // --- CONNECTOR CALLBACK PAYLOAD START ---
-      if (payloadType && payloadType.includes('CLEVERTAP')) {
-        logger.info(`--- [${connectorName.toUpperCase()} CALLBACK PAYLOAD START] ---`);
-        logger.info(JSON.stringify(payload, null, 2));
-        logger.info(`--- [${connectorName.toUpperCase()} CALLBACK PAYLOAD END] ---`);
+      logger.info(`--- [${connectorName.toUpperCase()} CALLBACK PAYLOAD START] ---`);
+      logger.info(JSON.stringify(payload, null, 2));
+      logger.info(`--- [${connectorName.toUpperCase()} CALLBACK PAYLOAD END] ---`);
+
+      const headers = { 'Content-Type': 'application/json' };
+      if (connectorName === 'WebEngage' && env.WEBENGAGE_AUTH_TOKEN) {
+        headers['Authorization'] = `Bearer ${env.WEBENGAGE_AUTH_TOKEN}`;
       }
 
       const response = await axios.post(dlrUrl, payload, {
         timeout: CONNECTOR_CALLBACK_TIMEOUT_MS,
-        headers: { 'Content-Type': 'application/json' },
+        headers,
       });
 
       const success = response.status >= 200 && response.status < 300;

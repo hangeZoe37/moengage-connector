@@ -14,9 +14,9 @@ const logger = require('../config/logger');
  * @returns {string}
  */
 function suggestionTable(connectorType) {
-  return connectorType === 'CLEVERTAP'
-    ? 'clevertap_suggestion_events'
-    : 'moengage_suggestion_events';
+  if (connectorType === 'CLEVERTAP') return 'clevertap_suggestion_events';
+  if (connectorType === 'WEBENGAGE')  return 'webengage_suggestion_events';
+  return 'moengage_suggestion_events';
 }
 
 /**

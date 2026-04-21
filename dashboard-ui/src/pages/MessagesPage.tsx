@@ -244,95 +244,119 @@ export default function MessagesPage() {
             display: 'flex', flexDirection: 'column', transition: 'transform 0.3s'
           }}>
             <div style={{ padding: '24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: 600 }}>Message #{selectedMsgId}</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 600 }}>Message #{selectedMsgId}</h2>
+                <button className="btn btn-icon btn-secondary" onClick={() => openDrawer(selectedMsgId!)} title="Refresh Details">
+                  <RefreshCw size={14} className={loadingDetail ? 'spin' : ''} />
+                </button>
+              </div>
               <button className="btn btn-icon btn-secondary" onClick={closeDrawer}><X size={16} /></button>
             </div>
             
             <div style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
               {loadingDetail ? (
-                <div style={{ textAlign: 'center', marginTop: 40, color: 'var(--text-muted)' }}>Loading...</div>
+                <div style={{ textAlign: 'center', marginTop: 40, color: 'var(--text-muted)' }}>
+                   <RefreshCw size={24} className="spin" style={{ marginBottom: 12 }} />
+                   <p>Loading details...</p>
+                </div>
               ) : msgDetail ? (
                 (() => {
                   const connector = localStorage.getItem('currentConnector') || 'MOENGAGE';
-                  const connectorName = connector === 'MOENGAGE' ? 'MoEngage' : 'CleverTap';
+                  const connectorName = connector === 'MOENGAGE' ? 'MoEngage' : connector === 'WEBENGAGE' ? 'WebEngage' : 'CleverTap';
+                  const isFinal = msgDetail.message.status.includes('DELIVERED') || msgDetail.message.status.includes('FAILED');
 
                   return (
                     <div className="timeline">
-                      {/* Fake a timeline for the entire lifecycle as requested */}
+                      {/* Lifecycle Start */}
                       <div className="timeline-item">
-                        <span className="timeline-dot slate" />
+                        <span className="timeline-dot green" />
                         <div className="timeline-content">
                           <div style={{ fontWeight: 600 }}>{connectorName} Request Received</div>
                           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{formatTimestamp(msgDetail.message.created_at)}</p>
                         </div>
                       </div>
                   
-                  <div className="timeline-item">
-                    <span className="timeline-dot blue" />
-                    <div className="timeline-content">
-                      <div style={{ fontWeight: 600 }}>Queued & Accepted</div>
-                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>(200 OK returned to {connectorName})</p>
-                    </div>
-                  </div>
-
-                  {msgDetail.dlrEvents.length === 0 && (
-                     <div className="timeline-item">
-                       <span className="timeline-dot slate" />
-                       <div className="timeline-content">
-                         <div style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Awaiting DLR from SPARC...</div>
-                       </div>
-                     </div>
-                  )}
-
-                  {msgDetail.dlrEvents.map((ev: any, idx: number) => {
-                    const isFailure = ev.sparc_status.includes('FAIL') || ev.sparc_status.includes('REJECT');
-                    const isSuccess = ev.sparc_status.includes('DELIVER') || ev.sparc_status.includes('READ');
-                    const dotClass = isFailure ? 'red' : isSuccess ? 'green' : 'slate';
-
-                    return (
-                      <div key={ev.id} className="timeline-item">
-                        <span className={`timeline-dot ${dotClass}`} />
+                      <div className="timeline-item">
+                        <span className="timeline-dot blue" />
                         <div className="timeline-content">
-                          <div style={{ fontWeight: 600 }}>DLR Received from SPARC</div>
-                          <p style={{ fontSize: '0.9rem', color: isFailure ? 'var(--danger)' : 'var(--text-primary)' }}>
-                            Status: {ev.sparc_status}
-                          </p>
-                          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                            {formatTimestamp(ev.created_at)}
-                          </p>
-                          
-                          <div style={{ marginTop: 12, padding: '12px', background: 'var(--bg-elevated)', borderRadius: 6, border: '1px solid var(--border-subtle)' }}>
-                            <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 4 }}>
-                              Forwarded to {connectorName}: {ev.callback_dispatched ? '✓ Yes' : '✕ No'}
-                            </div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                              Mapped Status: {ev.moe_status}
-                            </div>
-                            {ev.error_message && (
-                              <div style={{ fontSize: '0.8rem', color: 'var(--danger)', marginTop: 4 }}>
-                                Error: {ev.error_message}
-                              </div>
-                            )}
-                          </div>
+                          <div style={{ fontWeight: 600 }}>Queued & Accepted</div>
+                          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>(200 OK returned to {connectorName})</p>
                         </div>
                       </div>
-                    );
-                  })}
-                  
-                  <div className="timeline-item">
-                    <span className={`timeline-dot square ${getStatusDot(msgDetail.message.status)}`} />
-                    <div className="timeline-content">
-                      <div style={{ fontWeight: 600 }}>Current Final Status</div>
-                      <p style={{ fontSize: '0.9rem', fontWeight: 600, marginTop: 4 }}>
-                        {msgDetail.message.status}
-                      </p>
+
+                      {/* SPARC Handshake */}
+                      <div className="timeline-item">
+                        <span className={`timeline-dot ${msgDetail.message.status.includes('SENT') || isFinal ? 'blue' : 'slate'}`} />
+                        <div className="timeline-content">
+                          <div style={{ fontWeight: 600 }}>Submitted to SPARC Network</div>
+                          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                            {msgDetail.message.sparc_message_id ? `MsgID: ${msgDetail.message.sparc_message_id}` : 'Handshake complete'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* DLR Waiting State or DLR Events */}
+                      {msgDetail.dlrEvents.length === 0 ? (
+                         !isFinal && (
+                            <div className="timeline-item">
+                              <span className="timeline-dot slate pulse" />
+                              <div className="timeline-content">
+                                <div style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Awaiting DLR from SPARC...</div>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Waiting for network acknowledgment</p>
+                              </div>
+                            </div>
+                         )
+                      ) : (
+                        msgDetail.dlrEvents.map((ev: any) => {
+                          const isFailure = ev.sparc_status.includes('FAIL') || ev.sparc_status.includes('REJECT');
+                          const isSuccess = ev.sparc_status.includes('DELIVER') || ev.sparc_status.includes('READ');
+                          const dotClass = isFailure ? 'red' : isSuccess ? 'green' : 'slate';
+
+                          return (
+                            <div key={ev.id} className="timeline-item">
+                              <span className={`timeline-dot ${dotClass}`} />
+                              <div className="timeline-content">
+                                <div style={{ fontWeight: 600 }}>DLR Received from SPARC</div>
+                                <p style={{ fontSize: '0.9rem', color: isFailure ? 'var(--danger)' : 'var(--text-primary)' }}>
+                                  Status: {ev.sparc_status}
+                                </p>
+                                
+                                <div style={{ marginTop: 12, padding: '12px', background: 'var(--bg-elevated)', borderRadius: 6, border: '1px solid var(--border-subtle)' }}>
+                                  <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 4 }}>
+                                    Forwarded to {connectorName}: {ev.callback_dispatched ? '✓ YES (Outcome Forwarded)' : '✕ NO'}
+                                  </div>
+                                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                    {connectorName} Status: {ev.moe_status}
+                                  </div>
+                                  {ev.error_message && (
+                                    <div style={{ fontSize: '0.8rem', color: 'var(--danger)', marginTop: 4 }}>
+                                      Error: {ev.error_message}
+                                    </div>
+                                  )}
+                                </div>
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 8 }}>
+                                  {formatTimestamp(ev.created_at)}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                      
+                      {/* Final Result */}
+                      <div className="timeline-item" style={{ marginTop: 24 }}>
+                        <span className={`timeline-dot square ${getStatusDot(msgDetail.message.status)}`} />
+                        <div className="timeline-content">
+                          <div style={{ fontWeight: 600 }}>{isFinal ? 'Final Outcome' : 'Current Connector Status'}</div>
+                          <p style={{ fontSize: '1rem', fontWeight: 700, marginTop: 4, letterSpacing: '0.5px' }}>
+                            {msgDetail.message.status.replace(/_/g, ' ')}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  
-                </div>
-              );
-            })()
-          ) : (
+                  );
+                })()
+              ) : (
                 <div style={{ color: 'var(--danger)' }}>Failed to load message details.</div>
               )}
             </div>

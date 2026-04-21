@@ -77,6 +77,57 @@ body.light {
   --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.05); /* very soft shadow */
 }
 
+/* ── WebEngage Connector Theme (premium electric indigo/royal blue) ─── */
+body.connector-webengage .sidebar {
+  background: linear-gradient(180deg, #06081f 0%, #0b1136 60%, #0e1540 100%);
+  border-right: 1px solid rgba(99, 102, 241, 0.2);
+}
+body.connector-webengage .sidebar-brand h1 {
+  background: linear-gradient(90deg, #a5b4fc, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+body.connector-webengage .nav-item.active {
+  background: rgba(99, 102, 241, 0.18);
+  color: #e0e7ff;
+  box-shadow: inset 3px 0 0 #6366f1;
+}
+body.connector-webengage .nav-item.active svg {
+  color: #818cf8;
+}
+body.connector-webengage .nav-item:hover {
+  background: rgba(99, 102, 241, 0.10);
+  color: #c7d2fe;
+}
+body.connector-webengage .btn-primary {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+}
+body.connector-webengage .btn-primary:hover {
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  box-shadow: 0 4px 18px rgba(99, 102, 241, 0.55);
+}
+body.connector-webengage .kpi-card.violet .kpi-value {
+  color: #818cf8;
+}
+body.connector-webengage .form-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+body.connector-webengage .badge-rcs {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+}
+body.connector-webengage .live-dot {
+  background: #818cf8;
+  box-shadow: 0 0 6px rgba(129, 140, 248, 0.7);
+}
+body.connector-webengage .live-indicator {
+  color: #a5b4fc;
+}
+
+
 /* ── Reset & Global ───────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 14px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }

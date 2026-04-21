@@ -29,6 +29,9 @@ function getTables(connector) {
   if (connector === 'MOENGAGE') {
     return { msgTable: 'moengage_message_logs', dlrTable: 'moengage_dlr_events', sugTable: 'moengage_suggestion_events' };
   }
+  if (connector === 'WEBENGAGE') {
+    return { msgTable: 'webengage_message_logs', dlrTable: 'webengage_dlr_events', sugTable: 'webengage_suggestion_events' };
+  }
   // Default: original shared tables (all connectors combined)
   return { msgTable: 'message_logs', dlrTable: 'dlr_events', sugTable: 'suggestion_events' };
 }

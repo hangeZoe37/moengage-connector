@@ -34,9 +34,35 @@ async function handleInteraction(sparcEvent) {
     if (!isNaN(parsed)) timestampSeconds = parsed;
   }
 
-  // Look up original message for client info BEFORE creating the event
-  // so we know which connector-specific table to write to.
-  const message = await messageRepo.findByCallbackData(callbackData);
+  // 1. Direct Match
+  let message = await messageRepo.findByCallbackData(callbackData);
+
+  // 2. Multi-Prefix Resilience: Handle mismatches (stripping or swaping prefixes)
+  if (!message && callbackData) {
+    const prefixes = ['moe_', 'cl_', 'web_'];
+    let unprefixedId = callbackData;
+    let foundPrefix = prefixes.find(p => callbackData.startsWith(p));
+    
+    if (foundPrefix) {
+      unprefixedId = callbackData.replace(foundPrefix, '');
+      message = await messageRepo.findByCallbackData(unprefixedId);
+    }
+    
+    if (!message) {
+      for (const p of prefixes) {
+        if (foundPrefix && p === foundPrefix) continue;
+        const morphedId = `${p}${unprefixedId}`;
+        const morphedMsg = await messageRepo.findByCallbackData(morphedId);
+        if (morphedMsg) {
+          message = morphedMsg;
+          callbackData = morphedId;
+          break;
+        }
+      }
+    } else if (foundPrefix) {
+      callbackData = unprefixedId;
+    }
+  }
 
   if (!message) {
     logger.warn('Interaction event received for unknown callback_data', { callbackData });
@@ -67,6 +93,12 @@ async function handleInteraction(sparcEvent) {
     logger.info('Forwarding Interaction to CleverTap', { callbackData, url: message.callback_url });
     const ctPayload = mapInteractionToCleverTap(callbackData, sparcEvent, message);
     dispatched = await callbackDispatcher.dispatch(message.callback_url, ctPayload, callbackData, 'CLEVERTAP_INTERACTION');
+  } else if (connectorType === 'WEBENGAGE') {
+    const { mapInteractionToWebEngage } = require('../mappers/webengageMapper');
+    const weUrl = env.WEBENGAGE_DLR_URL || 'https://rt.in.webengage.com/tracking/events';
+    logger.info('Forwarding Interaction to WebEngage', { callbackData, url: weUrl });
+    const wePayload = mapInteractionToWebEngage(callbackData, sparcEvent, message);
+    dispatched = await callbackDispatcher.dispatch(weUrl, wePayload, callbackData, 'WEBENGAGE_INTERACTION');
   } else {
     // Default MoEngage logic
     const callbackUrl = env.DEFAULT_CONNECTOR_URL;

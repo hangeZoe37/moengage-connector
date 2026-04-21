@@ -14,9 +14,9 @@ const logger = require('../config/logger');
  * @returns {string}
  */
 function msgTable(connectorType) {
-  return connectorType === 'CLEVERTAP'
-    ? 'clevertap_message_logs'
-    : 'moengage_message_logs';
+  if (connectorType === 'CLEVERTAP') return 'clevertap_message_logs';
+  if (connectorType === 'WEBENGAGE') return 'webengage_message_logs';
+  return 'moengage_message_logs';
 }
 
 /**
@@ -88,12 +88,13 @@ async function updateStatus(callbackData, status, sparcMessageId = null) {
     ? 'SET status = ?, sparc_message_id = ? WHERE callback_data = ?'
     : 'SET status = ? WHERE callback_data = ?';
 
-  const [res1, res2] = await Promise.all([
+  const [res1, res2, res3] = await Promise.all([
     query(`UPDATE moengage_message_logs ${sqlTemplate}`, params),
-    query(`UPDATE clevertap_message_logs ${sqlTemplate}`, params)
+    query(`UPDATE clevertap_message_logs ${sqlTemplate}`, params),
+    query(`UPDATE webengage_message_logs ${sqlTemplate}`, params)
   ]);
   
-  return res1.affectedRows > 0 ? res1 : res2;
+  return res1.affectedRows > 0 ? res1 : (res2.affectedRows > 0 ? res2 : res3);
 }
 
 /**
@@ -124,11 +125,12 @@ async function updateStatusInBoth(callbackData, status, connectorType, sparcMess
  */
 async function updateSparcTransactionId(callbackData, transactionId) {
   const params = [String(transactionId), callbackData];
-  const [res1, res2] = await Promise.all([
+  const [res1, res2, res3] = await Promise.all([
     query('UPDATE moengage_message_logs SET sparc_transaction_id = ? WHERE callback_data = ?', params),
-    query('UPDATE clevertap_message_logs SET sparc_transaction_id = ? WHERE callback_data = ?', params)
+    query('UPDATE clevertap_message_logs SET sparc_transaction_id = ? WHERE callback_data = ?', params),
+    query('UPDATE webengage_message_logs SET sparc_transaction_id = ? WHERE callback_data = ?', params)
   ]);
-  return res1.affectedRows > 0 ? res1 : res2;
+  return res1.affectedRows > 0 ? res1 : (res2.affectedRows > 0 ? res2 : res3);
 }
 
 /**
@@ -139,11 +141,12 @@ async function updateSparcTransactionId(callbackData, transactionId) {
  */
 async function updateHasUrl(callbackData, hasUrlFlag) {
   const params = [hasUrlFlag, callbackData];
-  const [res1, res2] = await Promise.all([
+  const [res1, res2, res3] = await Promise.all([
     query('UPDATE moengage_message_logs SET has_url = ? WHERE callback_data = ?', params),
-    query('UPDATE clevertap_message_logs SET has_url = ? WHERE callback_data = ?', params)
+    query('UPDATE clevertap_message_logs SET has_url = ? WHERE callback_data = ?', params),
+    query('UPDATE webengage_message_logs SET has_url = ? WHERE callback_data = ?', params)
   ]);
-  return res1.affectedRows > 0 ? res1 : res2;
+  return res1.affectedRows > 0 ? res1 : (res2.affectedRows > 0 ? res2 : res3);
 }
 
 /**

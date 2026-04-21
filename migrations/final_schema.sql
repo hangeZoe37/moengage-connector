@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS moengage_message_logs (
                        ) DEFAULT 'QUEUED',
   raw_payload          JSON,
   has_url              TINYINT(1) DEFAULT 0,
-  connector_type       ENUM('MOENGAGE', 'CLEVERTAP') DEFAULT 'MOENGAGE',
+  connector_type       ENUM('MOENGAGE', 'CLEVERTAP', 'WEBENGAGE') DEFAULT 'MOENGAGE',
   callback_url         VARCHAR(512) DEFAULT NULL,
   created_at           TIMESTAMP DEFAULT NOW(),
   updated_at           TIMESTAMP DEFAULT NOW() ON UPDATE NOW(),
@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS moengage_suggestion_events (
 CREATE TABLE IF NOT EXISTS moengage_callback_dispatch_log (
   id             BIGINT AUTO_INCREMENT PRIMARY KEY,
   callback_data  VARCHAR(200),
-  payload_type   ENUM('STATUS','SUGGESTION', 'CLEVERTAP_STATUS', 'CLEVERTAP_INTERACTION'),
+  payload_type   ENUM('STATUS','SUGGESTION', 'CLEVERTAP_STATUS', 'CLEVERTAP_INTERACTION', 'WEBENGAGE_STATUS', 'WEBENGAGE_INTERACTION'),
   attempt_number TINYINT,
   http_status    SMALLINT,
   success        TINYINT(1),
@@ -173,7 +173,7 @@ CREATE TABLE IF NOT EXISTS clevertap_message_logs (
                        ) DEFAULT 'QUEUED',
   raw_payload          JSON,
   has_url              TINYINT(1) DEFAULT 0,
-  connector_type       ENUM('MOENGAGE', 'CLEVERTAP') DEFAULT 'CLEVERTAP',
+  connector_type       ENUM('MOENGAGE', 'CLEVERTAP', 'WEBENGAGE') DEFAULT 'CLEVERTAP',
   callback_url         VARCHAR(512) DEFAULT NULL,
   created_at           TIMESTAMP DEFAULT NOW(),
   updated_at           TIMESTAMP DEFAULT NOW() ON UPDATE NOW(),
@@ -190,26 +190,78 @@ CREATE TABLE IF NOT EXISTS clevertap_dlr_events LIKE moengage_dlr_events;
 CREATE TABLE IF NOT EXISTS clevertap_suggestion_events LIKE moengage_suggestion_events;
 CREATE TABLE IF NOT EXISTS clevertap_callback_dispatch_log LIKE moengage_callback_dispatch_log;
 
+
 -- ============================================================
--- 4. VIEWS (To make dashboard reads seamless)
+-- 4. WEBENGAGE TABLES
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS webengage_message_logs (
+  id                   BIGINT AUTO_INCREMENT PRIMARY KEY,
+  callback_data        VARCHAR(200) NOT NULL,
+  client_id            INT,
+  destination          VARCHAR(20),
+  bot_id               VARCHAR(100),
+  template_name        VARCHAR(100),
+  message_type         VARCHAR(20),
+  fallback_order       JSON,
+  sparc_message_id     VARCHAR(100),
+  sparc_transaction_id VARCHAR(100),
+  status               ENUM(
+                         'QUEUED',
+                         'RCS_SENT','RCS_SENT_FAILED',
+                         'RCS_DELIVERED','RCS_DELIVERY_FAILED','RCS_READ',
+                         'SMS_SENT','SMS_SENT_FAILED',
+                         'SMS_DELIVERED','SMS_DELIVERY_FAILED',
+                         'DONE'
+                       ) DEFAULT 'QUEUED',
+  raw_payload          JSON,
+  has_url              TINYINT(1) DEFAULT 0,
+  connector_type       ENUM('MOENGAGE', 'CLEVERTAP', 'WEBENGAGE') DEFAULT 'WEBENGAGE',
+  callback_url         VARCHAR(512) DEFAULT NULL,
+  created_at           TIMESTAMP DEFAULT NOW(),
+  updated_at           TIMESTAMP DEFAULT NOW() ON UPDATE NOW(),
+
+  INDEX idx_callback_data      (callback_data),
+  INDEX idx_client_id          (client_id),
+  INDEX idx_created_at         (created_at),
+  INDEX idx_sparc_txn_id       (sparc_transaction_id),
+  INDEX idx_status             (status),
+  CONSTRAINT fk_we_client_log  FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS webengage_dlr_events LIKE moengage_dlr_events;
+CREATE TABLE IF NOT EXISTS webengage_suggestion_events LIKE moengage_suggestion_events;
+CREATE TABLE IF NOT EXISTS webengage_callback_dispatch_log LIKE moengage_callback_dispatch_log;
+
+
+-- ============================================================
+-- 5. VIEWS (To make dashboard reads seamless)
 -- ============================================================
 
 CREATE OR REPLACE VIEW message_logs AS
 SELECT * FROM moengage_message_logs
 UNION ALL
-SELECT * FROM clevertap_message_logs;
+SELECT * FROM clevertap_message_logs
+UNION ALL
+SELECT * FROM webengage_message_logs;
 
 CREATE OR REPLACE VIEW dlr_events AS
 SELECT * FROM moengage_dlr_events
 UNION ALL
-SELECT * FROM clevertap_dlr_events;
+SELECT * FROM clevertap_dlr_events
+UNION ALL
+SELECT * FROM webengage_dlr_events;
 
 CREATE OR REPLACE VIEW suggestion_events AS
 SELECT * FROM moengage_suggestion_events
 UNION ALL
-SELECT * FROM clevertap_suggestion_events;
+SELECT * FROM clevertap_suggestion_events
+UNION ALL
+SELECT * FROM webengage_suggestion_events;
 
 CREATE OR REPLACE VIEW callback_dispatch_log AS
 SELECT * FROM moengage_callback_dispatch_log
 UNION ALL
-SELECT * FROM clevertap_callback_dispatch_log;
+SELECT * FROM clevertap_callback_dispatch_log
+UNION ALL
+SELECT * FROM webengage_callback_dispatch_log;

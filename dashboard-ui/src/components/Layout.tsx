@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import MoEngageLogo from '../assets/moengage.png';
 import CleverTapLogo from '../assets/clevertap.png';
+import WebEngageLogo from '../assets/webengage.png';
 import { clearToken } from '../api';
 
 const navItems = [
@@ -28,9 +29,10 @@ const pageTitles: Record<string, string> = {
 export default function Layout() {
   const navigate = useNavigate();
   const connector = localStorage.getItem('currentConnector') || 'MOENGAGE';
-  const isMoEngage = connector === 'MOENGAGE';
-  const connectorLogo = isMoEngage ? MoEngageLogo : CleverTapLogo;
-  const connectorName = isMoEngage ? 'MoEngage' : 'CleverTap';
+  const isMoEngage  = connector === 'MOENGAGE';
+  const isWebEngage = connector === 'WEBENGAGE';
+  const connectorLogo = isMoEngage ? MoEngageLogo : isWebEngage ? WebEngageLogo : CleverTapLogo;
+  const connectorName = isMoEngage ? 'MoEngage' : isWebEngage ? 'WebEngage' : 'CleverTap';
 
   const location = useLocation();
   const pathKey = location.pathname;
@@ -38,6 +40,12 @@ export default function Layout() {
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDark, setIsDark] = useState(false); // Defaulting to light mode to match the reference image
+
+  // Apply connector-specific body class for themed sidebar
+  useLayoutEffect(() => {
+    document.body.classList.remove('connector-webengage', 'connector-clevertap', 'connector-moengage');
+    if (isWebEngage) document.body.classList.add('connector-webengage');
+  }, [isWebEngage]);
 
   useEffect(() => {
     if (isDark) {
