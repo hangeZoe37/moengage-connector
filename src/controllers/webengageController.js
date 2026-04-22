@@ -51,7 +51,7 @@ async function handleInbound(req, res) {
       client_id: client.id,
       destination: to,
       bot_id: rcsData.sender,
-      template_name: rcsData.templateData?.templateId || null,
+      template_name: rcsData.templateData?.templateName || rcsData.templateData?.templateId || null,
       message_type: type.toUpperCase(),
       fallback_order: fallbackOrder, 
       raw_payload: body,

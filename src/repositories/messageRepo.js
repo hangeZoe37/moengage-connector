@@ -49,17 +49,17 @@ async function create(params) {
 
   switch (connector_type.toUpperCase()) {
     case 'WEBENGAGE':
-      // WebEngage Schema: No callback_url, No has_url, Rename fallback_order -> routing_details
+      // WebEngage Schema: No callback_url, No has_url — uses routing_details instead of fallback_order
       sql = `INSERT INTO message_logs
         (callback_data, client_id, destination, bot_id, template_name,
          message_type, routing_details, sparc_message_id, status, raw_payload,
-         has_url, connector_type, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`;
+         connector_type, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`;
       values = [
         callback_data, client_id, destination, bot_id, template_name || null,
         message_type, JSON.stringify(fallback_order || ['rcs']),
         sparc_message_id || null, status, JSON.stringify(raw_payload || {}),
-        has_url, connector_type
+        connector_type
       ];
       break;
 
