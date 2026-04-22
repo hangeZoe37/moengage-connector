@@ -17,7 +17,7 @@ const logger = require('../config/logger');
 
 const router = Router();
 
-router.post('/send', bearerAuth, validatePayload, async (req, res) => {
+router.post(['/', '/send'], bearerAuth, validatePayload, async (req, res) => {
   const { messages } = req.body;
   const client = req.client;
 

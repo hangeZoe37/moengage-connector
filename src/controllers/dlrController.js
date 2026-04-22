@@ -113,8 +113,8 @@ async function handleDlrEvent(sparcEvent) {
     event_timestamp: eventTimestamp,
   }, connectorType);
 
-  // Update message status in shared table AND connector-specific table
-  await messageRepo.updateStatusInBoth(callbackData, internalStatus, connectorType);
+  // Update message status in connector-specific table
+  await messageRepo.updateStatusByConnector(callbackData, internalStatus, connectorType);
 
   // 1. Determine DLR URL and payload format
   const callbackUrl = env.DEFAULT_CONNECTOR_URL;
@@ -153,9 +153,9 @@ async function handleDlrEvent(sparcEvent) {
         ? JSON.parse(message.raw_payload)
         : message.raw_payload;
 
-      const fallbackOrder = (rawPayload?.fallback_order || [])
+      const fallbackOrder = (message.fallback_order || [])
         .map(c => String(c).toLowerCase());
-      const smsBlock = rawPayload?.sms;
+      const smsBlock = rawPayload?.sms || rawPayload?.smsContent || rawPayload?.smsData;
 
       if (fallbackOrder.includes(CHANNELS.SMS) && smsBlock) {
         logger.info('RCS DLR failure — triggering SMS fallback', { callbackData, internalStatus });
@@ -164,7 +164,7 @@ async function handleDlrEvent(sparcEvent) {
         if (client) {
           if (connectorType === 'CLEVERTAP') {
              // Use cleverTapService for fallback
-             await clevertapService.processMessage(rawPayload, client);
+             await clevertapService.attemptSms(rawPayload, client);
           } else {
              const fullMessage  = { ...rawPayload, callback_data: callbackData };
              const assistantId  = rawPayload?.rcs?.bot_id || client.rcs_assistant_id || null;

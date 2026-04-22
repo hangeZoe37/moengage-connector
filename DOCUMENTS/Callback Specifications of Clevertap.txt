@@ -1,0 +1,228 @@
+Callback Specifications
+Delivery status and user interaction callbacks must be sent to the callbackURL specified in the original message payload. The meta field in callbacks must contain the original msgId from CleverTap's request.
+The following table summarizes all supported callback event types, their trigger conditions, and additional notes to help providers correctly interpret CleverTap’s callback payloads. Each event corresponds to a specific stage in the RCS message lifecycle, from delivery and user engagement to failure reporting.
+Event Type	Trigger Condition
+delivered	When the message is successfully delivered to the user's device.
+failed	When message delivery fails at the provider level. Includes error code and timestamp.
+viewed	When the user views the message.
+clicked	When the user clicks a URL suggestion button. Includes url and userAgent.
+replied	When the user sends the replies, such as simple text, postback, media, video, PDF, and location, for more information, refer to the Callback Event Payload.
+Callback Event Payloads
+Notification DeliveredNotification FailedNotification ViewedNotification ClickedNotification Replied — Text Reply (Simple)Notification Replied — Text Reply (with Postback)Notification Replied — Media Replies (Image)Notification Replied — Media Replies (Video)Notification Replied — Media Replies (PDF)Notification Replied — Media Replies (Location)
+Notification Delivered
+[
+  {
+    "event": "delivered", 
+    "data": [
+      {
+        "channel": "RCS",
+        "meta": "CT_TXT_20240315_001_ABC123"
+      }
+    ]
+  }
+]
+Notification Failed
+[
+  {
+    "event": "failed",
+    "data": [
+      {
+        "ts": 1710504000,
+				"channel": "RCS"
+        "code": "2002",
+        "meta": "CT_TXT_20240315_001_ABC123"
+      }
+    ]
+  }
+]
+Notification Viewed 
+[
+  {
+    "event": "viewed",
+    "data": [
+      {
+        "channel": "RCS",
+        "meta": "CT_TXT_20240315_001_ABC123"
+      }
+    ]
+  }
+]
+
+Notification Clicked
+[
+  {
+    "event": "clicked",
+    "data": [
+      {
+        "ts": 1710504000,
+				"channel": "RCS"
+        "meta": "CT_TXT_20240315_001_ABC123",
+        "userAgent": "Mozilla/5.0 (Android 12; Mobile; rv:91.0)",
+        "url": "https://example.com/features",
+        "shortUrl": "https://bit.ly/example123"
+      }
+    ]
+  }
+]
+Notification Replied — Text Reply (Simple)
+[ { "event": "replied", "data": [ { "channel": "RCS", "type": "text", "fromPhone": "+91XXXXXXXXXX", "toPhone": "+91XXXXXXXXXX", "incomingText": "Thank you for the information", "meta": "CT_TXT_20240315_001_ABC123" } ] } ]
+Notification Replied — Text Reply (with Postback)
+[
+  {
+    "event": "replied",
+    "data": [
+      {
+        "channel": "RCS",
+        "type": "text",
+        "fromPhone": "+91XXXXXXXXXX",
+        "toPhone": "+91XXXXXXXXXXX",
+        "incomingText": "Yes, show me",
+        "postback": "explore_premium",
+        "meta": "CT_TXT_20240315_001_ABC123"
+      }
+    ]
+  }
+]
+
+Notification Replied — Media Replies (Image) 
+[
+  {
+    "event": "replied",
+    "data": [
+      {
+        "channel": "RCS",
+        "type": "image/png",
+        "mediaUrl": "https://rcs-provider.com/media/user-image-abc123",
+        "fromPhone": "+91XXXXXXXXXX",
+        "toPhone": "+91XXXXXXXXXXX",
+        "meta": "CT_TXT_20240315_001_ABC123"
+      }
+    ]
+  }
+]
+Notification Replied — Media Replies (Video)
+[
+  {
+    "event": "replied", 
+    "data": [
+      {
+        "channel": "RCS",
+        "type": "video/mp4",
+        "mediaUrl": "https://rcs-provider.com/media/user-video-def456",
+        "fromPhone": "+91XXXXXXXXXXX",
+        "toPhone": "+91XXXXXXXXXXX",
+        "meta": "CT_TXT_20240315_001_ABC123"
+      }
+    ]
+  }
+]
+Notification Replied — Media Replies (PDF)
+[
+  {
+    "event": "replied",
+    "data": [
+      {
+        "channel": "RCS", 
+        "type": "application/pdf",
+        "mediaUrl": "https://rcs-provider.com/media/user-document-ghi789",
+        "fromPhone": "+91XXXXXXXXXX",
+        "toPhone": "+91XXXXXXXXXX", 
+        "meta": "CT_TXT_20240315_001_ABC123"
+      }
+    ]
+  }
+]
+Notification Replied — Media Replies (Location)
+
+[
+  {
+    "event": "replied",
+    "data": [
+      {
+        "channel": "RCS",
+        "type": "location",
+        "fromPhone": "+91XXXXXXXXXX",
+        "toPhone": "+91XXXXXXXXXX",
+        "incomingText": "My current location",
+        "latitude": "19.0760",
+        "longitude": "72.8777", 
+        "meta": "CT_TXT_20240315_001_ABC123"
+      }
+    ]
+  }
+]
+Error Codes and Status Responses
+This section lists all possible errors returned either synchronously (API) or asynchronously (callback).
+API-Level Errors (Provider Response)
+These errors are returned immediately when the provider identifies issues during message processing.
+HTTP Status	API Error Code	Error Title	Description	Usage
+200	2000	Invalid credentials	Authentication failure, API key issues	Return when the auth credentials are invalid/expired
+200	2001	Invalid template parameters	Missing parameters, template mismatch, incorrect template name	Return when template validation fails
+200	2002	Invalid phone number	Phone number format errors, invalid country codes, malformed numbers	Return when phone number validation fails
+200	2003	Phone number not subscribed	User consent-related errors, opt-out status	Return when the user has not consented to RCS messages
+200	2004	RCS Disabled for the number	Target number doesn't support RCS	Return when RCS is not available for the recipient
+200	2005	Messaging Account Disabled	Provider account issues, billing problems, service suspension	Return when the provider account has issues
+200	2006	Invalid Media	Media file issues: invalid format, size limits, broken URLs	Return when media validation fails
+200	2007	Source IP Restricted	IP whitelisting violations	Return when the request originates from a non-whitelisted IP
+200	2008	Invalid RCS sender ID	RCS Business Messaging sender ID errors	Return when the sender ID is invalid/unregistered
+200	2009	No Active Conversation	Lack of an active RCS conversation window	Return when the RCS conversation has expired
+200	2011	Outside Permitted Time Window	Message sent outside allowed time constraints	Return when message timing violates regulations
+200	2012	Content Policy Violation	Message content blocked due to policy violations	Return when content filtering detects violations
+200	2013	Promotional Message Limit Exceeded	Daily/hourly promotional message limits reached	Return when rate limits are exceeded
+200	2014	Others	Any other provider-specific errors	Return for unclassified errors
+Callback-Level Error Codes (Delivery Failures)
+These errors are sent via callback when delivery fails after the initial API acceptance.
+Error Title	Description	Callback Code
+DND Failure	Number registered in the Do Not Disturb registry	901
+Spam Detection	Message blocked by carrier spam filters	902
+Blacklist Rejection	Number blacklisted due to previous opt-outs or complaints	903
+System Error	Internal provider system failure during processing	904
+Subscriber Error	Recipient issues: insufficient balance, network problems	905
+DLT Header Blocked	Sender ID blocked at DLT platform (India-specific)	906
+DLT Entity Blocked	Entity ID issues at DLT platform (India-specific)	907
+DLT Template Blocked	Template issues at DLT platform (India-specific)	908
+DLT Consent Error	Missing DLT consent registration (India-specific)	909
+Invalid Subscriber	Inactive or invalid phone number	910
+Message Inbox Full	Recipient's inbox storage is full	912
+NDNC Rejected	Number in the National Do Not Call registry	913
+Undelivered	Delivery failed after multiple retry attempts	914
+Dropped	Number banned or inactive (no usage for 60+ days)	915
+Expired	Message expired after multiple delivery attempts	916
+Force Expired	Message dropped by provider rules or client request	917
+Duplicate Message Drop	Same content sent to the same number within 30 minutes	918
+DLT Platform Failure	DLT platform-level issues (India-specific)	919
+Error Response Format
+API Response (Immediate):
+API Response
+{
+  "success": true
+}
+API Response
+[
+  {
+    "event": "failed",
+    "data": [
+      {
+        "ts": 1710504000,
+        "code": "2000",
+        "meta": "CT_TXT_20240315_001_ABC123"
+      }
+    ]
+  }
+]
+Callback Response (Delivery Failure):
+Callback Response
+[
+  {
+    "event": "failed",
+    "data": [
+      {
+        "ts": 1710504000,
+        "code": "903",
+        "meta": "CT_TXT_20240315_001_ABC123"
+      }
+    ]
+  }
+]
+
+

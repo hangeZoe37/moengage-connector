@@ -12,6 +12,6 @@ const basicAuth = require('../middleware/basicAuth');
 
 // WebEngage hits this endpoint to send RCS messages
 // Protected by Basic Auth (SPARC credentials)
-router.post('/', basicAuth, webengageController.handleInbound);
+router.post(['/', '/send'], basicAuth, webengageController.handleInbound);
 
 module.exports = router;

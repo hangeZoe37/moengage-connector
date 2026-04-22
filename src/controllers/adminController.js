@@ -58,8 +58,9 @@ async function createClient(req, res) {
     }
     const bearer_token = req.body.bearer_token || crypto.randomBytes(32).toString('hex');
 
-    const id = await clientRepo.createClient({ ...req.body, bearer_token });
-    const newClient = await clientRepo.findById(id);
+    const { connector_type = 'MOENGAGE' } = req.body;
+    const id = await clientRepo.createClient({ ...req.body, bearer_token }, connector_type);
+    const newClient = await clientRepo.findById(id, connector_type);
     if (newClient) {
       newClient.rcs_password = newClient.rcs_password ? '***' : null;
       newClient.sms_password = newClient.sms_password ? '***' : null;
@@ -79,11 +80,12 @@ async function createClient(req, res) {
 async function updateClient(req, res) {
   try {
     const id = parseInt(req.params.id, 10);
-    const client = await clientRepo.findById(id);
+    const connectorType = req.body.connector_type || req.query.connector_type || req.query.connector;
+    const client = await clientRepo.findById(id, connectorType);
     if (!client) return res.status(404).json({ error: 'Client not found' });
 
-    await clientRepo.updateClient(id, req.body);
-    const updated = await clientRepo.findById(id);
+    await clientRepo.updateClient(id, req.body, client.connector_type);
+    const updated = await clientRepo.findById(id, client.connector_type);
     if (updated) {
       updated.rcs_password = updated.rcs_password ? '***' : null;
       updated.sms_password = updated.sms_password ? '***' : null;
@@ -98,14 +100,15 @@ async function updateClient(req, res) {
 async function toggleClientStatus(req, res) {
   try {
     const id = parseInt(req.params.id, 10);
+    const connectorType = req.body.connector_type || req.query.connector_type || req.query.connector;
     if (isNaN(id)) return res.status(400).json({ error: 'Invalid client id' });
 
-    const client = await clientRepo.findById(id);
+    const client = await clientRepo.findById(id, connectorType);
     if (!client) return res.status(404).json({ error: 'Client not found' });
 
-    await query('UPDATE clients SET is_active = NOT is_active WHERE id = ?', [id]);
+    await clientRepo.toggleActive(id, client.connector_type);
 
-    const updated = await clientRepo.findById(id);
+    const updated = await clientRepo.findById(id, client.connector_type);
     logger.info('Admin: client status toggled', { clientId: id, is_active: updated?.is_active });
     res.json({ status: 'success', is_active: updated?.is_active });
   } catch (error) {

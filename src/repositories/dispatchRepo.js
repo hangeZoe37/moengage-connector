@@ -2,27 +2,21 @@
 
 /**
  * src/repositories/dispatchRepo.js
- * SQL operations for connector-specific callback_dispatch_log table.
+ * SQL operations for callback_dispatch_log table.
  */
 
-const { query } = require('../config/db');
+const db = require('../config/db');
 
-/**
- * Resolve the connector-specific table name based on payload type.
- * @param {string} payloadType
- * @returns {string}
- */
-function dispatchTable(payloadType) {
-  if (typeof payloadType === 'string' && payloadType.includes('CLEVERTAP')) {
-    return 'clevertap_callback_dispatch_log';
+function parseConnector(payloadType) {
+  if (typeof payloadType === 'string') {
+    if (payloadType.includes('CLEVERTAP')) return 'CLEVERTAP';
+    if (payloadType.includes('WEBENGAGE')) return 'WEBENGAGE';
   }
-  return 'moengage_callback_dispatch_log';
+  return 'MOENGAGE';
 }
 
 /**
- * Insert a callback dispatch log entry directly into the connector table ONLY.
- * @param {object} params
- * @returns {Promise<object>}
+ * Insert a callback dispatch log entry into the connector db.
  */
 async function create(params) {
   const {
@@ -34,10 +28,11 @@ async function create(params) {
     error_message,
   } = params;
 
-  const specificTable = dispatchTable(payload_type);
+  const connector = parseConnector(payload_type);
 
-  return query(
-    `INSERT INTO ${specificTable}
+  return db.connectorQuery(
+    connector,
+    `INSERT INTO callback_dispatch_log
       (callback_data, payload_type, attempt_number, http_status, success, error_message, dispatched_at)
      VALUES (?, ?, ?, ?, ?, ?, NOW())`,
     [

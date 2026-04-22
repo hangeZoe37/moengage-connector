@@ -31,7 +31,7 @@ async function processMessages(messages, client) {
   // 1. Pre-fetch mappings once per batch (optimization)
   let mappings = [];
   try {
-    mappings = await trackLinkRepo.getMappingsByClient(client.id);
+    mappings = await trackLinkRepo.getMappingsByClient(client.id, 'MOENGAGE');
   } catch (err) {
     logger.error('Failed to pre-fetch URL mappings', { clientId: client.id, error: err.message });
   }
@@ -70,6 +70,7 @@ async function processMessages(messages, client) {
         fallback_order:  message.fallback_order || ['rcs'],
         raw_payload:     message,
         has_url:         hasUrlFlag,
+        connector_type:  'MOENGAGE'
       });
 
       // No fallback content provided, notify of failure

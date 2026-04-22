@@ -5,7 +5,7 @@
  * SQL operations for the clients table.
  */
 
-const { query } = require('../config/db');
+const db = require('../config/db');
 const cache = require('../services/cacheService');
 const { hashToken } = require('../utils/crypto');
 
@@ -13,22 +13,30 @@ const { hashToken } = require('../utils/crypto');
  * Find a client by its Bearer token.
  * Used exclusively for inbound request authentication and routing.
  * Caches results for 5 minutes.
- * Supports both plain and hashed tokens for backward compatibility.
+ * 
+ * SEARCH STRATEGY: Fan-out to all 3 connector databases (MOE, CT, WE).
+ * 
  * @param {string} token - Bearer token from Authorization header
  * @returns {Promise<object|null>} Client row or null
  */
 async function findByToken(token) {
   const hashed = hashToken(token);
-  const cacheKey = `client_token_${hashed}`; // Use hash for cache key consistency
+  const cacheKey = `client_token_${hashed}`;
   const cached = cache.get(cacheKey);
   if (cached) return cached;
 
-  // Search by plain token OR hashed token
-  const rows = await query(
-    'SELECT * FROM clients WHERE (bearer_token = ? OR bearer_token = ?) AND is_active = 1 LIMIT 1',
-    [token, hashed]
-  );
-  const client = rows.length > 0 ? rows[0] : null;
+  // Search by plain token OR hashed token across ALL databases
+  const sql = 'SELECT * FROM clients WHERE (bearer_token = ? OR bearer_token = ?) AND is_active = 1 LIMIT 1';
+  const [moe, ct, we] = await db.fanOutQuery(sql, [token, hashed]);
+
+  let client = null;
+  if (moe.length > 0) {
+    client = { ...moe[0], connector_type: 'MOENGAGE' };
+  } else if (ct.length > 0) {
+    client = { ...ct[0], connector_type: 'CLEVERTAP' };
+  } else if (we.length > 0) {
+    client = { ...we[0], connector_type: 'WEBENGAGE' };
+  }
   
   if (client) {
     cache.set(cacheKey, client);
@@ -44,40 +52,68 @@ async function findByToken(token) {
  * @returns {Promise<object|null>}
  */
 async function findByCredentials(username, password) {
-  const rows = await query(
-    'SELECT * FROM clients WHERE rcs_username = ? AND rcs_password = ? AND is_active = 1 LIMIT 1',
-    [username, password]
-  );
-  return rows.length > 0 ? rows[0] : null;
+  const sql = 'SELECT * FROM clients WHERE rcs_username = ? AND rcs_password = ? AND is_active = 1 LIMIT 1';
+  const [moe, ct, we] = await db.fanOutQuery(sql, [username, password]);
+
+  if (moe.length > 0) return { ...moe[0], connector_type: 'MOENGAGE' };
+  if (ct.length > 0) return { ...ct[0], connector_type: 'CLEVERTAP' };
+  if (we.length > 0) return { ...we[0], connector_type: 'WEBENGAGE' };
+  return null;
 }
 
 /**
- * Find a client by ID.
+ * Find a client by ID. Requires connectorType since IDs may overlap in different DBs.
  * @param {number} clientId
+ * @param {string} connectorType
  * @returns {Promise<object|null>}
  */
-async function findById(clientId) {
-  const rows = await query(
+async function findById(clientId, connectorType) {
+  if (!connectorType) return findAcrossAllById(clientId);
+
+  const rows = await db.connectorQuery(
+    connectorType,
     'SELECT * FROM clients WHERE id = ? LIMIT 1',
     [clientId]
   );
-  return rows.length > 0 ? rows[0] : null;
+  return rows.length > 0 ? { ...rows[0], connector_type: connectorType } : null;
 }
 
 /**
- * Get all clients for the dashboard/admin list.
+ * Fallback search for a client ID across all DBs. 
+ * Used when the connector_type context is missing (e.g. from older UI states).
+ */
+async function findAcrossAllById(clientId) {
+  const sql = 'SELECT * FROM clients WHERE id = ? LIMIT 1';
+  const [moe, ct, we] = await db.fanOutQuery(sql, [clientId]);
+
+  if (moe.length > 0) return { ...moe[0], connector_type: 'MOENGAGE' };
+  if (ct.length > 0) return { ...ct[0], connector_type: 'CLEVERTAP' };
+  if (we.length > 0) return { ...we[0], connector_type: 'WEBENGAGE' };
+  return null;
+}
+
+/**
+ * Get all clients from all databases for the dashboard/admin list.
  * @returns {Promise<Array>}
  */
 async function getAll() {
-  return query('SELECT * FROM clients ORDER BY created_at DESC');
+  const sql = 'SELECT * FROM clients ORDER BY created_at DESC';
+  const [moe, ct, we] = await db.fanOutQuery(sql);
+  
+  return [
+    ...moe.map(c => ({ ...c, connector_type: 'MOENGAGE' })),
+    ...ct.map(c => ({ ...c, connector_type: 'CLEVERTAP' })),
+    ...we.map(c => ({ ...c, connector_type: 'WEBENGAGE' }))
+  ];
 }
 
 /**
- * Onboard a new client into the database.
+ * Onboard a new client into a specific database.
  * @param {object} clientData
+ * @param {string} connectorType
  * @returns {Promise<number>} New client ID
  */
-async function createClient(clientData) {
+async function createClient(clientData, connectorType = 'MOENGAGE') {
   const {
     client_name,
     bearer_token,
@@ -88,7 +124,8 @@ async function createClient(clientData) {
     rcs_assistant_id,
   } = clientData;
 
-  const result = await query(
+  const result = await db.connectorQuery(
+    connectorType,
     `INSERT INTO clients (
       client_name, bearer_token, rcs_username, rcs_password,
       sms_username, sms_password, rcs_assistant_id
@@ -108,11 +145,12 @@ async function createClient(clientData) {
 }
 
 /**
- * Update client fields (allowlisted columns only).
+ * Update client fields in its specific database.
  * @param {number} id
  * @param {object} fields - Partial updates
+ * @param {string} connectorType
  */
-async function updateClient(id, fields) {
+async function updateClient(id, fields, connectorType = 'MOENGAGE') {
   const allowed = [
     'client_name', 'rcs_username', 'rcs_password',
     'sms_username', 'sms_password', 'rcs_assistant_id',
@@ -127,31 +165,33 @@ async function updateClient(id, fields) {
   }
   if (updates.length === 0) return;
   params.push(id);
-  const result = await query(`UPDATE clients SET ${updates.join(', ')} WHERE id = ?`, params);
   
-  // Invalidate any token caches for this client by flushing or specific key if known
-  // For simplicity and safety, we flush the token if we can find it, or just use a short TTL
-  // Here we'll rely on the cache TTL for now, or we could find the token and del it.
-  // Best practice: find old token, del it. 
+  const result = await db.connectorQuery(
+    connectorType,
+    `UPDATE clients SET ${updates.join(', ')} WHERE id = ?`, 
+    params
+  );
+  
+  cache.flush();
   return result;
 }
 
 /**
- * Soft-deactivate a client (sets is_active = 0).
- * Message history is preserved. Re-enable via toggleClientStatus.
+ * Soft-deactivate a client.
  * @param {number} id
+ * @param {string} connectorType
  */
-async function deactivateClient(id) {
-  return query('UPDATE clients SET is_active = 0 WHERE id = ?', [id]);
+async function deactivateClient(id, connectorType = 'MOENGAGE') {
+  return db.connectorQuery(connectorType, 'UPDATE clients SET is_active = 0 WHERE id = ?', [id]);
 }
 
 /**
- * Toggle a client's active status (0 → 1 or 1 → 0).
+ * Toggle a client's active status.
  * @param {number} id
+ * @param {string} connectorType
  */
-async function toggleActive(id) {
-  const result = await query('UPDATE clients SET is_active = NOT is_active WHERE id = ?', [id]);
-  // Flush cache to be safe on status change
+async function toggleActive(id, connectorType = 'MOENGAGE') {
+  const result = await db.connectorQuery(connectorType, 'UPDATE clients SET is_active = NOT is_active WHERE id = ?', [id]);
   cache.flush(); 
   return result;
 }
@@ -159,6 +199,7 @@ async function toggleActive(id) {
 module.exports = {
   findByToken,
   findById,
+  findAcrossAllById,
   getAll,
   createClient,
   updateClient,

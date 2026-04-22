@@ -25,6 +25,7 @@ const trackLinkRepo = require('../repositories/trackLinkRepo');
 const { processMessageLinks } = require('../utils/urlProcessor');
 const { CHANNELS, MESSAGE_STATUSES } = require('../config/constants');
 const { env } = require('../config/env');
+const db = require('../config/db');
 const logger = require('../config/logger');
 
 /**
@@ -87,7 +88,7 @@ async function processMessage(message, client) {
       // Update message status to RCS_SENT
       const messageId = sparcPayload.messages[0].message_id;
 
-      await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.RCS_SENT, submissionId || messageId);
+      await messageRepo.updateStatusByConnector(callback_data, MESSAGE_STATUSES.RCS_SENT, 'MOENGAGE', submissionId || messageId);
 
       // Fire RCS_SENT callback to MoEngage after 5 seconds
       const sentPayload = buildMoeStatusPayload(MESSAGE_STATUSES.RCS_SENT, callback_data);
@@ -118,7 +119,7 @@ async function processMessage(message, client) {
       });
 
       // Update status to RCS_SENT_FAILED
-      await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.RCS_SENT_FAILED);
+      await messageRepo.updateStatusByConnector(callback_data, MESSAGE_STATUSES.RCS_SENT_FAILED, 'MOENGAGE');
 
       // Fire RCS_DELIVERY_FAILED callback  
       const failedPayload = buildMoeStatusPayload(
@@ -172,12 +173,12 @@ async function attemptSms(message, client, dlrUrl, assistantId = null) {
 
   try {
     // --- URL Tracking Upgradation ---
-    const mappings = await trackLinkRepo.getMappingsByClient(client.id);
+    const mappings = await trackLinkRepo.getMappingsByClient(client.id, client.connector_type || 'MOENGAGE');
     const { modifiedText, trackLinkIds, hasUrl } = processMessageLinks(sms.message || sms.text, mappings);
 
     let smsResponse;
     if (hasUrl) {
-      await messageRepo.updateHasUrl(callback_data, 1);
+      await messageRepo.updateHasUrlByConnector(callback_data, 1, 'MOENGAGE');
       smsResponse = await sparcClient.sendLinkSMS(
         client,
         { ...sms, message: modifiedText },
@@ -185,7 +186,7 @@ async function attemptSms(message, client, dlrUrl, assistantId = null) {
         trackLinkIds
       );
     } else {
-      await messageRepo.updateHasUrl(callback_data, 0);
+      await messageRepo.updateHasUrlByConnector(callback_data, 0, 'MOENGAGE');
       smsResponse = await sparcClient.sendSMS(
         client,
         sms,
@@ -200,15 +201,15 @@ async function attemptSms(message, client, dlrUrl, assistantId = null) {
       state: smsResponse?.state,
     });
 
-    await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.SMS_SENT);
+    await messageRepo.updateStatusByConnector(callback_data, MESSAGE_STATUSES.SMS_SENT, 'MOENGAGE');
 
     // Persist the SPARC SMS transactionId so the SMS DLR webhook can correlate back
     if (smsResponse?.transactionId) {
-      await messageRepo.updateSparcTransactionId(callback_data, smsResponse.transactionId).catch(err => {
-        logger.warn('Failed to store SMS transactionId — SMS_DELIVERED DLR may not dispatch', {
+      const sql = 'UPDATE message_logs SET sparc_transaction_id = ? WHERE callback_data = ?';
+      await db.connectorQuery('MOENGAGE', sql, [String(smsResponse.transactionId), callback_data]).catch(err => {
+        logger.warn('Failed to store SMS transactionId', {
           callbackData: callback_data,
-          transactionId: smsResponse.transactionId,
-          error: err.message,
+          error: err.message
         });
       });
     }
@@ -219,7 +220,6 @@ async function attemptSms(message, client, dlrUrl, assistantId = null) {
       try {
         await callbackDispatcher.dispatchStatus(dlrUrl, smsPayload, callback_data);
         const timestamp = Math.floor(Date.now() / 1000);
-        console.log(`sms sent | callback_data: ${callback_data} | timestamp: ${timestamp}`);
         logger.info(`sms sent | callback_data: ${callback_data} | timestamp: ${timestamp}`);
       } catch (err) {
         logger.error('Delayed SMS_SENT callback failed', { callbackData: callback_data, error: err.message });
@@ -232,12 +232,12 @@ async function attemptSms(message, client, dlrUrl, assistantId = null) {
       error: smsError.message,
     });
 
-    await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.SMS_SENT_FAILED);
+    await messageRepo.updateStatusByConnector(callback_data, MESSAGE_STATUSES.SMS_SENT_FAILED, 'MOENGAGE');
 
     const smsFailPayload = buildMoeStatusPayload(
       MESSAGE_STATUSES.SMS_DELIVERY_FAILED,
       callback_data,
-      'Mobile number is incorrect'
+      smsError.message
     );
     await callbackDispatcher.dispatchStatus(dlrUrl, smsFailPayload, callback_data);
   }

@@ -17,7 +17,7 @@ const PORT = env.PORT;
 // ─── Start Server ────────────────────────────────────────────────────────────
 
 const server = app.listen(PORT, () => {
-  logger.info('SPARC-MoEngage Connector started', {
+  logger.info('SPARC-Connector Hub started', {
     port: PORT,
     nodeEnv: env.NODE_ENV,
     pid: process.pid,
@@ -47,11 +47,17 @@ async function shutdown(signal) {
     logger.info('HTTP server closed — no new connections accepted');
 
     try {
-      // Drain the MySQL connection pool
-      await pool.end();
-      logger.info('MySQL pool drained — all connections closed');
+      // Drain all 4 MySQL connection pools
+      const { pools } = require('./src/config/db');
+      await Promise.all([
+        pools.ADMIN.end(),
+        pools.MOENGAGE.end(),
+        pools.CLEVERTAP.end(),
+        pools.WEBENGAGE.end()
+      ]);
+      logger.info('All MySQL pools drained — all connections closed');
     } catch (err) {
-      logger.error('Error draining MySQL pool during shutdown', { error: err.message });
+      logger.error('Error draining MySQL pools during shutdown', { error: err.message });
     }
 
     logger.info('Graceful shutdown complete');

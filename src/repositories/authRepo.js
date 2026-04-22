@@ -1,13 +1,13 @@
 'use strict';
 
-const db = require('../config/db');
+const { adminQuery } = require('../config/db');
 
 class AuthRepo {
   /**
    * Fetches the admin record by username.
    */
   async getAdminByUsername(username) {
-    const rows = await db.query(
+    const rows = await adminQuery(
       'SELECT * FROM admins WHERE username = ? LIMIT 1',
       [username]
     );

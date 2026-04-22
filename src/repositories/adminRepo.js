@@ -2,317 +2,258 @@
 
 /**
  * src/repositories/adminRepo.js
- * SQL operations for the Admin Panel.
- *
- * TABLE ROUTING:
- * When a `connector` filter is provided ('MOENGAGE' or 'CLEVERTAP'), all
- * queries target the connector-specific tables directly, giving the PM
- * a fully isolated view of each connector's data:
- *   - MOENGAGE  → moengage_message_logs  + moengage_dlr_events
- *   - CLEVERTAP → clevertap_message_logs + clevertap_dlr_events
- *
- * When no connector is specified, the original shared tables are used
- * (full cross-connector view — backward compat for any generic queries).
+ * Dashboard aggregations across multiple isolated databases.
  */
 
-const { query } = require('../config/db');
+const db = require('../config/db');
+const clientRepo = require('./clientRepo');
 
-/**
- * Return the correct message and DLR table names for a given connector.
- * @param {string|null} connector
- * @returns {{ msgTable: string, dlrTable: string }}
- */
-function getTables(connector) {
-  if (connector === 'CLEVERTAP') {
-    return { msgTable: 'clevertap_message_logs', dlrTable: 'clevertap_dlr_events', sugTable: 'clevertap_suggestion_events' };
+async function getClientsMap() {
+  const clients = await clientRepo.getAll();
+  const map = { MOENGAGE: {}, CLEVERTAP: {}, WEBENGAGE: {} };
+  for (const c of clients) {
+    if (map[c.connector_type]) {
+      map[c.connector_type][c.id] = c.client_name;
+    }
   }
-  if (connector === 'MOENGAGE') {
-    return { msgTable: 'moengage_message_logs', dlrTable: 'moengage_dlr_events', sugTable: 'moengage_suggestion_events' };
-  }
-  if (connector === 'WEBENGAGE') {
-    return { msgTable: 'webengage_message_logs', dlrTable: 'webengage_dlr_events', sugTable: 'webengage_suggestion_events' };
-  }
-  // Default: original shared tables (all connectors combined)
-  return { msgTable: 'message_logs', dlrTable: 'dlr_events', sugTable: 'suggestion_events' };
+  return map;
 }
 
-/**
- * Get the 5 top-level stats for a given date range and connector.
- * @returns {Promise<object>}
- */
 async function getTodayStats(dateFrom = null, dateTo = null, connector = null) {
-  const { msgTable, dlrTable } = getTables(connector);
-
-  let logDateCondition = `DATE(created_at) = CURDATE()`;
-  let dlrDateCondition = `DATE(e.created_at) = CURDATE()`;
-  const finalParams = [];
-
-  if (dateFrom && dateTo) {
-    logDateCondition = `DATE(created_at) >= ? AND DATE(created_at) <= ?`;
-    dlrDateCondition = `DATE(e.created_at) >= ? AND DATE(e.created_at) <= ?`;
-    finalParams.push(dateFrom, dateTo, dateFrom, dateTo);
-  } else if (dateFrom) {
-    logDateCondition = `DATE(created_at) = ?`;
-    dlrDateCondition = `DATE(e.created_at) = ?`;
-    finalParams.push(dateFrom, dateFrom);
-  }
-
-  // When using connector-specific tables, no connector_type WHERE clause needed
-  // — the table itself is already scoped. The shared table still supports the
-  // original connector filter behaviour when connector is null.
-  const connectorClause = (!connector && connector !== null) ? '' : '';
-  // Note: for the shared table path (connector=null), we return combined counts.
-
-  const sql = `
-    SELECT
-      COUNT(*) as total_received,
-      SUM(CASE WHEN status IN ('RCS_SENT', 'RCS_DELIVERED', 'RCS_READ') AND message_type != 'SMS' THEN 1 ELSE 0 END) as rcs_sent,
-      SUM(CASE WHEN channel = 'SMS' OR status LIKE 'SMS_%' THEN 1 ELSE 0 END) as sms_fallback,
-      (SELECT COUNT(*) FROM ${dlrTable} e WHERE ${dlrDateCondition}) as dlrs_received,
-      SUM(CASE WHEN status IN ('FAILED', 'RCS_SENT_FAILED', 'RCS_DELIVERY_FAILED', 'SMS_SENT_FAILED', 'SMS_DELIVERY_FAILED') THEN 1 ELSE 0 END) as terminal_failures
-    FROM (
-      SELECT *, CASE WHEN status LIKE 'SMS_%' THEN 'SMS' ELSE 'RCS' END as channel
-      FROM ${msgTable}
-      WHERE ${logDateCondition}
-    ) sub;
-  `;
-
-  const rows = await query(sql, finalParams);
-  return rows[0] || {
-    total_received:    0,
-    rcs_sent:          0,
-    sms_fallback:      0,
-    dlrs_received:     0,
-    terminal_failures: 0,
-  };
-}
-
-/**
- * Get today's stats per client for a given connector.
- * @returns {Promise<Array>}
- */
-async function getClientStatsToday(dateFrom = null, dateTo = null, connector = null) {
-  const { msgTable, dlrTable } = getTables(connector);
-
-  let dlrDateCondition = `DATE(e.created_at) = CURDATE()`;
-  let logDateCondition = `DATE(m.created_at) = CURDATE()`;
+  let logCond = `DATE(created_at) = CURDATE()`;
+  let dlrCond = `DATE(e.created_at) = CURDATE()`;
   const params = [];
 
   if (dateFrom && dateTo) {
-    dlrDateCondition = `DATE(e.created_at) >= ? AND DATE(e.created_at) <= ?`;
-    logDateCondition = `DATE(m.created_at) >= ? AND DATE(m.created_at) <= ?`;
+    logCond = `DATE(created_at) >= ? AND DATE(created_at) <= ?`;
+    dlrCond = `DATE(e.created_at) >= ? AND DATE(e.created_at) <= ?`;
     params.push(dateFrom, dateTo, dateFrom, dateTo);
   } else if (dateFrom) {
-    dlrDateCondition = `DATE(e.created_at) = ?`;
-    logDateCondition = `DATE(m.created_at) = ?`;
+    logCond = `DATE(created_at) = ?`;
+    dlrCond = `DATE(e.created_at) = ?`;
     params.push(dateFrom, dateFrom);
   }
 
   const sql = `
     SELECT
-      c.id as client_id,
-      c.client_name,
-      SUM(CASE WHEN m.status IN ('RCS_SENT', 'RCS_DELIVERED', 'RCS_READ') AND m.message_type != 'SMS' THEN 1 ELSE 0 END) as rcs_sent,
-      SUM(CASE WHEN (m.status LIKE 'SMS_%' OR m.message_type = 'SMS') THEN 1 ELSE 0 END) as sms_fallback,
-      SUM(CASE WHEN m.status IN ('FAILED', 'RCS_SENT_FAILED', 'RCS_DELIVERY_FAILED', 'SMS_SENT_FAILED', 'SMS_DELIVERY_FAILED') THEN 1 ELSE 0 END) as failed,
-      (SELECT COUNT(*) FROM ${dlrTable} e JOIN ${msgTable} m2 ON e.callback_data = m2.callback_data WHERE m2.client_id = c.id AND ${dlrDateCondition}) as dlrs_received,
-      COUNT(m.id) as total
-    FROM clients c
-    LEFT JOIN ${msgTable} m ON c.id = m.client_id AND ${logDateCondition}
-    GROUP BY c.id, c.client_name
-    ORDER BY c.client_name ASC
+      COUNT(*) as total_received,
+      SUM(CASE WHEN status IN ('RCS_SENT', 'RCS_DELIVERED', 'RCS_READ') AND message_type != 'SMS' THEN 1 ELSE 0 END) as rcs_sent,
+      SUM(CASE WHEN status LIKE 'SMS_%' OR message_type = 'SMS' THEN 1 ELSE 0 END) as sms_fallback,
+      (SELECT COUNT(*) FROM dlr_events e WHERE ${dlrCond}) as dlrs_received,
+      SUM(CASE WHEN status IN ('FAILED', 'RCS_SENT_FAILED', 'RCS_DELIVERY_FAILED', 'SMS_SENT_FAILED', 'SMS_DELIVERY_FAILED') THEN 1 ELSE 0 END) as terminal_failures
+    FROM message_logs
+    WHERE ${logCond}
   `;
-  return query(sql, params);
+
+  let results = [];
+  if (connector) {
+    const rows = await db.connectorQuery(connector, sql, params);
+    results = [rows[0]];
+  } else {
+    const arr = await db.fanOutQuery(sql, params);
+    results = arr; // [moeRow, ctRow, weRow]
+  }
+
+  const aggr = { total_received: 0, rcs_sent: 0, sms_fallback: 0, dlrs_received: 0, terminal_failures: 0 };
+  for (const row of results) {
+    if (!row) continue;
+    aggr.total_received += Number(row.total_received) || 0;
+    aggr.rcs_sent += Number(row.rcs_sent) || 0;
+    aggr.sms_fallback += Number(row.sms_fallback) || 0;
+    aggr.dlrs_received += Number(row.dlrs_received) || 0;
+    aggr.terminal_failures += Number(row.terminal_failures) || 0;
+  }
+  return aggr;
 }
 
-/**
- * Get stuck/unforwarded DLR events for the tracker.
- * Pagination applied in SQL — no in-memory slicing.
- * @param {object} filters
- * @param {number} limit
- * @param {number} offset
- * @returns {Promise<{events: Array, total: number}>}
- */
-async function getDlrTracker(filters = {}, limit = 50, offset = 0) {
-  const { clientId, state, dateFrom, dateTo, connector } = filters;
-  const { msgTable, dlrTable, sugTable } = getTables(connector);
-
-  const safeLimit  = Math.min(Math.max(parseInt(limit,  10) || 50,  1), 200);
-  const safeOffset = Math.max(parseInt(offset, 10) || 0, 0);
-
-  let whereClause = '';
+async function getClientStatsToday(dateFrom = null, dateTo = null, connector = null) {
+  let logCond = `DATE(m.created_at) = CURDATE()`;
+  let dlrCond = `DATE(e.created_at) = CURDATE()`;
   const params = [];
 
-  if (clientId) {
-    whereClause += ' AND m.client_id = ?';
-    params.push(clientId);
-  }
-
-  if (state === 'stuck') {
-    whereClause += ' AND forwarded = 0';
-  }
-
-  if (dateFrom) {
-    whereClause += ' AND created_at >= ?';
-    params.push(dateFrom);
-  }
-
-  if (dateTo) {
-    whereClause += ' AND created_at <= ?';
-    params.push(dateTo);
+  if (dateFrom && dateTo) {
+    logCond = `DATE(m.created_at) >= ? AND DATE(m.created_at) <= ?`;
+    dlrCond = `DATE(e.created_at) >= ? AND DATE(e.created_at) <= ?`;
+    params.push(dateFrom, dateTo, dateFrom, dateTo);
+  } else if (dateFrom) {
+    logCond = `DATE(m.created_at) = ?`;
+    dlrCond = `DATE(e.created_at) = ?`;
+    params.push(dateFrom, dateFrom);
   }
 
   const sql = `
-    SELECT * FROM (
-      SELECT d.id, d.callback_data as seq_id, c.client_name, d.sparc_status, d.moe_status,
-             d.callback_dispatched as forwarded, d.created_at, d.event_timestamp, m.client_id
-      FROM ${dlrTable} d
-      LEFT JOIN ${msgTable} m ON d.callback_data = m.callback_data
-      LEFT JOIN clients c ON m.client_id = c.id
-      UNION ALL
-      SELECT s.id, s.callback_data as seq_id, c.client_name, 'SUGGEST_CLICK' as sparc_status, s.suggestion_text as moe_status,
-             s.callback_dispatched as forwarded, s.created_at, s.event_timestamp, m.client_id
-      FROM ${sugTable} s
-      LEFT JOIN ${msgTable} m ON s.callback_data = m.callback_data
-      LEFT JOIN clients c ON m.client_id = c.id
-    ) as combined
-    WHERE 1=1 ${whereClause}
-    ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}
+    SELECT
+      m.client_id,
+      COUNT(m.id) as total,
+      SUM(CASE WHEN m.status IN ('RCS_SENT', 'RCS_DELIVERED', 'RCS_READ') AND m.message_type != 'SMS' THEN 1 ELSE 0 END) as rcs_sent,
+      SUM(CASE WHEN (m.status LIKE 'SMS_%' OR m.message_type = 'SMS') THEN 1 ELSE 0 END) as sms_fallback,
+      SUM(CASE WHEN m.status IN ('FAILED', 'RCS_SENT_FAILED', 'RCS_DELIVERY_FAILED', 'SMS_SENT_FAILED', 'SMS_DELIVERY_FAILED') THEN 1 ELSE 0 END) as failed,
+      (SELECT COUNT(*) FROM dlr_events e JOIN message_logs m2 ON e.callback_data = m2.callback_data WHERE m2.client_id = m.client_id AND ${dlrCond}) as dlrs_received
+    FROM message_logs m
+    WHERE ${logCond}
+    GROUP BY m.client_id
   `;
 
-  // Repeat params twice for UNION combined params?
-  // Wait, I wrap it in `FROM ( ... UNION ALL ... ) as combined WHERE 1=1 ${whereClause}`
-  // So the whereClause applies to `combined` and params are only needed once!
-  
-  const [rows, total] = await Promise.all([
-    query(sql, params),
-    countDlrTracker(filters),
-  ]);
+  let results = [];
+  if (connector) {
+    results = await db.connectorQuery(connector, sql, params);
+  } else {
+    const [moe, ct, we] = await db.fanOutQuery(sql, params);
+    results = [...moe, ...ct, ...we];
+  }
 
-  return { events: rows, total };
+  const clientMap = await getClientsMap();
+  const aggrMap = {};
+
+  // Default all clients to 0 so they appear in dashboard
+  // Only include clients from the relevant connector if filtered
+  for (const [conn, ids] of Object.entries(clientMap)) {
+    if (connector && conn !== connector) continue;
+    for (const [id, name] of Object.entries(ids)) {
+      aggrMap[id] = { client_id: id, client_name: name, total: 0, rcs_sent: 0, sms_fallback: 0, failed: 0, dlrs_received: 0 };
+    }
+  }
+
+  for (const row of results) {
+    if (!row.client_id) continue;
+    const item = aggrMap[row.client_id];
+    if (item) {
+      item.total += Number(row.total);
+      item.rcs_sent += Number(row.rcs_sent);
+      item.sms_fallback += Number(row.sms_fallback);
+      item.failed += Number(row.failed);
+      item.dlrs_received += Number(row.dlrs_received);
+    }
+  }
+
+  const unassigned = Object.values(aggrMap);
+  unassigned.sort((a,b) => a.client_name.localeCompare(b.client_name));
+  return unassigned;
 }
 
-/**
- * Count DLR tracker results (for pagination metadata).
- * @param {object} filters
- * @returns {Promise<number>}
- */
+async function getDlrTracker(filters = {}, limit = 50, offset = 0) {
+  const { clientId, state, dateFrom, dateTo, connector } = filters;
+  const safeLimit = Math.min(Math.max(parseInt(limit, 10)||50,1),200);
+  const safeOffset = Math.max(parseInt(offset,10)||0,0);
+  
+  let clause = '';
+  const params = [];
+  if (clientId) { clause += ' AND m.client_id = ?'; params.push(clientId); }
+  if (state === 'stuck') { clause += ' AND forwarded = 0'; }
+  if (dateFrom) { clause += ' AND combined.created_at >= ?'; params.push(dateFrom); }
+  if (dateTo) { clause += ' AND combined.created_at <= ?'; params.push(dateTo); }
+
+  const sql = `
+    SELECT combined.* FROM (
+      SELECT d.id, d.callback_data as seq_id, d.sparc_status, d.moe_status,
+             d.callback_dispatched as forwarded, d.created_at, d.event_timestamp, m.client_id
+      FROM dlr_events d LEFT JOIN message_logs m ON d.callback_data = m.callback_data
+      UNION ALL
+      SELECT s.id, s.callback_data as seq_id, 'SUGGEST_CLICK' as sparc_status, s.suggestion_text as moe_status,
+             s.callback_dispatched as forwarded, s.created_at, s.event_timestamp, m.client_id
+      FROM suggestion_events s LEFT JOIN message_logs m ON s.callback_data = m.callback_data
+    ) as combined WHERE 1=1 ${clause} 
+    ORDER BY created_at DESC LIMIT ${safeLimit + safeOffset}
+  `;
+
+  let events = [];
+  if (connector) {
+    events = await db.connectorQuery(connector, sql, params);
+  } else {
+    const [moe, ct, we] = await db.fanOutQuery(sql, params);
+    events = [...moe, ...ct, ...we];
+    events.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  }
+  
+  const paged = events.slice(safeOffset, safeOffset + safeLimit);
+  const total = await countDlrTracker(filters);
+  
+  const clientMap = await getClientsMap();
+  for (const e of paged) {
+    const connector = e.connector_type || filters.connector || 'MOENGAGE'; // e.connector_type added to DLR events in migration usually
+    e.client_name = (clientMap[connector] && clientMap[connector][e.client_id]) || 'Unknown';
+  }
+  
+  return { events: paged, total };
+}
+
 async function countDlrTracker(filters = {}) {
   const { clientId, state, dateFrom, dateTo, connector } = filters;
-  const { msgTable, dlrTable, sugTable } = getTables(connector);
-
-  let whereClause = '';
+  let clause = '';
   const params = [];
-
-  if (clientId) {
-    whereClause += ' AND client_id = ?';
-    params.push(clientId);
-  }
-  if (state === 'stuck') {
-    whereClause += ' AND forwarded = 0';
-  }
-  if (dateFrom) {
-    whereClause += ' AND created_at >= ?';
-    params.push(dateFrom);
-  }
-  if (dateTo) {
-    whereClause += ' AND created_at <= ?';
-    params.push(dateTo);
-  }
+  if (clientId) { clause += ' AND m.client_id = ?'; params.push(clientId); }
+  if (state === 'stuck') { clause += ' AND forwarded = 0'; }
+  if (dateFrom) { clause += ' AND combined.created_at >= ?'; params.push(dateFrom); }
+  if (dateTo) { clause += ' AND combined.created_at <= ?'; params.push(dateTo); }
 
   const sql = `
     SELECT COUNT(*) as total FROM (
       SELECT d.id, d.callback_dispatched as forwarded, d.created_at, m.client_id
-      FROM ${dlrTable} d
-      LEFT JOIN ${msgTable} m ON d.callback_data = m.callback_data
+      FROM dlr_events d LEFT JOIN message_logs m ON d.callback_data = m.callback_data
       UNION ALL
       SELECT s.id, s.callback_dispatched as forwarded, s.created_at, m.client_id
-      FROM ${sugTable} s
-      LEFT JOIN ${msgTable} m ON s.callback_data = m.callback_data
-    ) as combined
-    WHERE 1=1 ${whereClause}
+      FROM suggestion_events s LEFT JOIN message_logs m ON s.callback_data = m.callback_data
+    ) as combined WHERE 1=1 ${clause}
   `;
 
-  const rows = await query(sql, params);
-  return rows[0]?.total || 0;
+  if (connector) {
+    const rows = await db.connectorQuery(connector, sql, params);
+    return Number(rows[0]?.total || 0);
+  }
+  const [moe, ct, we] = await db.fanOutQuery(sql, params);
+  return Number(moe[0]?.total||0) + Number(ct[0]?.total||0) + Number(we[0]?.total||0);
 }
 
-/**
- * Message Explorer with SQL-level pagination.
- * @param {object} filters
- * @param {number} limit
- * @param {number} offset
- * @returns {Promise<{logs: Array, total: number}>}
- */
 async function getMessages(filters = {}, limit = 50, offset = 0) {
   const { clientId, status, channel, dateFrom, dateTo, connector } = filters;
-  const { msgTable, dlrTable } = getTables(connector);
-
-  const safeLimit  = Math.min(Math.max(parseInt(limit,  10) || 50,  1), 200);
-  const safeOffset = Math.max(parseInt(offset, 10) || 0, 0);
+  const safeLimit = Math.min(Math.max(parseInt(limit, 10)||50,1),200);
+  const safeOffset = Math.max(parseInt(offset,10)||0,0);
 
   let sql = `
-    SELECT m.id, m.callback_data, c.client_name, m.message_type, m.status,
-           m.created_at, m.bot_id, m.destination,
-           (SELECT COUNT(*) FROM ${dlrTable} d WHERE d.callback_data = m.callback_data) as total_dlrs,
-           (SELECT COUNT(*) FROM ${dlrTable} d WHERE d.callback_data = m.callback_data AND d.callback_dispatched = 1) as forwarded_dlrs,
-           (SELECT COUNT(*) FROM ${dlrTable} d WHERE d.callback_data = m.callback_data AND d.moe_status IN ('RCS_DELIVERY_FAILED', 'RCS_SENT_FAILED')) as has_fallback
-    FROM ${msgTable} m
-    LEFT JOIN clients c ON m.client_id = c.id
-    WHERE 1=1
+    SELECT m.id, m.callback_data, m.message_type, m.status, m.created_at, m.bot_id, m.destination, m.client_id,
+           (SELECT COUNT(*) FROM dlr_events d WHERE d.callback_data = m.callback_data) as total_dlrs,
+           (SELECT COUNT(*) FROM dlr_events d WHERE d.callback_data = m.callback_data AND d.callback_dispatched = 1) as forwarded_dlrs,
+           (SELECT COUNT(*) FROM dlr_events d WHERE d.callback_data = m.callback_data AND d.moe_status IN ('RCS_DELIVERY_FAILED', 'RCS_SENT_FAILED')) as has_fallback
+    FROM message_logs m WHERE 1=1
   `;
-  let countSql = `SELECT COUNT(m.id) as total FROM ${msgTable} m WHERE 1=1`;
-  const params      = [];
-  const countParams = [];
+  let countSql = 'SELECT COUNT(m.id) as total FROM message_logs m WHERE 1=1';
+  const params = [];
 
-  if (clientId) {
-    const clause = ' AND m.client_id = ?';
-    sql += clause; countSql += clause;
-    params.push(clientId); countParams.push(clientId);
-  }
-
-  if (status) {
-    const clause = ' AND m.status = ?';
-    sql += clause; countSql += clause;
-    params.push(status); countParams.push(status);
-  }
-
+  if (clientId) { const c = ' AND m.client_id = ?'; sql += c; countSql += c; params.push(clientId); }
+  if (status) { const c = ' AND m.status = ?'; sql += c; countSql += c; params.push(status); }
   if (channel) {
-    if (channel === 'RCS') {
-      const clause = " AND (m.status NOT LIKE 'SMS_%' AND m.message_type != 'SMS')";
-      sql += clause; countSql += clause;
-    } else if (channel === 'SMS') {
-      const clause = " AND (m.status LIKE 'SMS_%' OR m.message_type = 'SMS')";
-      sql += clause; countSql += clause;
-    }
+    if (channel==='RCS') { const c = " AND (m.status NOT LIKE 'SMS_%' AND m.message_type != 'SMS')"; sql+=c; countSql+=c; }
+    else if (channel==='SMS') { const c = " AND (m.status LIKE 'SMS_%' OR m.message_type = 'SMS')"; sql+=c; countSql+=c; }
+  }
+  if (dateFrom) { const c = ' AND m.created_at >= ?'; sql+=c; countSql+=c; params.push(dateFrom); }
+  if (dateTo) { const c = ' AND m.created_at <= ?'; sql+=c; countSql+=c; params.push(dateTo); }
+
+  sql += ` ORDER BY m.created_at DESC LIMIT ${safeLimit + safeOffset}`;
+
+  let rows = [];
+  let total = 0;
+
+  if (connector) {
+    const res = await db.connectorQuery(connector, sql, params);
+    rows = res;
+    const cRes = await db.connectorQuery(connector, countSql, params);
+    total = Number(cRes[0]?.total||0);
+  } else {
+    const [moe, ct, we] = await db.fanOutQuery(sql, params);
+    rows = [...moe, ...ct, ...we];
+    rows.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+    const [cMoe, cCt, cWe] = await db.fanOutQuery(countSql, params);
+    total = Number(cMoe[0]?.total||0) + Number(cCt[0]?.total||0) + Number(cWe[0]?.total||0);
   }
 
-  if (dateFrom) {
-    const clause = ' AND m.created_at >= ?';
-    sql += clause; countSql += clause;
-    params.push(dateFrom); countParams.push(dateFrom);
+  const paged = rows.slice(safeOffset, safeOffset + safeLimit);
+  const clientMap = await getClientsMap();
+  for (const p of paged) {
+    const connector = filters.connector || (p.connector_type) || 'MOENGAGE';
+    p.client_name = (clientMap[connector] && clientMap[connector][p.client_id]) || 'Unknown';
   }
 
-  if (dateTo) {
-    const clause = ' AND m.created_at <= ?';
-    sql += clause; countSql += clause;
-    params.push(dateTo); countParams.push(dateTo);
-  }
-
-  sql += ` ORDER BY m.created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`;
-
-  const [rows, countRow] = await Promise.all([
-    query(sql, params),
-    query(countSql, countParams),
-  ]);
-
-  return { logs: rows, total: countRow[0]?.total || 0 };
+  return { logs: paged, total };
 }
 
-module.exports = {
-  getTodayStats,
-  getClientStatsToday,
-  getDlrTracker,
-  countDlrTracker,
-  getMessages,
-};
+module.exports = { getTodayStats, getClientStatsToday, getDlrTracker, countDlrTracker, getMessages };

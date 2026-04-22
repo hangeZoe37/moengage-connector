@@ -42,7 +42,7 @@ const logger = winston.createLogger({
     winston.format.errors({ stack: true }),
     winston.format.json()
   ),
-  defaultMeta: { service: 'sparc-moengage-connector' },
+  defaultMeta: { service: 'sparc-connector-hub' },
   transports: [
     new winston.transports.Console({
       format:

@@ -144,14 +144,17 @@ async function sendSMS(clientData, smsData, destination) {
 
     return response.data;
   } catch (error) {
+    const sparcError = error.response?.data?.description || error.message;
     logger.error('SPARC SMS send failed', {
       clientId: clientData.id,
       to: toNumber,
-      error: error.message,
+      error: sparcError,
       status: error.response?.status,
       data: error.response?.data,
     });
-    throw error;
+    const customError = new Error(sparcError);
+    customError.response = error.response;
+    throw customError;
   }
 }
 
@@ -204,13 +207,16 @@ async function sendLinkSMS(clientData, smsData, destination, trackLinkIds) {
 
     return response.data;
   } catch (error) {
+    const sparcError = error.response?.data?.description || error.message;
     logger.error('SPARC SMS sendLink failed', {
       clientId: clientData.id,
       to: toNumber,
-      error: error.message,
+      error: sparcError,
       data: error.response?.data,
     });
-    throw error;
+    const customError = new Error(sparcError);
+    customError.response = error.response;
+    throw customError;
   }
 }
 

@@ -41,16 +41,21 @@ async function handleInbound(req, res) {
   });
 
   try {
+    // --- Automatic Fallback Determination ---
+    const hasSmsFallback = !!(body.smsData || body.smsContent || body.sms);
+    const fallbackOrder = body.fallback_order || (hasSmsFallback ? ['rcs', 'sms'] : ['rcs']);
+
     // 2. Persist to DB
     const logData = {
       callback_data: messageId, // WebEngage messageId maps to our reconcile key
       client_id: client.id,
       destination: to,
       bot_id: rcsData.sender,
+      template_name: rcsData.templateData?.templateId || null,
       message_type: type.toUpperCase(),
+      fallback_order: fallbackOrder, 
       raw_payload: body,
-      connector_type: 'WEBENGAGE',
-      callback_url: null // WebEngage uses static endpoints configured in dashboard
+      connector_type: 'WEBENGAGE'
     };
 
     await messageRepo.create(logData);

@@ -1,0 +1,359 @@
+1.	Service Partner Integration
+RCS Service Provider
+Welcome to WebEngage's Developer Hub!
+RSPs can integrate their platform with the WebEngage Marketing Automation Suite using this documentation.
+How to Initiate RSP Integration?
+We'd love to add you to our Service Partner Network! Please feel free to initiate a conversation by dropping an email at support@webengage.com with the following details:
+1.	Service provider's test credentials (e.g. Username and Password or Api Key, and API endpoint where WebEngage will post messages).
+2.	A logo of the service provider with minimum width of 370 px and preferably in Adobe Illustrator file format.
+3.	A static endpoint which listens to incoming HTTPS POST requests and adheres to the specified schema for sending RCS message. Note that this needs to be a single static endpoint. If you have multiple such endpoints based on e.g. geography, you will have to accept WebEngage requests on a single endpoint and then route them accordingly.
+4.	The request authentication method (Basic authentication or Bearer authentication).
+5.	Input fields to be shown to the client on WebEngage dashboard. For example: API Key or Username and Password.
+o	In case of API Key, the POST request will contain the header Authorization: Bearer API_KEY.
+o	In case of Username and Password, the POST request will contain the header Authorization: Basic BASE_64(USERNAME:PASSWORD).
+	For example, if your username is 'webengage' and password is 'admin' then the Authorization header will be Basic d2ViZW5nYWdlOmFkbWlu. The string d2ViZW5nYWdlOmFkbWlu is the Base64 encoded version of the string webengage:admin.
+WebEngage Support will process the request if there is a mutual client willing to try out the integration and add the service provider in private beta mode on WebEngage dashboard.
+Section 1: The flow of the message will be as follows:
+1.	WebEngage will send message to the RCS Service Provider (RSP) and RSP will reply synchronously to the message received with respective Status Codes given in the last section of this documentation.
+2.	RSP will reply back to WebEngage webhook (i.e. static endpoint which can be found on WebEngage dashboard following: **Integrations > Channels > RCS > ACTIONS (RSP) > View Webhook URL.**for delivery report (i.e. Delivery Status Notification (DSN)) asynchronously.
+1. WebEngage RCS Request to RSP
+As depicted in SECTION 1 point 1, WebEngage will send RCS message to RSP in the following given payload format and RSP needs to reply synchronously to the message with Status Codes provided in the last section of this documentation.
+Key points for API request from WebEngage to RSP:
+1.	At the time of integration, WebEngage allows RSP to accept parameters in the payload request from WebEngage to RSP. parameters is a Map of key value pairs of the template variables provided by user as per template. e.g. if the template is: hello {{key1}}, welcome to new {{key2}} and template variables i.e. {{key1}} and {{key2}} are john and world, then the parameters will be: {"key1":"john", "key2":"world"}.
+2.	templateData provided in given below payload will only contain parameters as per RSP’s choice at the time of integration.
+3.	The Content-Type header will always be application/json. We’ll also provide support for adding custom headers (specific to individual RSP) while user creates RCS RSP configuration on WebEngage dashboard.
+Request format of payload Text/ Rich Card/ Rich Carousel from WebEngage to RSP
+Rich Card
+{
+  "version": "1.0",
+  "rcsData": {
+    "toNumber": "+919999999999",
+    "sender": "<senderId>",
+    "templateData": {
+      "templateName": "rich_card_template",
+      "type": "RICH_CARD",
+      "language": "null",
+      "parameters": {
+        "paramkey1": "paramValue1",
+        "paramkey2": "paramValue2"
+      },
+      "templateDetails": {
+        "orientation": "Vertical",
+        "mediaHeight": "Short",
+        "title": "sample title",
+        "text": "hello john, welcome to new world",
+        "mediaType": "Image",
+        "mediaUrl": "image-url",
+        "buttonDetails": {
+          "buttons": [
+            {
+              "type": "SUGGESTED_REPLY",
+              "text": "Yes"
+            },
+            {
+              "type": "OPEN_URL",
+              "text": "Visit Website",
+              "url": "hKbcwY"
+            },
+            {
+              "type": "CALL_PHONE_NUMBER",
+              "text": "Contact Us",
+              "phone_number": "9999999999"
+            }
+          ]
+        }
+      }
+    },
+    "customData": {
+      "customkey1": "customValue1",
+      "customkey2": "customValue2"
+    }
+  },
+  "metadata": {
+    "campaignType": "PROMOTIONAL",
+    "timeStamp": "2024-12-12T10:29:19+0000",
+    "messageId": "message-id"
+  }
+}
+Text
+{
+  "version": "1.0",
+  "rcsData": {
+    "toNumber": "+919999999999",
+    "sender": "<senderId>",
+    "templateData": {
+      "templateName": "text_template",
+      "type": "TEXT",
+      "language": "null",
+      "parameters": {
+        "paramkey1": "paramValue1",
+        "paramkey2": "paramValue2"
+      },
+      "templateDetails": {
+        "text": "hello john, welcome to new world",
+        "buttonDetails": {
+          "buttons": [
+            {
+              "type": "SUGGESTED_REPLY",
+              "text": "Yes"
+            },
+            {
+              "type": "OPEN_URL",
+              "text": "Visit Website",
+              "url": "hKcdW1"
+            },
+            {
+              "type": "CALL_PHONE_NUMBER",
+              "text": "Contact Us",
+              "phone_number": "9999999999"
+            }
+          ]
+        }
+      }
+    },
+    "customData": {
+      "customkey1": "customValue1",
+      "customkey2": "customValue2"
+    }
+  },
+  "metadata": {
+    "campaignType": "PROMOTIONAL",
+    "timeStamp": "2024-12-12T10:31:38+0000",
+    "messageId": "messageId"
+  }
+}
+Rich Carousel
+{
+  "version": "1.0",
+  "rcsData": {
+    "toNumber": "+919999999999",
+    "sender": "<senderId>",
+    "templateData": {
+      "templateName": "rich_carousel_template",
+      "type": "RICH_CAROUSEL",
+      "language": "null",
+      "parameters": {
+        "paramkey1": "paramValue1",
+        "paramkey2": "paramValue2"
+      },
+      "templateDetails": {
+        "cardWidth": "Small",
+        "mediaHeight": "Short",
+        "cards": [
+          {
+            "title": "Card C1 title",
+            "text": "Card C1 text - hello john, welcome to new world",
+            "mediaType": "Image",
+            "mediaUrl": "media-url",
+            "buttonDetails": {
+              "buttons": [
+                {
+                  "type": "SUGGESTED_REPLY",
+                  "text": "Yes"
+                },
+                {
+                  "type": "OPEN_URL",
+                  "text": "Viszxit Website",
+                  "url": "gKc7p8"
+                },
+                {
+                  "type": "CALL_PHONE_NUMBER",
+                  "text": "Contact Us",
+                  "phone_number": "9999999999"
+                },
+                {
+                  "type": "OPEN_URL",
+                  "text": "Visit Website",
+                  "url": "hKcdW1"
+                }
+              ]
+            }
+          },
+          {
+            "title": "Card C2 title",
+            "text": "Card C2 text - hello john, welcome to new world",
+            "mediaType": "Image",
+            "mediaUrl": "image-url",
+            "buttonDetails": {
+              "buttons": [
+                {
+                  "type": "SUGGESTED_REPLY",
+                  "text": "Yes"
+                },
+                {
+                  "type": "OPEN_URL",
+                  "text": "Visit Website",
+                  "url": "gKc7m8"
+                },
+                {
+                  "type": "CALL_PHONE_NUMBER",
+                  "text": "Contact Us",
+                  "phone_number": "9999999999"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "customData": {
+      "customkey1": "customValue1",
+      "customkey2": "customValue2"
+    }
+  },
+  "metadata": {
+    "campaignType": "PROMOTIONAL",
+    "timeStamp": "2024-12-12T09:45:26+0000",
+    "messageId": "message-Id"
+  }
+}
+
+Key	Description
+version	Indicates the payload contract. If there is any change in the payload structure in future, the version will be updated.
+toNumber	The recipient’s phone number along with country code as prefix.
+sender	The RCS SenderID you are using to send the campaign.
+templateName	Name of template used
+parameters	Template variables with the exact name and sequence as added in dashboard.
+timestamp	The time when the message was triggered from the WebEngage system. This follows the ISO date format: yyyy-MM-ddTHH:mm:ss±hhmm.
+messageId	Unique ID assigned to the message which should be used in further Delivery Status Notifications to identify a message uniquely.
+campaignType	PROMOTIONAL
+customData	In this section , you can pass extra data (in Key-value pair format from the dashboard) in the payload. This is mainly used by partners if they require some custom integrations to be done for their internal systems or for particular clients.
+To use 'Open a URL' button click tracking clients have to use steps mentioned here
+Example curl request with parameters and API Key for authentication:
+cURL
+curl --location --request POST '<RSP-API-END-POINT>' \
+--header 'Authorization: Bearer <API-KEY>' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+  "version": "1.0",
+  "rcsData": {
+    "toNumber": "+919999999999",
+    "sender": "<senderId>",
+    "templateData": {
+      "templateName": "templateName",
+      "parameters": {
+        "paramkey1": "paramValue1",
+        "paramkey2": "paramValue2"
+      }
+    },
+    "customData": {
+      "customkey1": "customValue1",
+      "customkey2": "customValue2"
+    }
+  },
+  "metadata": {
+    "campaignType": "PROMOTIONAL",
+    "timeStamp": "2024-12-20T12:00:21+0000",
+    "messageId": "<messageId>"
+  }
+}'
+Examples for synchronous response for above payloads from RSP to WebEngage:
+Example 1: Message Accepted Successfully
+JSON
+HTTP 200 OK
+{
+    "status" : "rcs_accepted",
+    "statusCode": 0
+}
+Example 2: Message Cannot be Sent further
+NOTE: If the status code is not 0, send message property too.
+JSON
+HTTP 200 OK
+{
+    "status": "rcs_rejected",
+    "statusCode": 2000,
+    "message": "Not enough credit to send message"
+} 
+Example 3: Payload Not Acceptable
+NOTE: In case there is mismatch in payload version of API contract (current is 1.0).
+JSON
+HTTP 400 BAD REQUEST
+{
+    "status" : "rcs_rejected",
+    "statusCode" : 2010,
+    "message" : "Version not supported",
+    "supportedVersion" : "1.0" // Mandatory in case of statusCode 2010
+}
+2. Delivery Status Notification (DSN) from RSP to WebEngage
+Delivery report of each message forwarded by RSP to WebEngage is called as Delivery Status Notification (DSN). It helps our clients to track their campaign's performance in their WebEngage dashboard.
+As depicted in SECTION 1 point 2, DSNs are asynchronous updates to messages (e.g. RCS message delivered, expired, rejected etc.) that RSP sends to WebEngage webhook. This is shown in the flowchart below.
+Key points for DSN from RSP to WebEngage:
+1.	RSP is required to POST DSN i.e. RCS message sent, failed, etc. on the static endpoint which can be found on WebEngage dashboard following: Data Platform > Integrations > WhatsApp Setup (Configure) > ACTIONS (WSP) > View Webhook URL.
+WebEngage comes with three servers: Saudi Arabia, India and US servers, and it is necessary that the DSN is configured for all servers.
+You can find the DSN tracking link below. The DSN Token will be provided once the integration and testing are done by the WebEngage team.
+The service provider is required to POST Delivery Status Notifications (DSNs) i.e. RCS Message sent, failed, etc. on the static endpoint.
+For US Server : https://rt.webengage.com/tracking/events
+For IN Server : https://rt.in.webengage.com/tracking/events
+For KSA Server : https://rt.ksa.webengage.com/tracking/events
+2.	RSP will be provided with:
+Auth token - which needs to be included as an Authorization header in the POST request of DSNs.
+e.g. Authorization: Bearer <Auth token>. This token will remain the same and should not be shared to ensure security. In case there is a need to change the token, RSP should reach out to WebEngage Support to get a new token.
+3.	Content-Type Header for the DSN request should be application/json.
+4.	WebEngage will respond to the DSN request with an HTTP 2XX response code.
+Request format of DSN payload from RSP to WebEngage
+JSON
+{
+    "version": "1.0",
+    "messageId" : "webengage-message-id",
+    "toNumber" : "+919999999999",
+    "sender" : "<senderId>",
+    "status": "rcs_delivered",
+    "statusCode" : 0,
+    "reason": "Success",
+    "timestamp": "2024-08-12T14:57:16+0000"
+}
+Key	Description
+version	This indicates the payload contract of the request. If there is any change in the payload structure in future, the version will be updated.
+messageId	This is the unique ID assigned to the message which is used to identify a message uniquely.
+This is received by the service provider in the request body. The length of this string can be up to 500 characters. The messageId provided in DSNs must be the same as that received from WebEngage in the request. You must not modify it.
+toNumber	The message recipient’s phone number along with country code as prefix.
+sender	The RCS SenderID you are using to send the campaign.
+status	The message status being reported by this DSN. This can be either rcs_delivered,rcs_failed or rcs_read.
+statusCode	Status code of this DSN. This must be one of the status codes described below.
+reason	It is an optional field (must be given when statusCode doesn’t fulfill failed reason, or when statusCode is 9988).
+timestamp	The time when the message was triggered from the WebEngage system. This follows the ISO date format: yyyy-MM-ddTHH:mm:ss±hhmm.
+Example curl request of DSN with[Auth token for authentication] as header:
+JSON
+curl --location --request POST '<STATIC-DSN-END-POINT-OF-WEBENGAGE>' \
+--header 'Authorization: Bearer <AUTH-TOKEN-PROVIDED-BY-WEBENGAGE>' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+  "version": "1.0",
+  "messageId": "webengage-message-id",
+  "toNumber": "+919999999999",
+  "sender": "<senderId>",
+  "status": "rcs_delivered",
+  "statusCode": 0,
+  "reason": "sent successfully to user",
+  "timestamp": "2018-01-25T10:24:16+0000"
+}'
+Status Code
+These status codes are to be used both for synchronous responses and DSN. Refer to the Description column below for more details about the respective status. Make sure that you send the appropriate HTTP status corresponding to the status codes.
+Status Code	Description	HTTP Status
+0	To be sent in case of success	200
+1000	Insufficient credit balance	200
+1001	Number is RCS Disabled	200
+1002	Entity was not found	401
+1003	Template code with bot doesn’t exist	400
+9988	For outcomes not covered, include the appropriate error description in the "message" field of the response	400
+2019	Credit Insufficient	400
+2020	Message Empty	403
+2021	Mobile Number Invalid	200
+2022	Sender Id is Invalid	413
+2005	Authorization failure	401
+2006	Exceeding max length	200
+2007	Expired	400
+2008	Undelivered	401
+2009	Version Unsupported	200
+2017	Invalid Message Format	429
+2011	Others	200
+2012	DND Time	400
+2013	Maximum Retries Exhausted	400
+2014	Rate Limit Exceeded	400
+2015	WebEngage uses auto-scaling to handle high traffic, which may occasionally trigger rate limits on your end. For throttled requests, return this status code so WebEngage can recognize the signal and retry delivery at a later time.	200
+2016	Retries Expired	200
+2023	Template Missing	200
+2024	Template Paramenter Format Mismatch	200
+2025	User not Opted in or Inactive	200
+Please feel free to drop in a few lines at support@webengage.com in case you have any further queries. We're always just an email away!
+

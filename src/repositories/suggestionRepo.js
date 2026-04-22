@@ -2,28 +2,13 @@
 
 /**
  * src/repositories/suggestionRepo.js
- * SQL operations for connector-specific suggestion_events tables.
+ * SQL operations for suggestion_events tables.
  */
 
-const { query } = require('../config/db');
-const logger = require('../config/logger');
+const db = require('../config/db');
 
 /**
- * Resolve the connector-specific suggestion event table name.
- * @param {string} connectorType
- * @returns {string}
- */
-function suggestionTable(connectorType) {
-  if (connectorType === 'CLEVERTAP') return 'clevertap_suggestion_events';
-  if (connectorType === 'WEBENGAGE')  return 'webengage_suggestion_events';
-  return 'moengage_suggestion_events';
-}
-
-/**
- * Insert a suggestion click event directly into the connector-specific table ONLY.
- * @param {object} params
- * @param {string} [connectorType='MOENGAGE']
- * @returns {Promise<object>}
+ * Insert a suggestion click event into the specific connector db.
  */
 async function create(params, connectorType = 'MOENGAGE') {
   const {
@@ -33,10 +18,9 @@ async function create(params, connectorType = 'MOENGAGE') {
     event_timestamp,
   } = params;
 
-  const specificTable = suggestionTable(connectorType);
-
-  return query(
-    `INSERT INTO ${specificTable}
+  return db.connectorQuery(
+    connectorType,
+    `INSERT INTO suggestion_events
       (callback_data, suggestion_text, postback_data, event_timestamp, callback_dispatched, created_at)
      VALUES (?, ?, ?, ?, 0, NOW())`,
     [callback_data, suggestion_text || null, postback_data || null, event_timestamp || null]
@@ -44,28 +28,27 @@ async function create(params, connectorType = 'MOENGAGE') {
 }
 
 /**
- * Mark a suggestion event as dispatched in the specific connector table.
- * @param {number} eventId
- * @param {string} [connectorType='MOENGAGE']
- * @returns {Promise<object>}
+ * Mark a suggestion event as dispatched.
  */
 async function markDispatched(eventId, connectorType = 'MOENGAGE') {
-  const specificTable = suggestionTable(connectorType);
-  return query(`UPDATE ${specificTable} SET callback_dispatched = 1 WHERE id = ?`, [eventId]);
+  return db.connectorQuery(
+    connectorType,
+    `UPDATE suggestion_events SET callback_dispatched = 1 WHERE id = ?`,
+    [eventId]
+  );
 }
 
 /**
  * Find all suggestion events for a given callback_data.
- * Queries the view to get across all connectors.
- * @param {string} callbackData
- * @returns {Promise<Array>}
+ * Fans out across DBs.
  */
 async function findByCallbackData(callbackData) {
-  const rows = await query(
-    'SELECT * FROM suggestion_events WHERE callback_data = ? ORDER BY created_at ASC',
-    [callbackData]
-  );
-  return rows;
+  const sql = 'SELECT * FROM suggestion_events WHERE callback_data = ? ORDER BY created_at ASC';
+  const [moe, ct, we] = await db.fanOutQuery(sql, [callbackData]);
+  
+  const merged = [...moe, ...ct, ...we];
+  merged.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  return merged;
 }
 
 module.exports = { create, markDispatched, findByCallbackData };

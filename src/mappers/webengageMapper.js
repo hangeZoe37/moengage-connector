@@ -218,7 +218,14 @@ function mapDlrToWebEngage(messageId, status, message, description = 'Success') 
  */
 function mapInteractionToWebEngage(messageId, sparcEvent, message) {
   const isClick = !!(sparcEvent.url || sparcEvent.open_url);
-  const status = isClick ? 'RCS_CLICKED' : 'RCS_REPLIED';
+  const interactionType = (sparcEvent.interactionType || '').toUpperCase();
+  
+  let status = 'RCS_REPLIED';
+  if (interactionType === 'VIEW') {
+    status = 'RCS_READ';
+  } else if (isClick || interactionType === 'OPEN_URL') {
+    status = 'RCS_CLICKED';
+  }
   
   const externalId = messageId.replace(/^web_/, '');
 

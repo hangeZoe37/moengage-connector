@@ -13,6 +13,7 @@ const trackLinkRepo = require('../repositories/trackLinkRepo');
 const { processMessageLinks } = require('../utils/urlProcessor');
 const { CHANNELS, MESSAGE_STATUSES } = require('../config/constants');
 const { env } = require('../config/env');
+const db = require('../config/db');
 const logger = require('../config/logger');
 
 /**
@@ -41,14 +42,14 @@ async function processMessage(payload, client) {
     const messageId = sparcPayload.messages[0].message_id;
     const submissionId = sparcResponse.submission_id || sparcResponse[0]?.callback_data;
 
-    await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.RCS_SENT, submissionId || messageId);
+    await messageRepo.updateStatusByConnector(callback_data, MESSAGE_STATUSES.RCS_SENT, 'CLEVERTAP', submissionId || messageId);
 
     logger.info('CleverTap RCS sent successfully', { msgId, submissionId });
 
   } catch (rcsError) {
     logger.warn('CleverTap RCS failed, trying SMS fallback', { msgId, error: rcsError.message });
 
-    await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.RCS_SENT_FAILED);
+    await messageRepo.updateStatusByConnector(callback_data, MESSAGE_STATUSES.RCS_SENT_FAILED, 'CLEVERTAP');
 
     // 3. SMS Fallback
     if (smsContent) {
@@ -69,12 +70,12 @@ async function attemptSms(payload, client) {
   
   try {
     // URL tracking for SMS
-    const mappings = await trackLinkRepo.getMappingsByClient(client.id);
+    const mappings = await trackLinkRepo.getMappingsByClient(client.id, client.connector_type || 'CLEVERTAP');
     const { modifiedText, trackLinkIds, hasUrl } = processMessageLinks(smsContent.body, mappings);
 
     let smsResponse;
     if (hasUrl) {
-      await messageRepo.updateHasUrl(msgId, 1);
+      await messageRepo.updateHasUrlByConnector(msgId, 1, 'CLEVERTAP');
       smsResponse = await sparcClient.sendLinkSMS(
         client,
         { 
@@ -86,7 +87,7 @@ async function attemptSms(payload, client) {
         trackLinkIds
       );
     } else {
-      await messageRepo.updateHasUrl(msgId, 0);
+      await messageRepo.updateHasUrlByConnector(msgId, 0, 'CLEVERTAP');
       smsResponse = await sparcClient.sendSMS(
         client,
         { 
@@ -100,18 +101,22 @@ async function attemptSms(payload, client) {
 
     logger.info('CleverTap SMS fallback sent', { msgId, transactionId: smsResponse?.transactionId });
 
-    await messageRepo.updateStatus(msgId, MESSAGE_STATUSES.SMS_SENT);
+    await messageRepo.updateStatusByConnector(msgId, MESSAGE_STATUSES.SMS_SENT, 'CLEVERTAP');
 
     if (smsResponse?.transactionId) {
-      await messageRepo.updateSparcTransactionId(msgId, smsResponse.transactionId);
+       const sql = 'UPDATE message_logs SET sparc_transaction_id = ? WHERE callback_data = ?';
+       await db.connectorQuery('CLEVERTAP', sql, [String(smsResponse.transactionId), msgId]).catch(err => {
+         logger.warn('Failed to store CleverTap SMS transactionId', { msgId, error: err.message });
+       });
     }
 
   } catch (smsError) {
     logger.error('CleverTap SMS fallback failed', { msgId, error: smsError.message });
-    await messageRepo.updateStatus(msgId, MESSAGE_STATUSES.SMS_SENT_FAILED);
+    await messageRepo.updateStatusByConnector(msgId, MESSAGE_STATUSES.SMS_SENT_FAILED, 'CLEVERTAP');
   }
 }
 
 module.exports = {
   processMessage,
+  attemptSms,
 };

@@ -236,9 +236,14 @@ function mapDlrToCleverTap(msgId, status, errorDetails = null) {
  */
 function mapInteractionToCleverTap(msgId, sparcEvent, message) {
   const isClick = !!(sparcEvent.url || sparcEvent.open_url);
+  const interactionType = (sparcEvent.interactionType || '').toUpperCase();
   
   let event = 'replied';
-  if (isClick) event = 'clicked';
+  if (interactionType === 'VIEW') {
+    event = 'read';
+  } else if (isClick || interactionType === 'OPEN_URL') {
+    event = 'clicked';
+  }
 
   const channel = (message.status || '').startsWith('SMS_') ? "SMS" : "RCS";
 

@@ -41,13 +41,13 @@ async function processMessage(payload, client) {
     const internalMsgId = sparcPayload.messages[0].message_id;
     const submissionId = sparcResponse.submission_id || internalMsgId;
 
-    await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.RCS_SENT, submissionId);
+    await messageRepo.updateStatusByConnector(callback_data, MESSAGE_STATUSES.RCS_SENT, 'WEBENGAGE', submissionId);
 
     logger.info('WebEngage RCS sent successfully to SPARC', { messageId, submissionId });
 
   } catch (error) {
     logger.error('WebEngage RCS delivery failed', { messageId, error: error.message });
-    await messageRepo.updateStatus(callback_data, MESSAGE_STATUSES.RCS_SENT_FAILED);
+    await messageRepo.updateStatusByConnector(callback_data, MESSAGE_STATUSES.RCS_SENT_FAILED, 'WEBENGAGE');
     // Note: WebEngage doesn't define a standard SMS fallback in its RSP spec.
     // DLR controller will handle global fallback if configured in the original message log.
   }

@@ -2,27 +2,13 @@
 
 /**
  * src/repositories/dlrRepo.js
- * SQL operations for connector-specific dlr_events table.
+ * SQL operations for dlr_events table across multiple databases.
  */
 
-const { query } = require('../config/db');
+const db = require('../config/db');
 
 /**
- * Resolve the connector-specific table name for DLR events.
- * @param {string} connectorType
- * @returns {string}
- */
-function dlrTable(connectorType) {
-  if (connectorType === 'CLEVERTAP') return 'clevertap_dlr_events';
-  if (connectorType === 'WEBENGAGE')  return 'webengage_dlr_events';
-  return 'moengage_dlr_events';
-}
-
-/**
- * Insert a DLR raw event into the specific connector table ONLY.
- * @param {object} params
- * @param {string} [connectorType='MOENGAGE']
- * @returns {Promise<object>}
+ * Insert a DLR raw event into the specific connector database.
  */
 async function create(params, connectorType = 'MOENGAGE') {
   const {
@@ -33,10 +19,9 @@ async function create(params, connectorType = 'MOENGAGE') {
     event_timestamp,
   } = params;
 
-  const specificTable = dlrTable(connectorType);
-
-  return query(
-    `INSERT INTO ${specificTable}
+  return db.connectorQuery(
+    connectorType,
+    `INSERT INTO dlr_events
       (callback_data, sparc_status, moe_status, error_message, event_timestamp, callback_dispatched, created_at)
      VALUES (?, ?, ?, ?, ?, 0, NOW())`,
     [
@@ -50,48 +35,42 @@ async function create(params, connectorType = 'MOENGAGE') {
 }
 
 /**
- * Mark a DLR event as dispatched for MoEngage callback.
- * Needs to map exactly to the connector.
- * @param {number} eventId The internal numeric DB ID of the DLR
- * @param {string} [connectorType='MOENGAGE']
- * @returns {Promise<object>}
+ * Mark a DLR event as dispatched for callback.
  */
 async function markDispatched(eventId, connectorType = 'MOENGAGE') {
-  const specificTable = dlrTable(connectorType);
-
-  return query(`UPDATE ${specificTable} SET callback_dispatched = 1 WHERE id = ?`, [eventId]);
+  return db.connectorQuery(
+    connectorType, 
+    `UPDATE dlr_events SET callback_dispatched = 1 WHERE id = ?`, 
+    [eventId]
+  );
 }
 
 /**
  * Check if a recent generic DLR has arrived for a callback_data.
- * Reads from the view.
- * @param {string} callbackData
- * @param {number} withinMinutes
- * @returns {Promise<boolean>}
+ * Fans out to all 3 DBs since we may not know the connector.
  */
 async function hasRecentGenericDlr(callbackData, withinMinutes = 10) {
-  const [rows] = await query(
-    `SELECT COUNT(*) as count 
+  const sql = `SELECT COUNT(*) as count 
      FROM dlr_events 
      WHERE callback_data = ? 
        AND (sparc_status IN ('SENT', 'DELIVERED') OR moe_status IN ('RCS_SENT', 'RCS_DELIVERED', 'SMS_SENT', 'SMS_DELIVERED'))
-       AND created_at >= NOW() - INTERVAL ? MINUTE`,
-    [callbackData, withinMinutes]
-  );
-  return rows?.count > 0;
+       AND created_at >= NOW() - INTERVAL ? MINUTE`;
+       
+  const [moe, ct, we] = await db.fanOutQuery(sql, [callbackData, withinMinutes]);
+  return (Number(moe[0]?.count) > 0) || (Number(ct[0]?.count) > 0) || (Number(we[0]?.count) > 0);
 }
 
 /**
  * Find all DLR events for a given callback_data.
- * Queries the view to get across all connectors.
- * @param {string} callbackData
- * @returns {Promise<Array>}
+ * Fans out and merges.
  */
 async function findByCallbackData(callbackData) {
-  return query(
-    'SELECT * FROM dlr_events WHERE callback_data = ? ORDER BY created_at ASC',
-    [callbackData]
-  );
+  const sql = 'SELECT * FROM dlr_events WHERE callback_data = ? ORDER BY created_at ASC';
+  const [moe, ct, we] = await db.fanOutQuery(sql, [callbackData]);
+  
+  const merged = [...moe, ...ct, ...we];
+  merged.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  return merged;
 }
 
 module.exports = { create, markDispatched, hasRecentGenericDlr, findByCallbackData };

@@ -12,6 +12,6 @@ const basicAuth = require('../middleware/basicAuth');
 
 // CleverTap hits this endpoint to send RCS messages
 // Protected by Basic Auth (SPARC credentials)
-router.post('/', basicAuth, clevertapController.handleInbound);
+router.post(['/', '/send'], basicAuth, clevertapController.handleInbound);
 
 module.exports = router;
