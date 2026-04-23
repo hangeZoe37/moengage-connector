@@ -37,7 +37,8 @@ async function getOverviewStats(req, res) {
 
 async function getClients(req, res) {
   try {
-    const clients = await clientRepo.getAll();
+    const connector = req.query.connector || req.query.connector_type;
+    const clients = await clientRepo.getAll(connector);
     const safeClients = clients.map(c => ({
       ...c,
       rcs_password: c.rcs_password ? '***' : null,

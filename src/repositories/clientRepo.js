@@ -93,11 +93,18 @@ async function findAcrossAllById(clientId) {
 }
 
 /**
- * Get all clients from all databases for the dashboard/admin list.
+ * Get all clients from all databases or a specific one for the dashboard/admin list.
+ * @param {string} [connector] - Optional connector type to filter by
  * @returns {Promise<Array>}
  */
-async function getAll() {
+async function getAll(connector) {
   const sql = 'SELECT * FROM clients ORDER BY created_at DESC';
+  
+  if (connector) {
+    const rows = await db.connectorQuery(connector, sql);
+    return rows.map(c => ({ ...c, connector_type: connector.toUpperCase() }));
+  }
+
   const [moe, ct, we] = await db.fanOutQuery(sql);
   
   return [

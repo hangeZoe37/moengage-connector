@@ -45,7 +45,9 @@ export default function Layout() {
   useLayoutEffect(() => {
     document.body.classList.remove('connector-webengage', 'connector-clevertap', 'connector-moengage');
     if (isWebEngage) document.body.classList.add('connector-webengage');
-  }, [isWebEngage]);
+    else if (isMoEngage) document.body.classList.add('connector-moengage');
+    else document.body.classList.add('connector-clevertap');
+  }, [isWebEngage, isMoEngage]);
 
   useEffect(() => {
     if (isDark) {

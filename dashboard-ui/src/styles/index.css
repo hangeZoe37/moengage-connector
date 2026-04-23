@@ -77,54 +77,220 @@ body.light {
   --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.05); /* very soft shadow */
 }
 
-/* ── WebEngage Connector Theme (premium electric indigo/royal blue) ─── */
-body.connector-webengage .sidebar {
-  background: linear-gradient(180deg, #06081f 0%, #0b1136 60%, #0e1540 100%);
-  border-right: 1px solid rgba(99, 102, 241, 0.2);
+/* ═══════════════════════════════════════════════════════════════════════
+   CONNECTOR THEMES — Production-Grade, Solid Brand Colors
+   Each connector gets a completely unique visual identity.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── MoEngage Theme ─ Warm Orange (#F97316) ────────────────────────── */
+body.connector-moengage {
+  --connector-primary: #F97316;
+  --connector-primary-hover: #EA580C;
+  --connector-primary-dim: rgba(249, 115, 22, 0.12);
+  --connector-primary-glow: rgba(249, 115, 22, 0.35);
+  --connector-primary-light: #FFF7ED;
+  --connector-primary-text: #FB923C;
+  --connector-sidebar-bg: #1B2559;
+  --connector-sidebar-border: rgba(249, 115, 22, 0.15);
 }
-body.connector-webengage .sidebar-brand h1 {
-  background: linear-gradient(90deg, #a5b4fc, #818cf8);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+
+/* ── CleverTap Theme ─ Bold Crimson (#E11D48) ──────────────────────── */
+body.connector-clevertap {
+  --connector-primary: #E11D48;
+  --connector-primary-hover: #BE123C;
+  --connector-primary-dim: rgba(225, 29, 72, 0.12);
+  --connector-primary-glow: rgba(225, 29, 72, 0.35);
+  --connector-primary-light: #FFF1F2;
+  --connector-primary-text: #FB7185;
+  --connector-sidebar-bg: #1A1F36;
+  --connector-sidebar-border: rgba(225, 29, 72, 0.15);
 }
-body.connector-webengage .nav-item.active {
-  background: rgba(99, 102, 241, 0.18);
-  color: #e0e7ff;
-  box-shadow: inset 3px 0 0 #6366f1;
+
+/* ── WebEngage Theme ─ Cool Indigo (#4F46E5) ───────────────────────── */
+body.connector-webengage {
+  --connector-primary: #4F46E5;
+  --connector-primary-hover: #4338CA;
+  --connector-primary-dim: rgba(79, 70, 229, 0.12);
+  --connector-primary-glow: rgba(79, 70, 229, 0.35);
+  --connector-primary-light: #EEF2FF;
+  --connector-primary-text: #818CF8;
+  --connector-sidebar-bg: #111C44;
+  --connector-sidebar-border: rgba(79, 70, 229, 0.15);
 }
-body.connector-webengage .nav-item.active svg {
-  color: #818cf8;
+
+/* ═══ SHARED CONNECTOR STYLES (use CSS vars set above) ═══════════════ */
+
+/* ── Sidebar ─────────────────────────────────────────────────────────── */
+body[class*="connector-"] .sidebar {
+  background: var(--connector-sidebar-bg);
+  border-right: none;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
 }
-body.connector-webengage .nav-item:hover {
-  background: rgba(99, 102, 241, 0.10);
-  color: #c7d2fe;
+
+body[class*="connector-"] .sidebar-brand h1 {
+  color: #FFFFFF;
+  -webkit-text-fill-color: unset;
+  background: none;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
-body.connector-webengage .btn-primary {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+
+/* Nav — Active = White pill with brand icon (Purity UI style) */
+body[class*="connector-"] .nav-item {
+  border-radius: 12px;
+  padding: 11px 16px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  transition: all 200ms ease;
 }
-body.connector-webengage .btn-primary:hover {
-  background: linear-gradient(135deg, #4f46e5, #4338ca);
-  box-shadow: 0 4px 18px rgba(99, 102, 241, 0.55);
+
+body[class*="connector-"] .nav-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.9);
 }
-body.connector-webengage .kpi-card.violet .kpi-value {
-  color: #818cf8;
+
+body[class*="connector-"] .nav-item.active {
+  background: #FFFFFF;
+  color: var(--connector-sidebar-bg);
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
-body.connector-webengage .form-input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+
+body[class*="connector-"] .nav-item.active svg {
+  color: var(--connector-primary);
 }
-body.connector-webengage .badge-rcs {
-  background: rgba(99, 102, 241, 0.15);
-  color: #a5b4fc;
+
+/* ── Primary Buttons ─────────────────────────────────────────────────── */
+body[class*="connector-"] .btn-primary {
+  background: var(--connector-primary);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  box-shadow: 0 4px 14px var(--connector-primary-glow);
+  transition: all 200ms ease;
 }
-body.connector-webengage .live-dot {
-  background: #818cf8;
-  box-shadow: 0 0 6px rgba(129, 140, 248, 0.7);
+
+body[class*="connector-"] .btn-primary:hover {
+  background: var(--connector-primary-hover);
+  box-shadow: 0 6px 20px var(--connector-primary-glow);
+  transform: translateY(-1px);
 }
-body.connector-webengage .live-indicator {
-  color: #a5b4fc;
+
+/* ── KPI Cards ───────────────────────────────────────────────────────── */
+body[class*="connector-"] .kpi-card {
+  border-radius: 16px;
+  border: 1px solid var(--border-subtle);
+  position: relative;
+  overflow: hidden;
+}
+
+body[class*="connector-"] .kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--connector-primary);
+  opacity: 0;
+  transition: opacity 250ms ease;
+}
+
+body[class*="connector-"] .kpi-card:hover::before {
+  opacity: 1;
+}
+
+body[class*="connector-"] .kpi-card.violet .kpi-value {
+  color: var(--connector-primary);
+}
+
+/* ── Cards ────────────────────────────────────────────────────────────── */
+body[class*="connector-"] .card {
+  border-radius: 16px;
+  border: 1px solid var(--border-subtle);
+}
+
+/* ── Form Inputs ─────────────────────────────────────────────────────── */
+body[class*="connector-"] .form-input:focus {
+  border-color: var(--connector-primary);
+  box-shadow: 0 0 0 3px var(--connector-primary-dim);
+}
+
+/* ── Badges ──────────────────────────────────────────────────────────── */
+body[class*="connector-"] .badge-rcs {
+  background: var(--connector-primary-dim);
+  color: var(--connector-primary);
+  font-weight: 700;
+}
+
+/* ── Links ────────────────────────────────────────────────────────────── */
+body[class*="connector-"] a {
+  color: var(--connector-primary);
+}
+body[class*="connector-"] a:hover {
+  color: var(--connector-primary-hover);
+}
+
+/* ── Live Indicator ──────────────────────────────────────────────────── */
+body[class*="connector-"] .live-dot {
+  background: var(--connector-primary);
+  box-shadow: 0 0 8px var(--connector-primary-glow);
+}
+body[class*="connector-"] .live-indicator {
+  color: var(--connector-primary);
+  font-weight: 600;
+}
+
+/* ── Top Bar ─────────────────────────────────────────────────────────── */
+body[class*="connector-"] .top-bar {
+  border-bottom: 1px solid var(--border-subtle);
+}
+body[class*="connector-"] .top-bar-title {
+  color: var(--text-primary);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ── Tables ───────────────────────────────────────────────────────────── */
+body[class*="connector-"] .data-table tbody tr:hover {
+  background: var(--connector-primary-dim);
+}
+
+body[class*="connector-"] .data-table th {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────────── */
+body[class*="connector-"] ::-webkit-scrollbar-thumb {
+  background: var(--connector-primary-dim);
+  border-radius: 6px;
+}
+body[class*="connector-"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--connector-primary);
+}
+
+/* ── Pagination ──────────────────────────────────────────────────────── */
+body[class*="connector-"] .pagination .btn-primary,
+body[class*="connector-"] .pagination .btn-secondary:hover {
+  border-color: var(--connector-primary);
+}
+
+/* ── Modal & Drawer ──────────────────────────────────────────────────── */
+body[class*="connector-"] .modal-container {
+  border-radius: 20px;
+  border: 1px solid var(--border-subtle);
+}
+
+body[class*="connector-"] .modal-header {
+  border-bottom-color: var(--border-subtle);
+}
+
+body[class*="connector-"] .modal-header h2 {
+  color: var(--text-primary);
+  font-weight: 700;
 }
 
 
