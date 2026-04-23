@@ -56,8 +56,9 @@ router.post('/test/clevertap-callback', (req, res) => {
 
 /**
  * POST /test/clevertap-dlr (Our Endpoint)
+ * Alias: /test/clevertap/dlr — handles both hyphen and slash variants
  */
-router.post('/test/clevertap-dlr', (req, res) => {
+router.post(['/test/clevertap-dlr', '/test/clevertap/dlr'], (req, res) => {
   res.status(200).json({ status: 'success', status_code: 0 });
 });
 
