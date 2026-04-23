@@ -451,6 +451,70 @@
               ]
             }
           }
+        },
+        {
+          "name": "2.5 WEBHOOK: Message Read / Viewed (Auto-ID)",
+          "description": "Simulates SPARC sending a MESSAGE_READ event when the user opens the RCS message.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n    \"eventData\": {\n        \"userPhoneNumber\": \"{{test_destination}}\",\n        \"entity\": {\n            \"eventType\": \"MESSAGE_READ\",\n            \"sendTime\": \"{{$isoTimestamp}}\"\n        }\n    },\n    \"seqId\": \"{{last_msg_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/sparc/webhook",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sparc",
+                "webhook"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.6 WEBHOOK: SMS Delivery Failed (Auto-ID)",
+          "description": "Simulates SPARC SMS gateway sending a delivery failure receipt for an SMS that could not be delivered.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n    \"eventData\": {\n        \"userPhoneNumber\": \"{{test_destination}}\",\n        \"entity\": {\n            \"eventType\": \"SMS_DELIVERY_FAILED\",\n            \"sendTime\": \"{{$isoTimestamp}}\",\n            \"error\": {\n                \"code\": \"3001\",\n                \"message\": \"SMS delivery failed: Number unreachable\"\n            }\n        }\n    },\n    \"seqId\": \"{{last_msg_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/sparc/webhook",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sparc",
+                "webhook"
+              ]
+            }
+          }
         }
       ]
     },
@@ -979,6 +1043,134 @@
               ]
             }
           }
+        },
+        {
+          "name": "5.8 INTERACTION: Open URL Click",
+          "description": "Simulates a user clicking an Open URL suggestion button in a CleverTap RCS message.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n    \"interactionType\": \"OPEN_URL\",\n    \"seq_id\": \"{{last_msg_id}}\",\n    \"url\": \"https://example.com/specs\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/sparc/webhook",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sparc",
+                "webhook"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.9 INTERACTION: View (Message Read)",
+          "description": "Simulates SPARC sending a VIEW interaction event when user reads a CleverTap RCS message.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n    \"interactionType\": \"VIEW\",\n    \"seq_id\": \"{{last_msg_id}}\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/sparc/webhook",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sparc",
+                "webhook"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.10 DLR: SMS Delivered (CleverTap Fallback)",
+          "description": "Simulates SPARC sending an SMS_DELIVERED event for a CleverTap message that fell back to SMS.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n    \"eventData\": {\n        \"userPhoneNumber\": \"{{test_destination}}\",\n        \"entity\": {\n            \"eventType\": \"SMS_DELIVERED\",\n            \"sendTime\": \"{{$isoTimestamp}}\"\n        }\n    },\n    \"seqId\": \"{{last_msg_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/sparc/webhook",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sparc",
+                "webhook"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.11 DLR: SMS Delivery Failed (CleverTap Fallback)",
+          "description": "Simulates SPARC sending an SMS_DELIVERY_FAILED event for a CleverTap message whose SMS fallback also failed.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n    \"eventData\": {\n        \"userPhoneNumber\": \"{{test_destination}}\",\n        \"entity\": {\n            \"eventType\": \"SMS_DELIVERY_FAILED\",\n            \"sendTime\": \"{{$isoTimestamp}}\",\n            \"error\": {\n                \"code\": \"3001\",\n                \"message\": \"SMS delivery failed: No Balance\"\n            }\n        }\n    },\n    \"seqId\": \"{{last_msg_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/sparc/webhook",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sparc",
+                "webhook"
+              ]
+            }
+          }
         }
       ]
     },
@@ -1278,6 +1470,254 @@
               "path": [
                 "sparc",
                 "webhook"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. SECURITY — AUTH NEGATIVE TESTS",
+      "description": "Tests that the connector correctly rejects requests with missing or invalid authentication credentials. All requests in this folder MUST return 401 Unauthorized.",
+      "item": [
+        {
+          "name": "8.1 MoEngage: Missing Auth Header → Expect 401",
+          "description": "Sends a valid MoEngage payload with NO Authentication header. The connector must reject it with 401 Unauthorized.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"auth_test_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"message_content\": {\n          \"type\": \"TEXT\",\n          \"data\": { \"text\": \"Auth test — no token\" }\n        }\n      }\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/integrations/moengage/rcs/send",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "integrations",
+                "moengage",
+                "rcs",
+                "send"
+              ]
+            }
+          }
+        },
+        {
+          "name": "8.2 MoEngage: Invalid Bearer Token → Expect 401",
+          "description": "Sends a valid MoEngage payload with a WRONG Bearer token. The connector must reject it with 401 Unauthorized.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authentication",
+                "value": "Bearer THIS_IS_AN_INVALID_TOKEN_12345"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"auth_test_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"message_content\": {\n          \"type\": \"TEXT\",\n          \"data\": { \"text\": \"Auth test — bad token\" }\n        }\n      }\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/integrations/moengage/rcs/send",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "integrations",
+                "moengage",
+                "rcs",
+                "send"
+              ]
+            }
+          }
+        },
+        {
+          "name": "8.3 CleverTap: Invalid Basic Auth Credentials → Expect 401",
+          "description": "Sends a valid CleverTap payload with WRONG Basic Auth username/password. The connector must reject it with 401 Unauthorized.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "wrong_user",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "wrong_password",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"msgId\": \"auth_test_{{$timestamp}}\",\n  \"to\": \"{{test_destination}}\",\n  \"rcsContent\": {\n    \"senderId\": \"{{bot_id}}\",\n    \"content\": {\n      \"type\": \"TEXT\",\n      \"text\": \"Auth test — bad credentials\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/integrations/clevertap/rcs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "integrations",
+                "clevertap",
+                "rcs"
+              ]
+            }
+          }
+        },
+        {
+          "name": "8.4 WebEngage: Invalid Basic Auth Credentials → Expect 401",
+          "description": "Sends a valid WebEngage payload with WRONG Basic Auth credentials. The connector must reject it with 401 Unauthorized.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "wrong_user",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "wrong_password",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"1.0\",\n  \"rcsData\": {\n    \"toNumber\": \"{{test_destination}}\",\n    \"sender\": \"{{bot_id}}\",\n    \"templateData\": {\n      \"type\": \"TEXT\",\n      \"templateDetails\": {\n        \"text\": \"Auth test — bad credentials\"\n      }\n    }\n  },\n  \"metadata\": {\n    \"messageId\": \"auth_test_{{$timestamp}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/integrations/webengage/rcs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "integrations",
+                "webengage",
+                "rcs"
+              ]
+            }
+          }
+        },
+        {
+          "name": "8.5 Dashboard API: No Token → Expect 401",
+          "description": "Attempts to access the dashboard metrics endpoint WITHOUT a JWT token. The connector must reject it with 401 Unauthorized.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dashboard/metrics",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "metrics"
               ]
             }
           }
