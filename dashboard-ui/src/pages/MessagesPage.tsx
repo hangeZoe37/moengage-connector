@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { RefreshCw, Search, Filter, X } from 'lucide-react';
+import { RefreshCw, Search, Filter, X, Download } from 'lucide-react';
 import { api, MessageLog, Client, MessageDetailResponse } from '../api';
 import {
   getStatusBadgeClass,
@@ -83,6 +83,37 @@ export default function MessagesPage() {
     setMsgDetail(null);
   };
 
+  const exportCSV = () => {
+    if (!logs.length) return;
+    const header = ['Msg ID', 'Callback Data', 'Client', 'Channel', 'Status', 'DLR Rcvd', 'DLR Fwd', 'Timestamp'];
+    const rows = logs.map(log => {
+      const channelDisplay = getChannelFromStatus(log.status); 
+      const rcvd = (log as any).total_dlrs > 0 ? 'Yes' : 'No';
+      const fwd = (log as any).forwarded_dlrs > 0 ? 'Yes' : 'No';
+      return [
+        log.id,
+        `"${log.callback_data || ''}"`,
+        `"${log.client_name || '#' + log.client_id}"`,
+        channelDisplay,
+        log.status,
+        rcvd,
+        fwd,
+        new Date(log.created_at).toISOString()
+      ];
+    });
+    
+    const csvContent = [header, ...rows].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `message-logs-${selectedStatus || 'all'}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
 
@@ -123,9 +154,14 @@ export default function MessagesPage() {
               </div>
 
             </div>
-            <button className="btn btn-secondary btn-sm" onClick={() => load(0)}>
-              <RefreshCw size={14} /> Refresh
-            </button>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button className="btn btn-secondary btn-sm" onClick={() => load(0)}>
+                <RefreshCw size={14} /> Refresh
+              </button>
+              <button className="btn btn-primary btn-sm" onClick={exportCSV}>
+                <Download size={14} /> Export CSV
+              </button>
+            </div>
           </div>
         </div>
       </div>

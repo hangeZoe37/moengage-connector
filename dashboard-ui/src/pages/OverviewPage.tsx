@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { RefreshCw, Calendar } from 'lucide-react';
+import { RefreshCw, Calendar, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api, MetricsResponse } from '../api';
 import { formatTimestamp } from '../utils';
@@ -59,6 +59,29 @@ export default function OverviewPage() {
     return () => clearInterval(interval);
   }, [datePreset, customFrom, customTo]);
 
+  const exportCSV = () => {
+    if (!metrics?.clients.length) return;
+    const header = ['Client Name', 'RCS Sent', 'SMS Fallback', 'Failed', 'DLRs Received', 'Fallback Rate %'];
+    const rows = metrics.clients.map(c => [
+      `"${c.client_name}"`,
+      c.rcs_sent,
+      c.sms_fallback,
+      c.failed,
+      c.dlrs_received,
+      c.fallback_rate.toFixed(1)
+    ]);
+    const csvContent = [header, ...rows].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `client-overview-${datePreset}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (loading && !metrics) {
     return (
       <div className="empty-state">
@@ -108,6 +131,9 @@ export default function OverviewPage() {
         
         <button className="btn btn-secondary btn-sm" onClick={load} style={{ marginLeft: '4px' }}>
           <RefreshCw size={14} /> Refresh
+        </button>
+        <button className="btn btn-primary btn-sm" onClick={exportCSV} style={{ marginLeft: '4px' }}>
+          <Download size={14} /> Export CSV
         </button>
       </div>
 

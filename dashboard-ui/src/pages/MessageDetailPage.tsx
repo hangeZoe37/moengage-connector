@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Download } from 'lucide-react';
 import { api, MessageDetailResponse } from '../api';
 import {
   getStatusBadgeClass,
@@ -56,6 +56,74 @@ export default function MessageDetailPage() {
   const { message: msg, dlrEvents, suggestionEvents = [] } = data;
   const channel = getChannelFromStatus(msg.status);
 
+  const exportReport = () => {
+    const rows: string[][] = [];
+
+    // Section: Message Metadata
+    rows.push(['=== MESSAGE METADATA ===']);
+    rows.push(['Field', 'Value']);
+    rows.push(['Message ID', String(msg.id)]);
+    rows.push(['Callback Data', msg.callback_data || '—']);
+    rows.push(['Client', msg.client_name || `ID #${msg.client_id}`]);
+    rows.push(['Destination', msg.destination || '—']);
+    rows.push(['Bot / Assistant', msg.bot_id || '—']);
+    rows.push(['Message Type', msg.message_type || '—']);
+    rows.push(['Template', msg.template_name || '—']);
+    rows.push(['Fallback Order', msg.fallback_order || '—']);
+    rows.push(['Status', msg.status || '—']);
+    rows.push(['SPARC Msg ID', msg.sparc_message_id || '—']);
+    rows.push(['Error', msg.error_message || '—']);
+    rows.push(['Created At', new Date(msg.created_at).toISOString()]);
+    rows.push(['Updated At', new Date(msg.updated_at).toISOString()]);
+    rows.push([]);
+
+    // Section: DLR Events
+    rows.push(['=== DLR EVENTS ===']);
+    rows.push(['Event ID', 'SPARC Status', 'Connector Status', 'Dispatched', 'Error', 'Timestamp']);
+    if (dlrEvents.length === 0) {
+      rows.push(['No DLR events recorded', '', '', '', '', '']);
+    } else {
+      dlrEvents.forEach(ev => {
+        rows.push([
+          String(ev.id),
+          ev.sparc_status || '—',
+          ev.moe_status || '—',
+          ev.callback_dispatched ? 'Yes' : 'No',
+          ev.error_message || '—',
+          new Date(ev.created_at).toISOString()
+        ]);
+      });
+    }
+    rows.push([]);
+
+    // Section: User Interactions
+    rows.push(['=== USER INTERACTIONS (SUGGESTION EVENTS) ===']);
+    rows.push(['Event ID', 'Suggestion Text', 'Postback Data', 'Dispatched', 'Timestamp']);
+    if (suggestionEvents.length === 0) {
+      rows.push(['No interaction events recorded', '', '', '', '']);
+    } else {
+      suggestionEvents.forEach(ev => {
+        rows.push([
+          String(ev.id),
+          `"${ev.suggestion_text || '—'}"`,
+          `"${ev.postback_data || '—'}"`,
+          ev.callback_dispatched ? 'Yes' : 'No',
+          new Date(ev.created_at).toISOString()
+        ]);
+      });
+    }
+
+    const csvContent = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.setAttribute('href', URL.createObjectURL(blob));
+    link.setAttribute('download', `message-report-${msg.id}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div>
       {/* Header */}
@@ -79,6 +147,9 @@ export default function MessageDetailPage() {
             </div>
           </div>
         </div>
+        <button className="btn btn-primary btn-sm" onClick={exportReport}>
+          <Download size={14} /> Export Report
+        </button>
       </div>
 
       <div className="grid-2">
