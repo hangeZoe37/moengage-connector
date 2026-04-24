@@ -64,6 +64,7 @@ export interface MessageLog {
   fallback_order: string;
   status: string;
   sparc_message_id: string | null;
+  connector_type: string;
   raw_payload: unknown;
   error_message?: string;
   has_fallback?: number;
@@ -168,8 +169,10 @@ export const api = {
     return request<LogsResponse>(`/messages${qs}`);
   },
 
-  getMessageDetail: (id: number) =>
-    request<MessageDetailResponse>(`/messages/${id}`),
+  getMessageDetail: (id: number, connector?: string) => {
+    const qs = connector ? `?connector=${connector}` : '';
+    return request<MessageDetailResponse>(`/messages/${id}${qs}`);
+  },
 
   getDlrEvents: (limit = 30, offset = 0, clientId?: number, state?: string) => {
     let qs = `?limit=${limit}&offset=${offset}`;

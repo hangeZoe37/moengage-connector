@@ -64,12 +64,12 @@ export default function MessagesPage() {
     load(0);
   }, [load]);
 
-  const openDrawer = async (id: number) => {
+  const openDrawer = async (id: number, connector?: string) => {
     setSelectedMsgId(id);
     setLoadingDetail(true);
     setMsgDetail(null);
     try {
-      const res = await api.getMessageDetail(id);
+      const res = await api.getMessageDetail(id, connector);
       setMsgDetail(res);
     } catch (e) {
       console.error(e);
@@ -212,7 +212,7 @@ export default function MessagesPage() {
                 const fwd = log.forwarded_dlrs > 0;
 
                 return (
-                  <tr key={log.id} onClick={() => openDrawer(log.id)}>
+                  <tr key={`${log.connector_type}-${log.id}`} onClick={() => openDrawer(log.id, log.connector_type)}>
                     <td><span className="mono">#{log.id}</span></td>
                     <td><span className="mono">{truncate(log.callback_data, 18)}</span></td>
                     <td style={{ color: '#8b95a8' }}>{log.client_name || `#${log.client_id}`}</td>
@@ -297,9 +297,15 @@ export default function MessagesPage() {
                 </div>
               ) : msgDetail ? (
                 (() => {
-                  const connector = localStorage.getItem('currentConnector') || 'MOENGAGE';
-                  const connectorName = connector === 'MOENGAGE' ? 'MoEngage' : connector === 'WEBENGAGE' ? 'WebEngage' : 'CleverTap';
+                  const connectorType = msgDetail.message.connector_type || 'MOENGAGE';
+                  const connectorName = connectorType === 'MOENGAGE' ? 'MoEngage' : connectorType === 'WEBENGAGE' ? 'WebEngage' : 'CleverTap';
                   const isFinal = msgDetail.message.status.includes('DELIVERED') || msgDetail.message.status.includes('FAILED');
+
+                  // Merge all events into a single sorted timeline
+                  const allEvents = [
+                    ...(msgDetail.dlrEvents || []).map(e => ({ ...e, eventType: 'DLR' })),
+                    ...(msgDetail.suggestionEvents || []).map(e => ({ ...e, eventType: 'SUGGESTION' }))
+                  ].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
                   return (
                     <div className="timeline">
@@ -331,8 +337,8 @@ export default function MessagesPage() {
                         </div>
                       </div>
 
-                      {/* DLR Waiting State or DLR Events */}
-                      {msgDetail.dlrEvents.length === 0 ? (
+                      {/* Unified Timeline Events */}
+                      {allEvents.length === 0 ? (
                          !isFinal && (
                             <div className="timeline-item">
                               <span className="timeline-dot slate pulse" />
@@ -343,39 +349,61 @@ export default function MessagesPage() {
                             </div>
                          )
                       ) : (
-                        msgDetail.dlrEvents.map((ev: any) => {
-                          const isFailure = ev.sparc_status.includes('FAIL') || ev.sparc_status.includes('REJECT');
-                          const isSuccess = ev.sparc_status.includes('DELIVER') || ev.sparc_status.includes('READ');
-                          const dotClass = isFailure ? 'red' : isSuccess ? 'green' : 'slate';
+                        allEvents.map((ev: any, idx) => {
+                          if (ev.eventType === 'DLR') {
+                            const isFailure = ev.sparc_status.includes('FAIL') || ev.sparc_status.includes('REJECT');
+                            const isSuccess = ev.sparc_status.includes('DELIVER') || ev.sparc_status.includes('READ');
+                            const dotClass = isFailure ? 'red' : isSuccess ? 'green' : 'slate';
 
-                          return (
-                            <div key={ev.id} className="timeline-item">
-                              <span className={`timeline-dot ${dotClass}`} />
-                              <div className="timeline-content">
-                                <div style={{ fontWeight: 600 }}>DLR Received from SPARC</div>
-                                <p style={{ fontSize: '0.9rem', color: isFailure ? 'var(--danger)' : 'var(--text-primary)' }}>
-                                  Status: {ev.sparc_status}
-                                </p>
-                                
-                                <div style={{ marginTop: 12, padding: '12px', background: 'var(--bg-elevated)', borderRadius: 6, border: '1px solid var(--border-subtle)' }}>
-                                  <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 4 }}>
-                                    Forwarded to {connectorName}: {ev.callback_dispatched ? '✓ YES (Outcome Forwarded)' : '✕ NO'}
-                                  </div>
-                                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                    {connectorName} Status: {ev.moe_status}
-                                  </div>
-                                  {ev.error_message && (
-                                    <div style={{ fontSize: '0.8rem', color: 'var(--danger)', marginTop: 4 }}>
-                                      Error: {ev.error_message}
+                            return (
+                              <div key={`dlr-${ev.id}-${idx}`} className="timeline-item">
+                                <span className={`timeline-dot ${dotClass}`} />
+                                <div className="timeline-content">
+                                  <div style={{ fontWeight: 600 }}>DLR Received from SPARC</div>
+                                  <p style={{ fontSize: '0.9rem', color: isFailure ? 'var(--danger)' : 'var(--text-primary)' }}>
+                                    Status: {ev.sparc_status}
+                                  </p>
+                                  
+                                  <div style={{ marginTop: 12, padding: '12px', background: 'var(--bg-elevated)', borderRadius: 6, border: '1px solid var(--border-subtle)' }}>
+                                    <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 4 }}>
+                                      Forwarded to {connectorName}: {ev.callback_dispatched ? '✓ YES (Outcome Forwarded)' : '✕ NO'}
                                     </div>
-                                  )}
+                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                      {connectorName} Status: {ev.moe_status}
+                                    </div>
+                                    {ev.error_message && (
+                                      <div style={{ fontSize: '0.8rem', color: 'var(--danger)', marginTop: 4 }}>
+                                        Error: {ev.error_message}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 8 }}>
+                                    {formatTimestamp(ev.created_at)}
+                                  </p>
                                 </div>
-                                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 8 }}>
-                                  {formatTimestamp(ev.created_at)}
-                                </p>
                               </div>
-                            </div>
-                          );
+                            );
+                          } else {
+                            // Suggestion Event
+                            return (
+                              <div key={`sug-${ev.id}-${idx}`} className="timeline-item">
+                                <span className="timeline-dot cyan" />
+                                <div className="timeline-content">
+                                  <div style={{ fontWeight: 600 }}>Suggestion Clicked (User Interaction)</div>
+                                  <div style={{ marginTop: 10, padding: '10px', background: 'var(--bg-elevated)', borderRadius: 6, border: '1px solid var(--border-subtle)' }}>
+                                    <p style={{ fontSize: '0.85rem' }}>Text: <b>{ev.suggestion_text || '—'}</b></p>
+                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>Postback: <code>{ev.postback_data || '—'}</code></p>
+                                    <div style={{ fontSize: '0.8rem', marginTop: 8, color: ev.callback_dispatched ? 'var(--success)' : 'var(--text-muted)' }}>
+                                      Forwarded to {connectorName}: {ev.callback_dispatched ? '✓ YES' : '✕ NO'}
+                                    </div>
+                                  </div>
+                                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 8 }}>
+                                    {formatTimestamp(ev.created_at)}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          }
                         })
                       )}
                       

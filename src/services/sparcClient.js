@@ -35,13 +35,21 @@ axiosRetry(axios, {
  * @returns {import('axios').AxiosInstance}
  */
 function createClient(clientData) {
+  const isProd = process.env.NODE_ENV === 'production';
+  const serviceAccountName = clientData.rcs_username || (!isProd ? env.SPARC_SERVICE_ACCOUNT : null);
+  const apiPassword = clientData.rcs_password || (!isProd ? env.SPARC_API_PASSWORD : null);
+
+  if (!serviceAccountName || !apiPassword) {
+    throw new Error('Client not onboarded: Missing SPARC RCS credentials');
+  }
+
   return axios.create({
     baseURL: env.SPARC_API_BASE_URL,
     timeout: SPARC_REQUEST_TIMEOUT_MS,
     headers: {
       'Content-Type': 'application/json',
-      'serviceAccountName': clientData.rcs_username || env.SPARC_SERVICE_ACCOUNT,
-      'apiPassword': clientData.rcs_password || env.SPARC_API_PASSWORD,
+      'serviceAccountName': serviceAccountName,
+      'apiPassword': apiPassword,
     },
   });
 }
@@ -96,8 +104,13 @@ async function sendRCS(clientData, sparcPayload) {
 async function sendSMS(clientData, smsData, destination) {
   // SPARC SMS uses a completely different base URL + credentials from RCS
   const smsBaseUrl = env.SPARC_SMS_API_BASE_URL;
-  const username = clientData.sms_username || env.SPARC_SMS_USERNAME;
-  const password = clientData.sms_password || env.SPARC_SMS_PASSWORD;
+  const isProd = process.env.NODE_ENV === 'production';
+  const username = clientData.sms_username || (!isProd ? env.SPARC_SMS_USERNAME : null);
+  const password = clientData.sms_password || (!isProd ? env.SPARC_SMS_PASSWORD : null);
+
+  if (!username || !password) {
+    throw new Error('Client not onboarded: Missing SPARC SMS credentials');
+  }
 
   // Normalise phone: SPARC SMS wants digits only (no + prefix), e.g. 919876543210
   const toNumber = destination.replace(/^\+/, '');
@@ -170,8 +183,13 @@ async function sendSMS(clientData, smsData, destination) {
  */
 async function sendLinkSMS(clientData, smsData, destination, trackLinkIds) {
   const smsBaseUrl = env.SPARC_SMS_API_BASE_URL;
-  const username = clientData.sms_username || env.SPARC_SMS_USERNAME;
-  const password = clientData.sms_password || env.SPARC_SMS_PASSWORD;
+  const isProd = process.env.NODE_ENV === 'production';
+  const username = clientData.sms_username || (!isProd ? env.SPARC_SMS_USERNAME : null);
+  const password = clientData.sms_password || (!isProd ? env.SPARC_SMS_PASSWORD : null);
+
+  if (!username || !password) {
+    throw new Error('Client not onboarded: Missing SPARC SMS credentials for tracked link');
+  }
   const toNumber = destination.replace(/^\+/, '');
 
   const params = {

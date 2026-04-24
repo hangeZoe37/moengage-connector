@@ -143,9 +143,10 @@ async function getMessages(req, res) {
 async function getMessageDetail(req, res) {
   try {
     const id = parseInt(req.params.msgId, 10);
+    const connector = req.query.connector; // Optional disambiguator
     if (isNaN(id)) return res.status(400).json({ error: 'Invalid msgId' });
 
-    const message = await messageRepo.findById(id);
+    const message = await messageRepo.findById(id, connector);
     if (!message) return res.status(404).json({ error: 'Message not found' });
 
     const events = await dlrRepo.findByCallbackData(message.callback_data);

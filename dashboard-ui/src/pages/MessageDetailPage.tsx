@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, Download } from 'lucide-react';
 import { api, MessageDetailResponse } from '../api';
 import {
@@ -12,9 +12,13 @@ import {
 export default function MessageDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [data, setData] = useState<MessageDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const queryParams = new URLSearchParams(location.search);
+  const connector = queryParams.get('connector') || undefined;
 
   const getStatusDot = (status: string) => {
     const s = status.toUpperCase();
@@ -29,11 +33,11 @@ export default function MessageDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-    api.getMessageDetail(Number(id))
+    api.getMessageDetail(Number(id), connector)
       .then(setData)
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, connector]);
 
   if (loading) {
     return (
@@ -216,29 +220,34 @@ export default function MessageDetailPage() {
               </div>
             ) : (
               <div className="timeline">
-                {dlrEvents.map((ev, i) => (
-                  <div key={ev.id} className="timeline-item">
-                    <span className={`timeline-dot ${getStatusDot(ev.sparc_status)}`} />
-                    <div className="timeline-content">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                        <div className="status-indicator">
-                          <span className={`status-dot ${getStatusDot(ev.sparc_status)}`} />
-                          <span style={{ fontWeight: 600 }}>{ev.sparc_status.replace(/_/g, ' ')}</span>
+                {(() => {
+                  const connectorType = msg.connector_type || 'MOENGAGE';
+                  const connectorName = connectorType === 'MOENGAGE' ? 'MoEngage' : connectorType === 'WEBENGAGE' ? 'WebEngage' : 'CleverTap';
+                  
+                  return dlrEvents.map((ev, i) => (
+                    <div key={ev.id} className="timeline-item">
+                      <span className={`timeline-dot ${getStatusDot(ev.sparc_status)}`} />
+                      <div className="timeline-content">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <div className="status-indicator">
+                            <span className={`status-dot ${getStatusDot(ev.sparc_status)}`} />
+                            <span style={{ fontWeight: 600 }}>{ev.sparc_status.replace(/_/g, ' ')}</span>
+                          </div>
+                          {i === 0 && <span className="badge badge-queued" style={{ fontSize: '0.65rem' }}>LATEST</span>}
                         </div>
-                        {i === 0 && <span className="badge badge-queued" style={{ fontSize: '0.65rem' }}>LATEST</span>}
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                          {connectorName}: {ev.moe_status} · Forwarded: {ev.callback_dispatched ? 'Yes' : 'No'}
+                        </p>
+                        {ev.error_message && (
+                          <p className="text-danger" style={{ marginTop: 4, fontSize: '0.8rem' }}>{ev.error_message}</p>
+                        )}
+                        <p style={{ marginTop: 6, color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                          {formatTimestamp(ev.created_at)}
+                        </p>
                       </div>
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                        MoEngage: {ev.moe_status} · Dispatched: {ev.callback_dispatched ? 'Yes' : 'No'}
-                      </p>
-                      {ev.error_message && (
-                        <p className="text-danger" style={{ marginTop: 4, fontSize: '0.8rem' }}>{ev.error_message}</p>
-                      )}
-                      <p style={{ marginTop: 6, color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-                        {formatTimestamp(ev.created_at)}
-                      </p>
                     </div>
-                  </div>
-                ))}
+                  ));
+                })()}
               </div>
             )}
           </div>
@@ -253,31 +262,36 @@ export default function MessageDetailPage() {
             </div>
             <div className="card-body">
               <div className="timeline">
-                {suggestionEvents.map((ev) => (
-                  <div key={`sug-${ev.id}`} className="timeline-item">
-                    <span className="timeline-dot bg-cyan" />
-                    <div className="timeline-content">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                        <div className="status-indicator">
-                          <span className="status-dot bg-cyan" />
-                          <span style={{ fontWeight: 600 }}>REPLY / CLICK</span>
+                {(() => {
+                  const connectorType = msg.connector_type || 'MOENGAGE';
+                  const connectorName = connectorType === 'MOENGAGE' ? 'MoEngage' : connectorType === 'WEBENGAGE' ? 'WebEngage' : 'CleverTap';
+                  
+                  return suggestionEvents.map((ev) => (
+                    <div key={`sug-${ev.id}`} className="timeline-item">
+                      <span className="timeline-dot bg-cyan" />
+                      <div className="timeline-content">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <div className="status-indicator">
+                            <span className="status-dot bg-cyan" />
+                            <span style={{ fontWeight: 600 }}>REPLY / CLICK</span>
+                          </div>
                         </div>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                          Text: <span className="mono">{ev.suggestion_text || '—'}</span>
+                        </p>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                          Postback: <span className="mono">{ev.postback_data || '—'}</span>
+                        </p>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                          Forwarded to {connectorName}: {ev.callback_dispatched ? 'Yes' : 'No'}
+                        </p>
+                        <p style={{ marginTop: 6, color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                          {formatTimestamp(ev.created_at)}
+                        </p>
                       </div>
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                        Text: <span className="mono">{ev.suggestion_text || '—'}</span>
-                      </p>
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 4 }}>
-                        Postback: <span className="mono">{ev.postback_data || '—'}</span>
-                      </p>
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 4 }}>
-                        Dispatched: {ev.callback_dispatched ? 'Yes' : 'No'}
-                      </p>
-                      <p style={{ marginTop: 6, color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-                        {formatTimestamp(ev.created_at)}
-                      </p>
                     </div>
-                  </div>
-                ))}
+                  ));
+                })()}
               </div>
             </div>
           </div>

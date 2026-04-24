@@ -165,17 +165,25 @@ async function findByCallbackData(callbackData) {
   return parseMessageFields(msg);
 }
 
-async function findById(id) {
-  // If we don't have connectorType, we can't efficiently find an ID because IDs overlap across databases!
-  // BUT the parameter is just 'id'. We must check all 3.
+async function findById(id, connectorType = null) {
   const sql = `SELECT * FROM message_logs WHERE id = ? LIMIT 1`;
-  const [moe, ct, we] = await db.fanOutQuery(sql, [id]);
   
   let msg = null;
   let connector = null;
-  if (moe.length > 0) { msg = moe[0]; connector = 'MOENGAGE'; }
-  else if (ct.length > 0) { msg = ct[0]; connector = 'CLEVERTAP'; }
-  else if (we.length > 0) { msg = we[0]; connector = 'WEBENGAGE'; }
+
+  if (connectorType) {
+    const rows = await db.connectorQuery(connectorType, sql, [id]);
+    if (rows.length > 0) {
+      msg = rows[0];
+      connector = connectorType.toUpperCase();
+    }
+  } else {
+    // Fallback to fan-out if no connector specified (legacy or ambiguous call)
+    const [moe, ct, we] = await db.fanOutQuery(sql, [id]);
+    if (moe.length > 0) { msg = moe[0]; connector = 'MOENGAGE'; }
+    else if (ct.length > 0) { msg = ct[0]; connector = 'CLEVERTAP'; }
+    else if (we.length > 0) { msg = we[0]; connector = 'WEBENGAGE'; }
+  }
 
   if (msg) {
     msg.connector_type = connector;
@@ -213,7 +221,10 @@ async function getRecentLogs(limit = 50, offset = 0, clientId = null) {
   // we pull limit+offset from each, merge, sort, and slice.
   sql += ` ORDER BY created_at DESC LIMIT ${safeLimit + offset}`;
 
-  const [moe, ct, we] = await db.fanOutQuery(sql, params);
+  // Tag each log with its source connector before merging
+  moe.forEach(l => l.connector_type = 'MOENGAGE');
+  ct.forEach(l => l.connector_type = 'CLEVERTAP');
+  we.forEach(l => l.connector_type = 'WEBENGAGE');
   
   let allLogs = [...moe, ...ct, ...we];
   allLogs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
