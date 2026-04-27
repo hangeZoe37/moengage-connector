@@ -1,0 +1,347 @@
+{
+    "info": {
+        "name": "SPARC MoEngage Microservice API",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "0. SYNC: Fetch DB Credentials",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const response = pm.response.json();",
+                            "if (response.bot_id) {",
+                            "    pm.collectionVariables.set('bot_id', response.bot_id);",
+                            "    pm.collectionVariables.set('sms_sender', response.sms_sender);",
+                            "    pm.collectionVariables.set('rcs_assistant_id', response.rcs_assistant_id);",
+                            "    console.log('All variables synced from Database:', JSON.stringify(response));",
+                            "}"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "url": {
+                    "raw": "{{base_url}}/api/test/sync-config",
+                    "host": ["{{base_url}}"],
+                    "path": ["api", "test", "sync-config"]
+                }
+            }
+        },
+        {
+            "name": "0. AUTH (Get Dashboard Token)",
+            "item": [
+                {
+                    "name": "Login to Dashboard",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const response = pm.response.json();",
+                                    "if (response.token) {",
+                                    "    pm.collectionVariables.set('dashboard_token', response.token);",
+                                    "    console.log('Dashboard token stored successfully');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"{{dashboard_user}}\",\n  \"password\": \"{{dashboard_pass}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/login",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "login"]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "1. MOENGAGE PERSPECTIVE (Outbound)",
+            "item": [
+                {
+                    "name": "1.1 TEXT: Templated (RCS + SMS Fallback)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const reqData = JSON.parse(pm.request.body.raw);",
+                                    "const cbData = reqData.messages[0].callback_data;",
+                                    "pm.collectionVariables.set('last_msg_id', 'moe_' + cbData);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Authentication", "value": "Bearer {{bearer_token}}" },
+                            { "key": "Content-Type", "value": "application/json" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"text_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\", \"SMS\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"template_id\": \"test15\",\n        \"message_content\": {\n          \"type\": \"TEXT\",\n          \"data\": {\n            \"text\": \"Hello John!\",\n            \"parameters\": { \"name\": \"John\", \"company\": \"MoEngage\" }\n          }\n        }\n      },\n      \"sms\": {\n        \"sender\": \"{{sms_sender}}\",\n        \"message\": \"This is the Smartping Test Message(https://smartping.ai/)\",\n        \"template_id\": \"{{sms_template_id}}\"\n      }\n    }\n  ]\n}",
+                            "options": { "raw": { "language": "json" } }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/integrations/moengage/rcs/send",
+                            "host": ["{{base_url}}"],
+                            "path": ["integrations", "moengage", "rcs", "send"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "1.2 CARD: International Video + Reply Suggestion (RCS + SMS Fallback)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const reqData = JSON.parse(pm.request.body.raw);",
+                                    "const cbData = reqData.messages[0].callback_data;",
+                                    "pm.collectionVariables.set('last_msg_id', 'moe_' + cbData);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Authentication", "value": "Bearer {{bearer_token}}" },
+                            { "key": "Content-Type", "value": "application/json" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"card_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\", \"SMS\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"template_id\": null,\n        \"message_content\": {\n          \"type\": \"CARD\",\n          \"data\": {\n            \"media\": {\n              \"media_url\": \"https://www.w3schools.com/html/mov_bbb.mp4\",\n              \"content_type\": \"VIDEO\"\n            },\n            \"title\": \"Discover Nature\",\n            \"description\": \"A sample ad-hoc card message.\",\n            \"orientation\": \"VERTICAL\",\n            \"height\": \"MEDIUM\"\n          },\n          \"suggestions\": {\n            \"type\": \"REPLY\",\n            \"text\": \"Watch Video\",\n            \"postback_data\": \"VIDEO_OK\"\n          }\n        }\n      },\n      \"sms\": {\n        \"sender\": \"{{sms_sender}}\",\n        \"message\": \"This is the Smartping Test Message(https://smartping.ai/)\",\n        \"template_id\": \"{{sms_template_id}}\"\n      }\n    }\n  ]\n}",
+                            "options": { "raw": { "language": "json" } }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/integrations/moengage/rcs/send",
+                            "host": ["{{base_url}}"],
+                            "path": ["integrations", "moengage", "rcs", "send"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "1.3 MEDIA: Native Image + Open URL Suggestion (RCS + SMS Fallback)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const reqData = JSON.parse(pm.request.body.raw);",
+                                    "const cbData = reqData.messages[0].callback_data;",
+                                    "pm.collectionVariables.set('last_msg_id', 'moe_' + cbData);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Authentication", "value": "Bearer {{bearer_token}}" },
+                            { "key": "Content-Type", "value": "application/json" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"media_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\", \"SMS\"],\n      \"rcs\": {\n        \"bot_id\": \"{{bot_id}}\",\n        \"template_id\": null,\n        \"message_content\": {\n          \"type\": \"MEDIA\",\n          \"data\": {\n            \"media_url\": \"https://i.pinimg.com/736x/57/3a/57/573a573683e5a79390d021688a043048.jpg\",\n            \"content_type\": \"IMAGE\"\n          },\n          \"suggestions\": [\n            {\n              \"type\": \"OPEN_URL\",\n              \"text\": \"Learn More\",\n              \"postback_data\": \"URL_CLICKED\",\n              \"url\": \"https://moengage.com\"\n            }\n          ]\n        }\n      },\n      \"sms\": {\n        \"sender\": \"{{sms_sender}}\",\n        \"message\": \"This is the Smartping Test Message(https://smartping.ai/)\",\n        \"template_id\": \"{{sms_template_id}}\"\n      }\n    }\n  ]\n}",
+                            "options": { "raw": { "language": "json" } }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/integrations/moengage/rcs/send",
+                            "host": ["{{base_url}}"],
+                            "path": ["integrations", "moengage", "rcs", "send"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "1.4 TEST: Force RCS Failure → SMS Fallback (Invalid Bot ID)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const reqData = JSON.parse(pm.request.body.raw);",
+                                    "const cbData = reqData.messages[0].callback_data;",
+                                    "pm.collectionVariables.set('last_msg_id', 'moe_' + cbData);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Authentication", "value": "Bearer {{bearer_token}}" },
+                            { "key": "Content-Type", "value": "application/json" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"messages\": [\n    {\n      \"destination\": \"{{test_destination}}\",\n      \"callback_data\": \"failtest_{{$timestamp}}\",\n      \"fallback_order\": [\"RCS\", \"SMS\"],\n      \"rcs\": {\n        \"bot_id\": \"INVALID_BOT_FORCE_FAILURE\",\n        \"message_content\": {\n          \"type\": \"TEXT\",\n          \"data\": {\n            \"text\": \"This RCS will fail and SMS fallback will fire.\"\n          }\n        }\n      },\n      \"sms\": {\n        \"sender\": \"{{sms_sender}}\",\n        \"message\": \"This is the Smartping Test Message(https://smartping.ai/)\",\n        \"template_id\": \"{{sms_template_id}}\"\n      }\n    }\n  ]\n}",
+                            "options": { "raw": { "language": "json" } }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/integrations/moengage/rcs/send",
+                            "host": ["{{base_url}}"],
+                            "path": ["integrations", "moengage", "rcs", "send"]
+                        }
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Simulates MoEngage sending messages to your connector. Uses custom 'Authentication' header."
+        },
+        {
+            "name": "2. MOENGAGE PERSPECTIVE (Webhook)",
+            "item": [
+                {
+                    "name": "2.1 WEBHOOK: Message Delivered (Auto-ID)",
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"eventData\": {\n        \"userPhoneNumber\": \"{{test_destination}}\",\n        \"entity\": {\n            \"eventType\": \"MESSAGE_DELIVERED\",\n            \"sendTime\": \"{{$isoTimestamp}}\"\n        }\n    },\n    \"seqId\": \"{{last_msg_id}}\"\n}",
+                            "options": { "raw": { "language": "json" } }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/sparc/webhook",
+                            "host": ["{{base_url}}"],
+                            "path": ["sparc", "webhook"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "2.2 WEBHOOK: Suggestion Click (Auto-ID)",
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"interactionType\": \"REPLY\",\n    \"seq_id\": \"{{last_msg_id}}\",\n    \"suggestion_text\": \"Watch Video\",\n    \"postback_data\": \"VIDEO_OK\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n}",
+                            "options": { "raw": { "language": "json" } }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/sparc/webhook",
+                            "host": ["{{base_url}}"],
+                            "path": ["sparc", "webhook"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "2.3 WEBHOOK: Manual RCS Failure DLR → Triggers SMS Fallback (Auto-ID)",
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"eventData\": {\n        \"userPhoneNumber\": \"{{test_destination}}\",\n        \"entity\": {\n            \"eventType\": \"SEND_MESSAGE_FAILURE\",\n            \"sendTime\": \"{{$isoTimestamp}}\",\n            \"error\": {\n                \"message\": \"RCS not supported on this device\"\n            }\n        }\n    },\n    \"seqId\": \"{{last_msg_id}}\"\n}",
+                            "options": { "raw": { "language": "json" } }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/sparc/webhook",
+                            "host": ["{{base_url}}"],
+                            "path": ["sparc", "webhook"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "2.4 WEBHOOK: SMS Delivered (Auto-ID)",
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"eventData\": {\n        \"userPhoneNumber\": \"{{test_destination}}\",\n        \"entity\": {\n            \"eventType\": \"SMS_DELIVERED\",\n            \"sendTime\": \"{{$isoTimestamp}}\"\n        }\n    },\n    \"seqId\": \"{{last_msg_id}}\"\n}",
+                            "options": { "raw": { "language": "json" } }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/sparc/webhook",
+                            "host": ["{{base_url}}"],
+                            "path": ["sparc", "webhook"]
+                        }
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Simulates SPARC sending delivery or interaction updates to your connector."
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:4000",
+            "type": "string"
+        },
+        {
+            "key": "bearer_token",
+            "value": "286808b415d764aae7c38c46abf8cc05239bab0177123f9cd1dda209a8efc202",
+            "type": "string"
+        },
+        {
+            "key": "test_destination",
+            "value": "+919990927990",
+            "type": "string"
+        },
+        {
+            "key": "bot_id",
+            "value": "677baf920f6d1f157306740b",
+            "type": "string"
+        },
+        {
+            "key": "sms_sender",
+            "value": "SMPALT",
+            "type": "string"
+        },
+        {
+            "key": "sms_template_id",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "rcs_assistant_id",
+            "value": "677baf920f6d1f157306740b",
+            "type": "string"
+        },
+        {
+            "key": "dashboard_user",
+            "value": "admin",
+            "type": "string"
+        },
+        {
+            "key": "dashboard_pass",
+            "value": "admin123",
+            "type": "string"
+        },
+        {
+            "key": "last_msg_id",
+            "value": "",
+            "type": "string"
+        }
+    ]
+}
