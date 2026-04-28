@@ -97,8 +97,8 @@ export default function OverviewPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '24px', gap: '8px' }}>
         <div className="date-select-wrapper">
-          <select 
-            className="form-input date-select" 
+          <select
+            className="form-input date-select"
             value={datePreset}
             onChange={e => setDatePreset(e.target.value)}
             style={{ padding: '6px 32px 6px 12px', fontSize: '0.85rem' }}
@@ -113,24 +113,24 @@ export default function OverviewPage() {
 
         {datePreset === 'custom' && (
           <>
-            <input 
-              type="date" 
-              className="form-input" 
-              value={customFrom} 
+            <input
+              type="date"
+              className="form-input"
+              value={customFrom}
               onChange={e => setCustomFrom(e.target.value)}
               style={{ padding: '6px 12px', fontSize: '0.85rem' }}
             />
             <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>to</span>
-            <input 
-              type="date" 
-              className="form-input" 
-              value={customTo} 
+            <input
+              type="date"
+              className="form-input"
+              value={customTo}
               onChange={e => setCustomTo(e.target.value)}
               style={{ padding: '6px 12px', fontSize: '0.85rem' }}
             />
           </>
         )}
-        
+
         <button className="btn btn-secondary btn-sm" onClick={load} style={{ marginLeft: '4px' }}>
           <RefreshCw size={14} /> Refresh
         </button>
@@ -201,8 +201,8 @@ export default function OverviewPage() {
                 else if (isAmber) bgRule = 'rgba(245, 158, 11, 0.08)';
 
                 return (
-                  <tr 
-                    key={c.client_id} 
+                  <tr
+                    key={c.client_id}
                     onClick={() => navigate(`/messages?clientId=${c.client_id}`)}
                     style={{ background: bgRule }}
                   >
@@ -213,7 +213,7 @@ export default function OverviewPage() {
                     <td>{c.dlrs_received.toLocaleString()}</td>
                     {!isWebEngage && (
                       <td>
-                        <span style={{ 
+                        <span style={{
                           color: c.fallback_rate > 30 ? '#f59e0b' : 'inherit',
                           fontWeight: c.fallback_rate > 30 ? 600 : 400
                         }}>

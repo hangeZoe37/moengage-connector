@@ -139,7 +139,7 @@ export default function MessagesPage() {
                 <select className="form-input" value={selectedChannel} onChange={e => setSelectedChannel(e.target.value)}>
                   <option value="">All Channels</option>
                   <option value="RCS">RCS</option>
-                  <option value="SMS">SMS</option>
+                  {!isWebEngage && <option value="SMS">SMS</option>}
                 </select>
               </div>
 
@@ -149,9 +149,13 @@ export default function MessagesPage() {
                   <option value="RCS_SENT">RCS SENT</option>
                   <option value="RCS_DELIVERED">RCS DELIVERED</option>
                   <option value="RCS_DELIVERY_FAILED">RCS DELIVERY FAILED</option>
-                  <option value="SMS_SENT">SMS SENT</option>
-                  <option value="SMS_DELIVERED">SMS DELIVERED</option>
-                  <option value="SMS_DELIVERY_FAILED">SMS DELIVERY FAILED</option>
+                  {!isWebEngage && (
+                    <>
+                      <option value="SMS_SENT">SMS SENT</option>
+                      <option value="SMS_DELIVERED">SMS DELIVERED</option>
+                      <option value="SMS_DELIVERY_FAILED">SMS DELIVERY FAILED</option>
+                    </>
+                  )}
                 </select>
               </div>
 
