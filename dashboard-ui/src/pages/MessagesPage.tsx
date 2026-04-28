@@ -15,6 +15,8 @@ export default function MessagesPage() {
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
+  const connector = localStorage.getItem('currentConnector') || 'MOENGAGE';
+  const isWebEngage = connector === 'WEBENGAGE';
   
   // Filters
   const [clients, setClients] = useState<Client[]>([]);
@@ -225,7 +227,7 @@ export default function MessagesPage() {
                       <div className="status-indicator">
                         <span className={`status-dot ${getStatusDot(log.status)}`} />
                         {log.status?.replace(/_/g, ' ') || '—'}
-                        {log.has_fallback > 0 && channelDisplay === 'SMS' && (
+                        {!isWebEngage && log.has_fallback > 0 && channelDisplay === 'SMS' && (
                           <span className="badge badge-fallback" title="RCS failed, message was sent via SMS">
                             Fallback
                           </span>

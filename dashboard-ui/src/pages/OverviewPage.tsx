@@ -11,6 +11,8 @@ export default function OverviewPage() {
   const [datePreset, setDatePreset] = useState('today');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
+  const connector = localStorage.getItem('currentConnector') || 'MOENGAGE';
+  const isWebEngage = connector === 'WEBENGAGE';
   const navigate = useNavigate();
 
   const load = async () => {
@@ -142,23 +144,25 @@ export default function OverviewPage() {
         <div className="kpi-grid">
           <div className="kpi-card violet">
             <div className="kpi-label">Total Messages Received</div>
-            <div className="kpi-value violet">{(metrics.stats.total_received ?? 0).toLocaleString()}</div>
+            <div className="kpi-value violet">{(metrics?.stats.total_received ?? 0).toLocaleString()}</div>
           </div>
           <div className="kpi-card green">
             <div className="kpi-label">RCS Sent Successfully</div>
-            <div className="kpi-value green">{(metrics.stats.rcs_sent ?? 0).toLocaleString()}</div>
+            <div className="kpi-value green">{(metrics?.stats.rcs_sent ?? 0).toLocaleString()}</div>
           </div>
-          <div className="kpi-card amber">
-            <div className="kpi-label">SMS Fallback Triggered</div>
-            <div className="kpi-value amber">{(metrics.stats.sms_fallback ?? 0).toLocaleString()}</div>
-          </div>
+          {!isWebEngage && (
+            <div className="kpi-card amber">
+              <div className="kpi-label">SMS Fallback Triggered</div>
+              <div className="kpi-value amber">{(metrics?.stats.sms_fallback ?? 0).toLocaleString()}</div>
+            </div>
+          )}
           <div className="kpi-card cyan">
             <div className="kpi-label">DLRs Received</div>
-            <div className="kpi-value cyan">{(metrics.stats.dlrs_received ?? 0).toLocaleString()}</div>
+            <div className="kpi-value cyan">{(metrics?.stats.dlrs_received ?? 0).toLocaleString()}</div>
           </div>
           <div className="kpi-card red">
             <div className="kpi-label">Terminal Failures</div>
-            <div className="kpi-value red">{(metrics.stats.terminal_failures ?? 0).toLocaleString()}</div>
+            <div className="kpi-value red">{(metrics?.stats.terminal_failures ?? 0).toLocaleString()}</div>
           </div>
         </div>
       )}
@@ -182,14 +186,14 @@ export default function OverviewPage() {
               <tr>
                 <th>Client Name</th>
                 <th>RCS Sent</th>
-                <th>SMS Fallback</th>
+                {!isWebEngage && <th>SMS Fallback</th>}
                 <th>Failed</th>
                 <th>DLRs Received</th>
-                <th>Fallback Rate %</th>
+                {!isWebEngage && <th>Fallback Rate %</th>}
               </tr>
             </thead>
             <tbody>
-              {metrics && metrics.clients.map((c) => {
+              {metrics?.clients.map((c: any) => {
                 const isAmber = c.fallback_rate > 30;
                 const isRed = c.failed > 0;
                 let bgRule = '';
@@ -204,17 +208,19 @@ export default function OverviewPage() {
                   >
                     <td style={{ fontWeight: 600 }}>{c.client_name}</td>
                     <td>{c.rcs_sent.toLocaleString()}</td>
-                    <td>{c.sms_fallback.toLocaleString()}</td>
+                    {!isWebEngage && <td>{c.sms_fallback.toLocaleString()}</td>}
                     <td>{c.failed.toLocaleString()}</td>
                     <td>{c.dlrs_received.toLocaleString()}</td>
-                    <td>
-                      <span style={{ 
-                        color: c.fallback_rate > 30 ? '#f59e0b' : 'inherit',
-                        fontWeight: c.fallback_rate > 30 ? 600 : 400
-                      }}>
-                        {c.fallback_rate.toFixed(1)}%
-                      </span>
-                    </td>
+                    {!isWebEngage && (
+                      <td>
+                        <span style={{ 
+                          color: c.fallback_rate > 30 ? '#f59e0b' : 'inherit',
+                          fontWeight: c.fallback_rate > 30 ? 600 : 400
+                        }}>
+                          {c.fallback_rate.toFixed(1)}%
+                        </span>
+                      </td>
+                    )}
                   </tr>
                 );
               })}

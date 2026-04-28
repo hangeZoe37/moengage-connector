@@ -59,6 +59,7 @@ export default function MessageDetailPage() {
 
   const { message: msg, dlrEvents, suggestionEvents = [] } = data;
   const channel = getChannelFromStatus(msg.status);
+  const isWebEngage = msg.connector_type === 'WEBENGAGE';
 
   const exportReport = () => {
     const rows: string[][] = [];
@@ -73,7 +74,7 @@ export default function MessageDetailPage() {
     rows.push(['Bot / Assistant', msg.bot_id || '—']);
     rows.push(['Message Type', msg.message_type || '—']);
     rows.push(['Template', msg.template_name || '—']);
-    rows.push(['Fallback Order', msg.fallback_order || '—']);
+    if (!isWebEngage) rows.push(['Fallback Order', msg.fallback_order || '—']);
     rows.push(['Status', msg.status || '—']);
     rows.push(['SPARC Msg ID', msg.sparc_message_id || '—']);
     rows.push(['Error', msg.error_message || '—']);
@@ -143,7 +144,7 @@ export default function MessageDetailPage() {
                 <span className={`status-dot ${getStatusDot(msg.status)}`} />
                 <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{msg.status.toUpperCase()}</span>
               </div>
-              {channel === 'SMS' ? (
+              {channel === 'SMS' && !isWebEngage ? (
                 <span className="badge badge-sms-channel">SMS Fallback</span>
               ) : (
                 <span className="badge badge-rcs">RCS · {msg.message_type}</span>
@@ -172,8 +173,12 @@ export default function MessageDetailPage() {
                 <dd>{msg.message_type || '—'}</dd>
                 <dt>Template</dt>
                 <dd>{msg.template_name || '—'}</dd>
-                <dt>Fallback Order</dt>
-                <dd style={{ textTransform: 'capitalize' }}>{msg.fallback_order || '—'}</dd>
+                {!isWebEngage && (
+                  <>
+                    <dt>Fallback Order</dt>
+                    <dd style={{ textTransform: 'capitalize' }}>{msg.fallback_order || '—'}</dd>
+                  </>
+                )}
                 <dt>SPARC Msg ID</dt>
                 <dd className="mono">{msg.sparc_message_id || '—'}</dd>
                 <dt>Client</dt>

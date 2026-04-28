@@ -26,6 +26,8 @@ export default function ClientsPage() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editClient, setEditClient] = useState<Client | null>(null);
+  const connector = localStorage.getItem('currentConnector') || 'MOENGAGE';
+  const isWebEngage = connector === 'WEBENGAGE';
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -149,7 +151,7 @@ export default function ClientsPage() {
                 <th style={{ width: 60 }}>#</th>
                 <th>Full Name</th>
                 <th>RCS User</th>
-                <th>SMS User</th>
+                {!isWebEngage && <th>SMS User</th>}
                 <th>Assistant ID</th>
                 <th>Bearer Token</th>
                 <th>Status</th>
@@ -170,7 +172,7 @@ export default function ClientsPage() {
                     <td><span className="mono">#{c.id}</span></td>
                     <td style={{ fontWeight: 600 }}>{c.client_name}</td>
                     <td><span className="mono">{c.rcs_username || '—'}</span></td>
-                    <td><span className="mono">{c.sms_username || '—'}</span></td>
+                    {!isWebEngage && <td><span className="mono">{c.sms_username || '—'}</span></td>}
                     <td><span className="mono" style={{ fontSize: '0.75rem' }}>{c.rcs_assistant_id || '—'}</span></td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -260,19 +262,23 @@ export default function ClientsPage() {
                 <input className="form-input" placeholder="asst_xxxxxxxx" value={form.rcs_assistant_id} onChange={e => setForm(f => ({ ...f, rcs_assistant_id: e.target.value }))} />
               </div>
 
-              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#8b95a8', margin: '16px 0 8px', borderTop: '1px solid #1e2a3a', paddingTop: 16 }}>
-                SMS Credentials (Fallback)
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">SMS Username</label>
-                  <input className="form-input" placeholder="sparc_sms_user" value={form.sms_username} onChange={e => setForm(f => ({ ...f, sms_username: e.target.value }))} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">SMS Password {editClient && <span className="text-muted">(leave blank to keep)</span>}</label>
-                  <input className="form-input" type="password" placeholder="••••••••" value={form.sms_password} onChange={e => setForm(f => ({ ...f, sms_password: e.target.value }))} />
-                </div>
-              </div>
+              {!isWebEngage && (
+                <>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#8b95a8', margin: '16px 0 8px', borderTop: '1px solid #1e2a3a', paddingTop: 16 }}>
+                    SMS Credentials (Fallback)
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label className="form-label">SMS Username</label>
+                      <input className="form-input" placeholder="sparc_sms_user" value={form.sms_username} onChange={e => setForm(f => ({ ...f, sms_username: e.target.value }))} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">SMS Password {editClient && <span className="text-muted">(leave blank to keep)</span>}</label>
+                      <input className="form-input" type="password" placeholder="••••••••" value={form.sms_password} onChange={e => setForm(f => ({ ...f, sms_password: e.target.value }))} />
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setModalOpen(false)}>Cancel</button>
