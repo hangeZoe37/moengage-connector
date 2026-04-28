@@ -17,7 +17,11 @@ router.post('/webhook', async (req, res) => {
     }
 
     for (const sparcEvent of events) {
-      await webhookController.handleDlrEvent(sparcEvent);
+      if (sparcEvent.interactionType) {
+        await webhookController.handleInteraction(sparcEvent);
+      } else {
+        await webhookController.handleDlrEvent(sparcEvent);
+      }
     }
   } catch (err) {
     logger.error('Error processing SPARC webhook asynchronously', { error: err.message, body: req.body });

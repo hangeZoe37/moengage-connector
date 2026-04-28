@@ -2,6 +2,7 @@
 
 const { mapDlrEvent, translateStatus } = require('../mappers/dlrMapper');
 const dlrRepo = require('../repositories/dlrRepo');
+const suggestionRepo = require('../repositories/suggestionRepo');
 const messageRepo = require('../repositories/messageRepo');
 const clientRepo = require('../repositories/clientRepo');
 const callbackDispatcher = require('../services/callbackDispatcher');
@@ -107,4 +108,47 @@ async function handleDlrEvent(sparcEvent) {
   }
 }
 
-module.exports = { handleDlrEvent };
+async function handleInteraction(sparcEvent) {
+  const callbackData = sparcEvent.seq_id || sparcEvent.callback_data || sparcEvent.ref_id;
+
+  logger.info('Processing MoEngage interaction event', {
+    callbackData,
+    text: sparcEvent.suggestion_text || sparcEvent.text,
+  });
+
+  let timestampSeconds = Math.floor(Date.now() / 1000);
+  if (sparcEvent.timestamp) {
+    const parsed = Math.floor(new Date(sparcEvent.timestamp).getTime() / 1000);
+    if (!isNaN(parsed)) timestampSeconds = parsed;
+  }
+
+  let message = await messageRepo.findByCallbackData(callbackData);
+
+  // Prefix fallback
+  if (!message && callbackData && !String(callbackData).startsWith('moe_')) {
+    const prefixedId = `moe_${callbackData}`;
+    const prefixedMsg = await messageRepo.findByCallbackData(prefixedId);
+    if (prefixedMsg) {
+      message = prefixedMsg;
+    }
+  }
+
+  const result = await suggestionRepo.create({
+    callback_data: callbackData,
+    suggestion_text: sparcEvent.suggestion_text || sparcEvent.text,
+    postback_data: sparcEvent.postback_data || sparcEvent.postback,
+    event_timestamp: timestampSeconds,
+  });
+
+  const callbackUrl = env.MOENGAGE_DLR_URL || 'http://localhost:4000/test/moengage-dlr';
+  const callbackDispatcher = require('../services/callbackDispatcher');
+  const callbackPayload = require('../mappers/dlrMapper').mapDlrEvent(sparcEvent);
+  
+  const dispatched = await callbackDispatcher.dispatchSuggestion(callbackUrl, callbackPayload, callbackData);
+
+  if (dispatched) {
+    await suggestionRepo.markDispatched(result.insertId);
+  }
+}
+
+module.exports = { handleDlrEvent, handleInteraction };

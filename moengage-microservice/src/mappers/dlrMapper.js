@@ -27,6 +27,7 @@ const STATUS_MAP = Object.freeze({
   // ── Interaction Events ──────────────────────────────────────────────────
   'REPLY':                  'RCS_READ',
   'INTERACTION':            'RCS_READ',
+  'SUGGEST_CLICK':          'SUGGEST_CLICK',
 
   // ── Lowercase aliases (legacy / safety) ───────────────────────────────────
   'sent':                   'RCS_SENT',
@@ -78,7 +79,7 @@ function mapDlrEvent(sparcEvent) {
   const cleanCallbackData = callbackData ? String(callbackData).replace(/^moe_/, '') : callbackData;
 
   // ── SUGGESTION CLICK FORMAT ─────────────────────────────────────────────
-  if (sparcStatus === 'REPLY' || sparcStatus === 'INTERACTION') {
+  if (sparcStatus === 'REPLY' || sparcStatus === 'INTERACTION' || sparcStatus === 'SUGGEST_CLICK') {
     return {
       events: [{
         type: 'SUGGESTION_CLICKED',
