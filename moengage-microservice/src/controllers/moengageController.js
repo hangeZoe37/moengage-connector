@@ -15,8 +15,12 @@ async function handleInbound(req, res) {
     messageCount: messages?.length,
   });
 
-  // Acknowledge immediately
-  res.status(200).json({ status: 'Success', message: 'Accepted' });
+  // Acknowledge immediately with the format expected by MoEngage (Array of statuses)
+  const responseArray = messages.map((msg) => ({
+    status: 'SUCCESS',
+    callback_data: msg.callback_data,
+  }));
+  res.status(200).json(responseArray);
 
   // Process asynchronously
   setTimeout(async () => {

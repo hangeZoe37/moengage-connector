@@ -1,0 +1,347 @@
+{
+	"info": {
+		"_postman_id": "webengage-micro-test-v2-sequential",
+		"name": "WebEngage Microservice (Port 6000)",
+		"description": "Standalone test suite for the WebEngage Microservice on port 6000.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "0. HEALTH",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:6000/health",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "6000",
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "1. WEBENGAGE PERSPECTIVE (Outbound)",
+			"item": [
+				{
+					"name": "1.1 TEXT: Templated",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const req = JSON.parse(pm.request.body.raw);",
+									"pm.collectionVariables.set(\"last_msg_id\", \"web_\" + req.metadata.messageId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-api-key",
+								"value": "tstrcs444",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"version\": \"1.0\",\n  \"rcsData\": {\n    \"toNumber\": \"{{test_destination}}\",\n    \"sender\": \"{{bot_id}}\",\n    \"templateData\": {\n      \"templateName\": \"text_template\",\n      \"type\": \"TEXT\",\n      \"language\": \"null\",\n      \"parameters\": {\n        \"paramkey1\": \"paramValue1\",\n        \"paramkey2\": \"paramValue2\"\n      },\n      \"templateDetails\": {\n        \"text\": \"hello john, welcome to new world\",\n        \"buttonDetails\": {\n          \"buttons\": [\n            {\n              \"type\": \"SUGGESTED_REPLY\",\n              \"text\": \"Yes\"\n            },\n            {\n              \"type\": \"OPEN_URL\",\n              \"text\": \"Visit Website\",\n              \"url\": \"https://webengage.com\"\n            },\n            {\n              \"type\": \"CALL_PHONE_NUMBER\",\n              \"text\": \"Contact Us\",\n              \"phone_number\": \"9999999999\"\n            }\n          ]\n        }\n      }\n    },\n    \"customData\": {\n      \"customkey1\": \"customValue1\",\n      \"customkey2\": \"customValue2\"\n    }\n  },\n  \"metadata\": {\n    \"campaignType\": \"PROMOTIONAL\",\n    \"timeStamp\": \"{{$isoTimestamp}}\",\n    \"messageId\": \"text_{{$timestamp}}\"\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:6000/integrations/webengage/rcs/send",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "6000",
+							"path": [
+								"integrations",
+								"webengage",
+								"rcs",
+								"send"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "1.2 RICH_CARD: Ad-hoc",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const req = JSON.parse(pm.request.body.raw);",
+									"pm.collectionVariables.set(\"last_msg_id\", \"web_\" + req.metadata.messageId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-api-key",
+								"value": "tstrcs444",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"version\": \"1.0\",\n  \"rcsData\": {\n    \"toNumber\": \"{{test_destination}}\",\n    \"sender\": \"{{bot_id}}\",\n    \"templateData\": {\n      \"templateName\": \"rich_card_template\",\n      \"type\": \"RICH_CARD\",\n      \"language\": \"null\",\n      \"parameters\": {\n        \"paramkey1\": \"paramValue1\",\n        \"paramkey2\": \"paramValue2\"\n      },\n      \"templateDetails\": {\n        \"orientation\": \"Vertical\",\n        \"mediaHeight\": \"Short\",\n        \"title\": \"sample title\",\n        \"text\": \"hello john, welcome to new world\",\n        \"mediaType\": \"Image\",\n        \"mediaUrl\": \"https://i.pinimg.com/736x/57/3a/57/573a573683e5a79390d021688a043048.jpg\",\n        \"buttonDetails\": {\n          \"buttons\": [\n            {\n              \"type\": \"SUGGESTED_REPLY\",\n              \"text\": \"Yes\"\n            },\n            {\n              \"type\": \"OPEN_URL\",\n              \"text\": \"Visit Website\",\n              \"url\": \"https://webengage.com\"\n            },\n            {\n              \"type\": \"CALL_PHONE_NUMBER\",\n              \"text\": \"Contact Us\",\n              \"phone_number\": \"9999999999\"\n            }\n          ]\n        }\n      }\n    },\n    \"customData\": {\n      \"customkey1\": \"customValue1\",\n      \"customkey2\": \"customValue2\"\n    }\n  },\n  \"metadata\": {\n    \"campaignType\": \"PROMOTIONAL\",\n    \"timeStamp\": \"{{$isoTimestamp}}\",\n    \"messageId\": \"card_{{$timestamp}}\"\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:6000/integrations/webengage/rcs/send",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "6000",
+							"path": [
+								"integrations",
+								"webengage",
+								"rcs",
+								"send"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "1.3 RICH_CAROUSEL: Ad-hoc",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const req = JSON.parse(pm.request.body.raw);",
+									"pm.collectionVariables.set(\"last_msg_id\", \"web_\" + req.metadata.messageId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-api-key",
+								"value": "tstrcs444",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"version\": \"1.0\",\n  \"rcsData\": {\n    \"toNumber\": \"{{test_destination}}\",\n    \"sender\": \"{{bot_id}}\",\n    \"templateData\": {\n      \"templateName\": \"rich_carousel_template\",\n      \"type\": \"RICH_CAROUSEL\",\n      \"language\": \"null\",\n      \"parameters\": {\n        \"paramkey1\": \"paramValue1\",\n        \"paramkey2\": \"paramValue2\"\n      },\n      \"templateDetails\": {\n        \"cardWidth\": \"Small\",\n        \"mediaHeight\": \"Short\",\n        \"cards\": [\n          {\n            \"title\": \"Card C1 title\",\n            \"text\": \"Card C1 text - hello john, welcome to new world\",\n            \"mediaType\": \"Image\",\n            \"mediaUrl\": \"https://i.pinimg.com/736x/57/3a/57/573a573683e5a79390d021688a043048.jpg\",\n            \"buttonDetails\": {\n              \"buttons\": [\n                {\n                  \"type\": \"SUGGESTED_REPLY\",\n                  \"text\": \"Yes\"\n                },\n                {\n                  \"type\": \"OPEN_URL\",\n                  \"text\": \"Visit Website\",\n                  \"url\": \"https://webengage.com\"\n                }\n              ]\n            }\n          },\n          {\n            \"title\": \"Card C2 title\",\n            \"text\": \"Card C2 text - hello john, welcome to new world\",\n            \"mediaType\": \"Image\",\n            \"mediaUrl\": \"https://i.pinimg.com/736x/57/3a/57/573a573683e5a79390d021688a043048.jpg\",\n            \"buttonDetails\": {\n              \"buttons\": [\n                {\n                  \"type\": \"SUGGESTED_REPLY\",\n                  \"text\": \"Yes\"\n                },\n                {\n                  \"type\": \"OPEN_URL\",\n                  \"text\": \"Visit Website\",\n                  \"url\": \"https://webengage.com\"\n                }\n              ]\n            }\n          }\n        ]\n      }\n    },\n    \"customData\": {\n      \"customkey1\": \"customValue1\",\n      \"customkey2\": \"customValue2\"\n    }\n  },\n  \"metadata\": {\n    \"campaignType\": \"PROMOTIONAL\",\n    \"timeStamp\": \"{{$isoTimestamp}}\",\n    \"messageId\": \"caro_{{$timestamp}}\"\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:6000/integrations/webengage/rcs/send",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "6000",
+							"path": [
+								"integrations",
+								"webengage",
+								"rcs",
+								"send"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. WEBENGAGE WEBHOOK SIMULATION",
+			"item": [
+				{
+					"name": "2.1 DLR: Delivered (RCS)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"eventData\": {\n    \"userPhoneNumber\": \"{{test_destination}}\",\n    \"entity\": {\n      \"eventType\": \"MESSAGE_DELIVERED\",\n      \"sendTime\": \"{{$isoTimestamp}}\"\n    }\n  },\n  \"seqId\": \"{{last_msg_id}}\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:6000/sparc/webhook",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "6000",
+							"path": [
+								"sparc",
+								"webhook"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2.2 DLR: Failed (RCS)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"eventData\": {\n    \"userPhoneNumber\": \"{{test_destination}}\",\n    \"entity\": {\n      \"eventType\": \"MESSAGE_DELIVERY_FAILED\",\n      \"error\": {\n        \"code\": \"2001\",\n        \"message\": \"User Not Found\"\n      }\n    }\n  },\n  \"seqId\": \"{{last_msg_id}}\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:6000/sparc/webhook",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "6000",
+							"path": [
+								"sparc",
+								"webhook"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2.3 INTERACTION: View",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"interactionType\": \"VIEW\",\n  \"seq_id\": \"{{last_msg_id}}\",\n  \"timestamp\": \"{{$isoTimestamp}}\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:6000/sparc/webhook",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "6000",
+							"path": [
+								"sparc",
+								"webhook"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2.4 INTERACTION: Click",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"interactionType\": \"OPEN_URL\",\n  \"seq_id\": \"{{last_msg_id}}\",\n  \"url\": \"https://webengage.com\",\n  \"timestamp\": \"{{$isoTimestamp}}\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:6000/sparc/webhook",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "6000",
+							"path": [
+								"sparc",
+								"webhook"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2.5 INTERACTION: Reply",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"interactionType\": \"REPLY\",\n  \"seq_id\": \"{{last_msg_id}}\",\n  \"suggestion_text\": \"Claim\",\n  \"postback_data\": \"CLAIM_1\",\n  \"timestamp\": \"{{$isoTimestamp}}\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:6000/sparc/webhook",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "6000",
+							"path": [
+								"sparc",
+								"webhook"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "test_destination",
+			"value": "+918287902252"
+		},
+		{
+			"key": "bot_id",
+			"value": "677baf920f6d1f157306740b"
+		},
+		{
+			"key": "last_msg_id",
+			"value": ""
+		}
+	]
+}
