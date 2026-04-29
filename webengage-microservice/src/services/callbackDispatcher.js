@@ -13,7 +13,7 @@ async function dispatch(url, payload, callbackData, label = 'Callback') {
 
   try {
     const response = await axios.post(url, payload, { timeout: 10000 });
-    logger.debug(`${label} acknowledged by receiver`, { status: response.status, callbackData });
+    logger.info(`${label} acknowledged by receiver`, { status: response.status, callbackData });
     return true;
   } catch (error) {
     logger.warn(`${label} dispatch failed`, {

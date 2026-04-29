@@ -14,6 +14,11 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'UP', service: 'WebEngage-Microservice' });
 });
 
+// Test route for WebEngage DLRs
+app.post('/api/test/webengage-dlr', (req, res) => {
+  res.status(200).json({ status: 'Success', message: 'DLR received by mock endpoint' });
+});
+
 // Logging middleware
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.url}`);
