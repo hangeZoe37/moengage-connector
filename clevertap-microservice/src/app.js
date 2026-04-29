@@ -30,6 +30,11 @@ app.get('/health', (req, res) => {
   res.json({ status: 'UP', timestamp: new Date().toISOString() });
 });
 
+// Test route for CleverTap DLRs
+app.post('/api/test/clevertap-dlr', (req, res) => {
+  res.status(200).json({ status: 'Success', message: 'DLR received by mock endpoint' });
+});
+
 app.get('/', (req, res) => {
   res.json({ service: 'CleverTap Microservice', status: 'Running' });
 });

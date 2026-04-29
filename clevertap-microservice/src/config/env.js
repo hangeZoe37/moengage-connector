@@ -16,6 +16,8 @@ module.exports = {
     
     // SPARC API (RCS)
     SPARC_API_BASE_URL: process.env.SPARC_API_BASE_URL,
+    SPARC_SERVICE_ACCOUNT: process.env.SPARC_SERVICE_ACCOUNT,
+    SPARC_API_PASSWORD: process.env.SPARC_API_PASSWORD,
     SPARC_WEBHOOK_URL: process.env.SPARC_WEBHOOK_URL,
     
     // SPARC SMS API (different from RCS)
@@ -26,6 +28,10 @@ module.exports = {
     // CleverTap Callback
     CLEVERTAP_DLR_URL: process.env.CLEVERTAP_DLR_URL,
     
+    JWT_SECRET: process.env.JWT_SECRET || 'localdev_jwt_secret',
     LOG_LEVEL: process.env.LOG_LEVEL || 'info',
+    
+    RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 60000,
+    RATE_LIMIT_MAX: parseInt(process.env.RATE_LIMIT_MAX, 10) || 20000,
   }
 };

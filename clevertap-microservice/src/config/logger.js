@@ -18,13 +18,13 @@ const logger = createLogger({
         format.colorize(),
         format.printf(({ level, message, timestamp, ...metadata }) => {
           let meta = '';
-          if (Object.keys(metadata).length > 0 && metadata.service) {
-             const { service, ...rest } = metadata;
-             if (Object.keys(rest).length > 0) {
-                meta = JSON.stringify(rest);
-             }
+          const { service, ...rest } = metadata;
+          if (Object.keys(rest).length > 0) {
+            meta = env.NODE_ENV === 'development' 
+              ? '\n' + JSON.stringify(rest, null, 2) 
+              : ' ' + JSON.stringify(rest);
           }
-          return `${timestamp} [${level}]: ${message} ${meta}`;
+          return `${timestamp} [${level}]: ${message}${meta}`;
         })
       ),
     }),

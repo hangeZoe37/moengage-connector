@@ -23,7 +23,7 @@ async function processMessage(payload, client) {
 
   try {
     const sparcPayload = mapInbound(payload, env.SPARC_WEBHOOK_URL, client);
-    logger.debug('Sending to SPARC RCS', { payload: JSON.stringify(sparcPayload, null, 2) });
+    logger.debug('Sending to SPARC RCS', { sparcPayload });
     const sparcResponse = await sparcClient.sendRCS(client, sparcPayload);
 
     logger.debug('CleverTap RCS submission response', { msgId, sparcResponse });
