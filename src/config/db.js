@@ -19,7 +19,6 @@ const dbConfig = {
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000,
-  timezone: '+00:00',
 };
 
 // Create 4 distinct connection pools

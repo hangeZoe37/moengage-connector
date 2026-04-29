@@ -7,6 +7,7 @@
 
 const messageRepo = require('../repositories/messageRepo');
 const dlrRepo = require('../repositories/dlrRepo');
+const suggestionRepo = require('../repositories/suggestionRepo');
 const clientRepo = require('../repositories/clientRepo');
 const { dashboardEmitter } = require('../services/dashboardService');
 const logger = require('../config/logger');
@@ -61,7 +62,10 @@ async function getMessageDetail(req, res) {
 
     if (!message) return res.status(404).json({ error: 'Message not found' });
 
-    const events = await dlrRepo.findByCallbackData(message.callback_data);
+    const [events, suggestions] = await Promise.all([
+      dlrRepo.findByCallbackData(message.callback_data),
+      suggestionRepo.findByCallbackData(message.callback_data)
+    ]);
 
     // Parse raw_payload if stored as string
     let parsedPayload = message.raw_payload;
@@ -69,7 +73,11 @@ async function getMessageDetail(req, res) {
       try { parsedPayload = JSON.parse(parsedPayload); } catch (_) {}
     }
 
-    res.json({ message: { ...message, raw_payload: parsedPayload }, dlrEvents: events });
+    res.json({ 
+      message: { ...message, raw_payload: parsedPayload }, 
+      dlrEvents: events,
+      suggestionEvents: suggestions
+    });
   } catch (error) {
     logger.error('Dashboard getMessageDetail failed', { error: error.message });
     res.status(500).json({ error: 'Internal server error' });

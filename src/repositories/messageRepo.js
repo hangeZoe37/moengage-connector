@@ -221,6 +221,8 @@ async function getRecentLogs(limit = 50, offset = 0, clientId = null) {
   // we pull limit+offset from each, merge, sort, and slice.
   sql += ` ORDER BY created_at DESC LIMIT ${safeLimit + offset}`;
 
+  const [moe, ct, we] = await db.fanOutQuery(sql, params);
+
   // Tag each log with its source connector before merging
   moe.forEach(l => l.connector_type = 'MOENGAGE');
   ct.forEach(l => l.connector_type = 'CLEVERTAP');
