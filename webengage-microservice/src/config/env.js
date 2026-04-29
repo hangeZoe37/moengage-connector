@@ -12,8 +12,13 @@ module.exports = {
     DB_PASSWORD: process.env.DB_PASSWORD,
     DB_POOL_SIZE: parseInt(process.env.DB_POOL_SIZE, 10) || 10,
     SPARC_API_BASE_URL: process.env.SPARC_API_BASE_URL,
+    SPARC_SERVICE_ACCOUNT: process.env.SPARC_SERVICE_ACCOUNT,
+    SPARC_API_PASSWORD: process.env.SPARC_API_PASSWORD,
     SPARC_WEBHOOK_URL: process.env.SPARC_WEBHOOK_URL,
     WEBENGAGE_DLR_URL: process.env.WEBENGAGE_DLR_URL,
+    JWT_SECRET: process.env.JWT_SECRET || 'localdev_jwt_secret',
     LOG_LEVEL: process.env.LOG_LEVEL || 'info',
+    RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 60000,
+    RATE_LIMIT_MAX: parseInt(process.env.RATE_LIMIT_MAX, 10) || 1000,
   }
 };
