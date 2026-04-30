@@ -35,12 +35,10 @@ async function dispatch(callbackUrl, payload, callbackData, payloadType) {
 
   for (let attempt = 1; attempt <= RETRY_CONFIG.MAX_ATTEMPTS; attempt++) {
     try {
-      logger.info('Dispatching callback to CleverTap', {
-        callbackData,
-        payloadType,
-        attempt,
-        url: callbackUrl,
-      });
+      logger.info('Forwarding callback to CleverTap', { callbackData, url: callbackUrl });
+      logger.info('--- [CLEVERTAP CALLBACK PAYLOAD START] ---');
+      logger.info(JSON.stringify(payload, null, 2));
+      logger.info('--- [CLEVERTAP CALLBACK PAYLOAD END] ---');
 
       const response = await axios.post(callbackUrl, payload, {
         timeout: CONNECTOR_CALLBACK_TIMEOUT_MS,

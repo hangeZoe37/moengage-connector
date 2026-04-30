@@ -18,7 +18,7 @@ async function create(dispatchData) {
   } = dispatchData;
 
   const sql = `
-    INSERT INTO callback_dispatches (
+    INSERT INTO callback_dispatch_log (
       callback_data, payload_type, attempt_number,
       http_status, success, error_message, dispatched_at
     ) VALUES (?, ?, ?, ?, ?, ?, NOW())

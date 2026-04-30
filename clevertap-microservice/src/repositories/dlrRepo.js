@@ -28,7 +28,7 @@ async function create(dlrData) {
     sparc_status,
     moe_status,
     error_message || null,
-    event_timestamp ? new Date(event_timestamp * 1000) : null
+    event_timestamp ? event_timestamp * 1000 : null
   ]);
 
   return result;

@@ -6,25 +6,21 @@ const { env } = require('./env');
 const logger = winston.createLogger({
   level: env.LOG_LEVEL || 'info',
   format: winston.format.combine(
-    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
+    winston.format.timestamp({ format: 'YYYY-DD-MM HH:mm:ss.SSS' }),
     winston.format.errors({ stack: true }),
-    winston.format.json()
+    winston.format.splat()
   ),
-  defaultMeta: { service: 'webengage-microservice' },
+  defaultMeta: { service: 'sparc-connector-hub' },
   transports: [
     new winston.transports.Console({
-      format: env.NODE_ENV === 'development'
-        ? winston.format.combine(
-            winston.format.colorize(),
-            winston.format.printf(({ timestamp, level, message, service, ...meta }) => {
-              const hasRealMeta = Object.keys(meta).filter(k => k !== 'stack').length > 0;
-              const metaStr = hasRealMeta ? ` ${JSON.stringify(meta)}` : '';
-              return `${timestamp} [${level}]: ${message}${metaStr}`;
-            })
-          )
-        : undefined,
-    })
-  ]
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.printf(({ level, message, timestamp, ...metadata }) => {
+          return `${timestamp} [${level}]: ${message} ${JSON.stringify(metadata)}`;
+        })
+      ),
+    }),
+  ],
 });
 
 module.exports = logger;

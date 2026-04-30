@@ -9,11 +9,13 @@ const clevertapService = require('../services/clevertapService');
 const messageRepo = require('../repositories/messageRepo');
 const trackLinkRepo = require('../repositories/trackLinkRepo');
 const { processMessageLinks } = require('../utils/urlProcessor');
+const { env } = require('../config/env');
 const logger = require('../config/logger');
 
 async function handleInbound(req, res) {
   const { body, client } = req;
-  let { msgId, to, rcsContent, smsContent, callbackURL, sms } = body;
+  let { msgId, to, rcsContent, smsContent, sms } = body;
+  const callbackURL = body.dlr_url || body.callback_url || body.callbackURL || env.CLEVERTAP_DLR_URL;
   const smsBlock = smsContent || sms;
 
   // Automatic Prefixing for Bifurcation

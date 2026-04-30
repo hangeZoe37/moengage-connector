@@ -6,25 +6,17 @@ const { env } = require('./env');
 const logger = createLogger({
   level: env.LOG_LEVEL || 'info',
   format: format.combine(
-    format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    format.timestamp({ format: 'YYYY-DD-MM HH:mm:ss.SSS' }),
     format.errors({ stack: true }),
-    format.splat(),
-    format.json()
+    format.splat()
   ),
-  defaultMeta: { service: 'clevertap-microservice' },
+  defaultMeta: { service: 'sparc-connector-hub' },
   transports: [
     new transports.Console({
       format: format.combine(
         format.colorize(),
         format.printf(({ level, message, timestamp, ...metadata }) => {
-          let meta = '';
-          const { service, ...rest } = metadata;
-          if (Object.keys(rest).length > 0) {
-            meta = env.NODE_ENV === 'development' 
-              ? '\n' + JSON.stringify(rest, null, 2) 
-              : ' ' + JSON.stringify(rest);
-          }
-          return `${timestamp} [${level}]: ${message}${meta}`;
+          return `${timestamp} [${level}]: ${message} ${JSON.stringify(metadata)}`;
         })
       ),
     }),

@@ -23,10 +23,8 @@ async function processMessage(payload, client) {
 
   try {
     const sparcPayload = mapInbound(payload, env.SPARC_WEBHOOK_URL, client);
-    logger.debug('Sending to SPARC RCS', { sparcPayload });
     const sparcResponse = await sparcClient.sendRCS(client, sparcPayload);
 
-    logger.debug('CleverTap RCS submission response', { msgId, sparcResponse });
 
     // Validate response
     if (Array.isArray(sparcResponse) && sparcResponse[0]?.status?.toUpperCase() !== 'SUCCESS') {

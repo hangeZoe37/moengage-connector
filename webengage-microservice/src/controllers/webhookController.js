@@ -57,7 +57,8 @@ async function handleDlrEvent(sparcEvent) {
   const callbackUrl = env.WEBENGAGE_DLR_URL;
   const wePayload = mapToWebEngage(callbackData, internalStatus, message, entity.error?.message);
   
-  const dispatched = await callbackDispatcher.dispatch(callbackUrl, wePayload, callbackData, 'DSN');
+  logger.info('Forwarding DLR to WebEngage', { callbackData, url: callbackUrl });
+  const dispatched = await callbackDispatcher.dispatch(callbackUrl, wePayload, callbackData, 'WEBENGAGE_STATUS');
 
   if (dispatched) {
     await dlrRepo.markDispatched(dlrResult.insertId);
@@ -96,7 +97,8 @@ async function handleInteraction(sparcEvent) {
   const callbackUrl = env.WEBENGAGE_DLR_URL;
   const wePayload = mapInteractionToWebEngage(callbackData, sparcEvent, message);
   
-  const dispatched = await callbackDispatcher.dispatch(callbackUrl, wePayload, callbackData, 'Interaction');
+  logger.info('Forwarding Interaction to WebEngage', { callbackData, url: callbackUrl });
+  const dispatched = await callbackDispatcher.dispatch(callbackUrl, wePayload, callbackData, 'WEBENGAGE_INTERACTION');
 
   if (dispatched) {
     await suggestionRepo.markDispatched(result.insertId);

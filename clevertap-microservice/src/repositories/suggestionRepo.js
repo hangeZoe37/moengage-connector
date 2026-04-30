@@ -26,7 +26,7 @@ async function create(suggestionData) {
     callback_data,
     suggestion_text || null,
     postback_data || null,
-    event_timestamp ? new Date(event_timestamp * 1000) : null
+    event_timestamp ? event_timestamp * 1000 : null
   ]);
 
   return result;

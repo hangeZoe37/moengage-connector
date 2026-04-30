@@ -56,6 +56,7 @@ async function handleDlrEvent(sparcEvent) {
   if (message.callback_url) {
     const ctPayload = mapDlrToCleverTap(callbackData, internalStatus, entity.error);
     if (ctPayload) {
+      logger.info('Forwarding DLR to CleverTap', { callbackData, url: message.callback_url });
       const dispatched = await callbackDispatcher.dispatch(message.callback_url, ctPayload, callbackData, 'CLEVERTAP_STATUS');
       if (dispatched) {
         await dlrRepo.markDispatched(dlrResult.insertId);
@@ -111,6 +112,7 @@ async function handleInteraction(sparcEvent) {
   if (message.callback_url) {
     const ctPayload = mapInteractionToCleverTap(callbackData, sparcEvent, message);
     if (ctPayload) {
+      logger.info('Forwarding Interaction to CleverTap', { callbackData, url: message.callback_url });
       const dispatched = await callbackDispatcher.dispatch(message.callback_url, ctPayload, callbackData, 'CLEVERTAP_INTERACTION');
       if (dispatched) {
         await suggestionRepo.markDispatched(result.insertId);
