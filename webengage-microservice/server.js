@@ -29,8 +29,8 @@ async function startServer() {
       server.close(async () => {
         logger.info('HTTP server closed');
         try {
-          await pools.ADMIN.end();
-          await pools.WEBENGAGE.end();
+          if (db.pools.ADMIN) await db.pools.ADMIN.end();
+          if (db.pools.WEBENGAGE) await db.pools.WEBENGAGE.end();
           logger.info('Database pools drained');
         } catch (err) {
           logger.error('Error draining pools', { error: err.message });
