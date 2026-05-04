@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: sparc-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: reset@123
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./migrations:/docker-entrypoint-initdb.d
+      - mysql_data:/var/lib/mysql
+
+  moengage:
+    build: ./moengage-microservice
+    restart: always
+    depends_on:
+      - mysql
+    ports:
+      - "4000:4000"
+    env_file: ./moengage-microservice/.env
+    environment:
+      - DB_HOST=mysql
+
+  clevertap:
+    build: ./clevertap-microservice
+    restart: always
+    depends_on:
+      - mysql
+    ports:
+      - "6001:6001"
+    env_file: ./clevertap-microservice/.env
+    environment:
+      - DB_HOST=mysql
+
+  webengage:
+    build: ./webengage-microservice
+    restart: always
+    depends_on:
+      - mysql
+    ports:
+      - "6000:6000"
+    env_file: ./webengage-microservice/.env
+    environment:
+      - DB_HOST=mysql
+
+  dashboard-hub:
+    build: ./sparc-dashboard-hub
+    restart: always
+    depends_on:
+      - mysql
+    ports:
+      - "7001:7001"
+      - "7000:7000"
+    env_file: ./sparc-dashboard-hub/.env
+    environment:
+      - DB_HOST=mysql
+
+volumes:
+  mysql_data:
