@@ -5,7 +5,7 @@
  * Handles SPARC webhooks (DLRs and Interactions).
  */
 
-const { translateStatus } = require('../mappers/dlrMapper');
+const { translateStatus, isSmsStatus } = require('../mappers/dlrMapper');
 const { mapDlrToCleverTap, mapInteractionToCleverTap } = require('../mappers/clevertapMapper');
 const messageRepo = require('../repositories/messageRepo');
 const dlrRepo = require('../repositories/dlrRepo');
@@ -13,6 +13,7 @@ const suggestionRepo = require('../repositories/suggestionRepo');
 const clientRepo = require('../repositories/clientRepo');
 const clevertapService = require('../services/clevertapService');
 const callbackDispatcher = require('../services/callbackDispatcher');
+const { pools } = require('../config/db');
 const logger = require('../config/logger');
 
 async function handleDlrEvent(sparcEvent) {
@@ -21,6 +22,12 @@ async function handleDlrEvent(sparcEvent) {
 
   let callbackData = sparcEvent.seq_id || sparcEvent.seqId || eventRoot.seqId || sparcEvent.callback_data;
   
+  console.log('-------------------------------------------');
+  console.log('📡 [DEBUG] RCS DLR RECEIVED IN CONTROLLER');
+  console.log('ID:', callbackData);
+  console.log('Sparc Status:', (entity.eventType || eventRoot.status || sparcEvent.status));
+  console.log('-------------------------------------------');
+
   if (callbackData && !String(callbackData).startsWith('cl_')) {
     callbackData = `cl_${callbackData}`;
   }
@@ -124,20 +131,61 @@ async function handleInteraction(sparcEvent) {
 async function handleSmsDlr(reqQuery) {
   const { transactionId, deliverystatus, deliverytime, description } = reqQuery;
 
-  if (!transactionId || !deliverystatus) return;
+  console.log('-------------------------------------------');
+  console.log('📩 [DEBUG] SMS DLR RECEIVED IN CONTROLLER');
+  console.log('ID:', transactionId);
+  console.log('Status:', deliverystatus);
+  console.log('-------------------------------------------');
 
-  const message = await messageRepo.findBySparcTransactionId(transactionId);
-  if (!message) return;
+  logger.info('📩 SMS DLR received', { transactionId, deliverystatus });
+
+  if (!transactionId || !deliverystatus) {
+    logger.warn('SMS DLR missing transactionId or deliverystatus — check your Postman seqId variable!', { transactionId, deliverystatus });
+    return;
+  }
+
+  // Try finding by Sparc Transaction ID first, then fall back to Callback Data (for simulations)
+  let message = await messageRepo.findBySparcTransactionId(transactionId);
+  if (!message) {
+    logger.debug('SMS DLR: Sparc ID not found, trying Callback Data lookup', { transactionId });
+    message = await messageRepo.findByCallbackData(transactionId);
+  }
+
+  if (!message) {
+    logger.warn('❌ SMS DLR received for unknown message — did you send an outbound request first?', { transactionId });
+    return;
+  }
+
+  logger.info('✅ SMS DLR matched to message', { transactionId, messageId: message.id });
 
   const { callback_data } = message;
   const internalStatus = translateStatus(deliverystatus);
 
+  // 1. Update DB — mark status AND channel as SMS
+  const dlrResult = await dlrRepo.create({
+    callback_data: callback_data,
+    sparc_status: deliverystatus,
+    moe_status: internalStatus,
+    error_message: description || null,
+    event_timestamp: deliverytime ? Math.floor(new Date(deliverytime).getTime() / 1000) : Math.floor(Date.now() / 1000),
+  });
+
   await messageRepo.updateStatus(callback_data, internalStatus);
 
+  // Mark the message channel as SMS so the UI "SMS" filter works
+  await pools.CLEVERTAP.query(
+    `UPDATE message_logs SET message_type = 'SMS', updated_at = NOW() WHERE callback_data = ?`,
+    [callback_data]
+  );
+
+  // 2. Dispatch to CleverTap
   if (message.callback_url) {
     const ctPayload = mapDlrToCleverTap(callback_data, internalStatus, description ? { code: "SMS", message: description } : null);
     if (ctPayload) {
-      await callbackDispatcher.dispatch(message.callback_url, ctPayload, callback_data, 'CLEVERTAP_SMS_DLR');
+      const dispatched = await callbackDispatcher.dispatch(message.callback_url, ctPayload, callback_data, 'CLEVERTAP_SMS_DLR');
+      if (dispatched) {
+        await dlrRepo.markDispatched(dlrResult.insertId);
+      }
     }
   }
 }

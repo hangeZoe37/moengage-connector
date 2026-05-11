@@ -12,6 +12,8 @@ const { processMessageLinks } = require('../utils/urlProcessor');
 const { env } = require('../config/env');
 const logger = require('../config/logger');
 
+const { mapCleverTapApiError } = require('../utils/clevertapErrorMapper');
+
 async function handleInbound(req, res) {
   const { body, client } = req;
   let { msgId, to, rcsContent, smsContent, sms } = body;
@@ -33,8 +35,19 @@ async function handleInbound(req, res) {
 
   try {
     // 1. Initial validation
+    const cleanId = msgId ? String(msgId).replace(/^cl_/, '') : msgId;
+
     if (!msgId || !to || !rcsContent) {
-      return res.status(400).json({ status: 'error', message: 'Missing required fields: msgId, to, or rcsContent' });
+      return res.status(200).json([
+        {
+          event: "failed",
+          data: [{
+            ts: Math.floor(Date.now() / 1000),
+            code: "2014",
+            meta: cleanId || "unknown"
+          }]
+        }
+      ]);
     }
 
     // --- URL Tracking Selection ---
@@ -68,16 +81,37 @@ async function handleInbound(req, res) {
 
     await messageRepo.create(logData);
 
-    // 3. Process asynchronously
-    clevertapService.processMessage(body, client).catch(err => {
-      logger.error('Background CleverTap processing failed', { msgId, error: err.message });
-    });
-
-    return res.status(200).json({ status: 'success', message: 'Message queued' });
+    // 3. Process synchronously to catch immediate provider errors
+    try {
+      await clevertapService.processMessage(body, client);
+      return res.status(200).json({ success: true });
+    } catch (serviceError) {
+      const errorCode = mapCleverTapApiError(serviceError.message);
+      return res.status(200).json([
+        {
+          event: "failed",
+          data: [{
+            ts: Math.floor(Date.now() / 1000),
+            code: errorCode,
+            meta: cleanId
+          }]
+        }
+      ]);
+    }
 
   } catch (error) {
     logger.error('CleverTap inbound handler error', { msgId, error: error.message });
-    return res.status(500).json({ status: 'error', message: 'Internal server error' });
+    const cleanId = msgId ? String(msgId).replace(/^cl_/, '') : msgId;
+    return res.status(200).json([
+      {
+        event: "failed",
+        data: [{
+          ts: Math.floor(Date.now() / 1000),
+          code: "2014",
+          meta: cleanId
+        }]
+      }
+    ]);
   }
 }
 

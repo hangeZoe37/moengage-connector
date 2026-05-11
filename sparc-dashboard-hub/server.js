@@ -330,7 +330,7 @@ app.get('/api/dlr', async (req, res) => {
         s.id,
         s.callback_data as seq_id,
         COALESCE(CONCAT('Interaction: ', s.suggestion_text), 'Interaction: Unknown/Postback') as sparc_status,
-        COALESCE(s.postback_data, 'No Payload') as mapped_status,
+        COALESCE(s.postback_data, s.suggestion_text, 'No Payload') as mapped_status,
         s.callback_dispatched as forwarded,
         s.created_at,
         m.destination,

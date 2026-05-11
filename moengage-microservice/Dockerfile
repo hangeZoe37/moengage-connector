@@ -4,11 +4,14 @@ FROM node:20-alpine
 # Set the working directory inside the container
 WORKDIR /app
 
+# Install nodemon globally so it works even with volume mounts
+RUN npm install -g nodemon
+
 # Copy package files first (better for caching)
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install --production
+RUN npm install
 
 # Copy the rest of the application code
 COPY . .
@@ -17,4 +20,4 @@ COPY . .
 EXPOSE 4000
 
 # Start the application
-CMD ["npm", "start"]
+CMD ["nodemon", "server.js"]

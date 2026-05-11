@@ -116,10 +116,14 @@ function mapInbound(cleverTapPayload, dlrWebhookUrl, client) {
   const { msgId, to, rcsContent } = cleverTapPayload;
   const { content, senderId } = rcsContent;
 
+  // Use senderId from request payload — if wrong, SPARC will reject and trigger SMS fallback
+  // Only fall back to DB value if senderId is completely absent
+  const resolvedAssistantId = senderId || client.rcs_assistant_id;
+
   const sparcAddress = {
     seq_id: msgId, 
-    assistant_id: client.rcs_assistant_id, // Force from DB
-    assistantid: client.rcs_assistant_id,  // Alternative naming
+    assistant_id: resolvedAssistantId,
+    assistantid: resolvedAssistantId,
     mobile_number: to.replace('+', '').replace(/^91/, ''),
   };
 
@@ -178,6 +182,8 @@ function mapInbound(cleverTapPayload, dlrWebhookUrl, client) {
   };
 }
 
+const { mapCleverTapCallbackError } = require('../utils/clevertapErrorMapper');
+
 /**
  * Map SPARC DLR to CleverTap format.
  */
@@ -186,22 +192,22 @@ function mapDlrToCleverTap(msgId, status, errorDetails = null) {
   if (status.includes('DELIVERED')) ctEvent = 'delivered';
   if (status === 'RCS_READ') ctEvent = 'viewed';
   
-  // Non-final/intermediate statuses
-  if (['RCS_SENT', 'SMS_SENT', 'QUEUED'].includes(status)) return null; 
+  // Non-final/intermediate statuses — skip
+  if (['RCS_SENT', 'SMS_SENT', 'QUEUED'].includes(status)) return null;
 
-  const channel = status.startsWith('SMS_') ? "SMS" : "RCS";
+  // Determine channel from status string
+  const channel = status.startsWith('SMS_') ? 'SMS' : 'RCS';
+
+  const cleanId = msgId ? String(msgId).replace(/^cl_/, '') : msgId;
   const item = {
+    ts: Math.floor(Date.now() / 1000),
     channel,
-    meta: msgId ? String(msgId).replace(/^cl_/, '') : msgId
+    meta: cleanId,
   };
 
   if (ctEvent === 'failed') {
-    item.ts = Math.floor(Date.now() / 1000);
-    const errCode = String(errorDetails?.code || '');
-    if (errCode.includes('2002')) item.code = 2002;
-    else if (errCode.includes('2004')) item.code = 2004;
-    else if (errCode.includes('901')) item.code = 901;
-    else item.code = 904;
+    const sparcError = errorDetails?.message || errorDetails || status;
+    item.code = mapCleverTapCallbackError(sparcError);
   }
 
   return [{ event: ctEvent, data: [item] }];
@@ -211,32 +217,68 @@ function mapDlrToCleverTap(msgId, status, errorDetails = null) {
  * Map SPARC Interaction to CleverTap format.
  */
 function mapInteractionToCleverTap(msgId, sparcEvent, message) {
-  const isClick = !!(sparcEvent.url || sparcEvent.open_url);
-  const interactionType = (sparcEvent.interactionType || '').toUpperCase();
-  
-  let event = 'replied';
-  if (interactionType === 'VIEW') {
+  // Check all possible SPARC field names for interaction type
+  const interactionType = (
+    sparcEvent.interactionType || 
+    sparcEvent.suggestion_type || 
+    sparcEvent.type || 
+    ''
+  ).toUpperCase();
+
+  // Check all possible SPARC field names for URL (indicates a click)
+  const urlValue = sparcEvent.url || sparcEvent.open_url || 
+                   sparcEvent.openUrl?.url || sparcEvent.url_action?.open_url?.url;
+
+  const postback = (sparcEvent.postback_data || sparcEvent.postback || '').toUpperCase();
+  const incomingText = (sparcEvent.suggestion_text || sparcEvent.text || sparcEvent.incomingText || '').toUpperCase();
+
+  const isClick = !!(urlValue) || 
+                  interactionType === 'OPEN_URL' || 
+                  interactionType === 'URL_ACTION' ||
+                  postback.includes('URL') || postback.includes('CLICK') ||
+                  incomingText.includes('(URL)') || incomingText.includes('CLICKED');
+
+  const isView = interactionType === 'VIEW' || interactionType === 'READ';
+
+  let event = 'replied'; // default
+  if (isView) {
     event = 'read';
-  } else if (isClick || interactionType === 'OPEN_URL') {
+  } else if (isClick) {
     event = 'clicked';
   }
 
-  const channel = (message.status || '').startsWith('SMS_') ? "SMS" : "RCS";
-  const item = {
-    channel,
-    meta: msgId ? String(msgId).replace(/^cl_/, '') : msgId
-  };
+  const channel = (message.status || '').startsWith('SMS_') ? 'SMS' : 'RCS';
+  const cleanMeta = msgId ? String(msgId).replace(/^cl_/, '') : msgId;
+  const resolvedUrl = urlValue || '';
 
+  let item;
   if (event === 'clicked') {
-    item.ts = Math.floor(Date.now() / 1000);
-    item.url = sparcEvent.url || sparcEvent.open_url || '';
-    item.userAgent = sparcEvent.userAgent || 'SPARC-RCS-Agent';
-    item.shortUrl = sparcEvent.shortUrl || item.url;
+    // Exact spec format: ts, channel, meta, userAgent, url, shortUrl
+    item = {
+      ts: Math.floor(Date.now() / 1000),
+      channel,
+      meta: cleanMeta,
+      userAgent: sparcEvent.userAgent || sparcEvent.user_agent || 'SPARC-RCS-Agent',
+      url: resolvedUrl,
+      shortUrl: sparcEvent.shortUrl || sparcEvent.short_url || resolvedUrl
+    };
+  } else if (event === 'read') {
+    item = {
+      ts: Math.floor(Date.now() / 1000),
+      channel,
+      meta: cleanMeta
+    };
   } else {
-    item.type = "text";
-    item.fromPhone = message.destination || '';
-    item.toPhone = sparcEvent.toPhone || ''; 
-    item.incomingText = sparcEvent.suggestion_text || sparcEvent.text || '';
+    // replied
+    item = {
+      ts: Math.floor(Date.now() / 1000),
+      channel,
+      meta: cleanMeta,
+      type: 'text',
+      fromPhone: message.destination || '',
+      toPhone: sparcEvent.toPhone || '',
+      incomingText: sparcEvent.suggestion_text || sparcEvent.text || ''
+    };
     const postback = sparcEvent.postback_data || sparcEvent.postback;
     if (postback) item.postback = postback;
   }

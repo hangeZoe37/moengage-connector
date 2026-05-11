@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mysql:
     image: mysql:8.0
@@ -12,51 +10,76 @@ services:
     volumes:
       - ./migrations:/docker-entrypoint-initdb.d
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-preset@123"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
   moengage:
     build: ./moengage-microservice
     restart: always
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     ports:
       - "4000:4000"
     env_file: ./moengage-microservice/.env
     environment:
       - DB_HOST=mysql
+    volumes:
+      - ./moengage-microservice:/app
+      - /app/node_modules
+    command: nodemon server.js
 
   clevertap:
     build: ./clevertap-microservice
     restart: always
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     ports:
       - "6001:6001"
     env_file: ./clevertap-microservice/.env
     environment:
       - DB_HOST=mysql
+    volumes:
+      - ./clevertap-microservice:/app
+      - /app/node_modules
+    command: nodemon server.js
 
   webengage:
     build: ./webengage-microservice
     restart: always
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     ports:
       - "6000:6000"
     env_file: ./webengage-microservice/.env
     environment:
       - DB_HOST=mysql
+    volumes:
+      - ./webengage-microservice:/app
+      - /app/node_modules
+    command: nodemon server.js
 
   dashboard-hub:
     build: ./sparc-dashboard-hub
     restart: always
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     ports:
       - "7001:7001"
       - "7000:7000"
     env_file: ./sparc-dashboard-hub/.env
     environment:
       - DB_HOST=mysql
+    volumes:
+      - ./sparc-dashboard-hub:/app
+      - /app/node_modules
 
 volumes:
   mysql_data:

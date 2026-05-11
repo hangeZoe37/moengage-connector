@@ -45,18 +45,26 @@ async function processInbound(payload, client) {
   try {
     const response = await sparcClient.sendMessage(sparcPayload, credentials);
     
-    // Updated validation to be more flexible and match Port 3000 logic
-    const isSuccess = 
-      response.status === 'Success' || 
+    const sparcMessage = (response.message || '').toUpperCase();
+    const hasFailures = response.failed && response.failed.length > 0;
+    const isSuccess = !hasFailures && (
+      response.status?.toUpperCase() === 'SUCCESS' || 
       response.success === true || 
-      response.message === 'Successfull' || 
-      response.status_code === 200;
+      sparcMessage === 'SUCCESSFULL' || 
+      sparcMessage === 'SUCCESS' ||
+      response.status_code === 200
+    );
 
-    if (isSuccess && (!response.failed || response.failed.length === 0)) {
+    if (isSuccess) {
       await messageRepo.updateStatus(prefixedId, 'RCS_SENT');
-      return { status: 'rcs_accepted', statusCode: 0 };
+      return { status: 'rcs_accepted', statusCode: 0, message: 'Success' };
     } else {
-      const errorMsg = response.message || (response.failed && response.failed[0]?.error) || 'SPARC submission failed';
+      // Priority: Find ANY error signal in the failed array
+      const firstFail = response.failed?.[0] || {};
+      const errorMsg = firstFail.error || firstFail.description || firstFail.status || firstFail.reason || 
+                       (response.message !== 'Successfull' ? response.message : null) || 
+                       'SPARC submission failed';
+      
       throw new Error(errorMsg);
     }
   } catch (error) {

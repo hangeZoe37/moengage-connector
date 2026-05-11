@@ -72,7 +72,7 @@
 						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"msgId\": \"text_{{$timestamp}}\",\n  \"to\": \"{{test_destination}}\",\n  \"rcsContent\": {\n    \"senderId\": \"{{bot_id}}\",\n    \"content\": {\n      \"type\": \"TEXT\",\n      \"text\": \"Hello from CleverTap! Visit our new store.\",\n      \"suggestions\": [\n        {\n          \"type\": \"REPLY\",\n          \"text\": \"Yes\",\n          \"postbackData\": \"YES_CLICKED\"\n        },\n        {\n          \"type\": \"OPEN_URL\",\n          \"text\": \"View Store\",\n          \"url\": \"https://clevertap.com\"\n        }\n      ]\n    }\n  },\n  \"smsContent\": {\n    \"senderId\": \"{{sms_sender}}\",\n    \"body\": \"Fallback SMS: Visit https://clevertap.com\",\n    \"templateId\": \"{{sms_template_id}}\"\n  },\n  \"callbackURL\": \"{{clevertap_mock_callback_url}}\"\n}"
+							"raw": "{\n  \"msgId\": \"text_{{$timestamp}}\",\n  \"to\": \"{{test_destination}}\",\n  \"callbackURL\": \"http://localhost:6001/api/test/clevertap-dlr\",\n  \"rcsContent\": {\n    \"senderId\": \"{{bot_id}}\",\n    \"content\": {\n      \"type\": \"TEXT\",\n      \"text\": \"Hello from CleverTap! Visit our new store.\",\n      \"suggestions\": [\n        {\n          \"type\": \"REPLY\",\n          \"text\": \"Yes\",\n          \"postbackData\": \"YES_CLICKED\"\n        },\n        {\n          \"type\": \"OPEN_URL\",\n          \"text\": \"View Store\",\n          \"url\": \"https://clevertap.com\"\n        }\n      ]\n    }\n  },\n  \"smsContent\": {\n    \"senderId\": \"{{sms_sender}}\",\n    \"body\": \"Fallback SMS: Visit https://clevertap.com\",\n    \"templateId\": \"{{sms_template_id}}\"\n  }\n}"
 						},
 						"url": {
 							"raw": "http://localhost:6001/integrations/clevertap/rcs/send",
@@ -92,7 +92,7 @@
 					"response": []
 				},
 				{
-					"name": "1.2 CARD: Ad-hoc (RCS + SMS Fallback)",
+					"name": "1.2 CARD: Premium Smartphone (RCS + SMS Fallback)",
 					"event": [
 						{
 							"listen": "test",
@@ -130,7 +130,7 @@
 						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"msgId\": \"card_{{$timestamp}}\",\n  \"to\": \"{{test_destination}}\",\n  \"rcsContent\": {\n    \"senderId\": \"{{bot_id}}\",\n    \"content\": {\n      \"type\": \"CARD\",\n      \"title\": \"Weekend Sale!\",\n      \"text\": \"Grab your favorites at 30% off.\",\n      \"mediaUrl\": \"https://i.pinimg.com/736x/57/3a/57/573a573683e5a79390d021688a043048.jpg\",\n      \"suggestions\": [\n        {\n          \"type\": \"REPLY\",\n          \"text\": \"Claim 30%\",\n          \"postbackData\": \"CLAIM_30\"\n        }\n      ]\n    }\n  },\n  \"sms\": {\n    \"sender\": \"{{sms_sender}}\",\n    \"message\": \"Fallback SMS: Claim your 30% discount now!\",\n    \"template_id\": \"{{sms_template_id}}\"\n  }\n}"
+							"raw": "{\n  \"msgId\": \"card_{{$timestamp}}\",\n  \"to\": \"{{test_destination}}\",\n  \"callbackURL\": \"http://localhost:6001/api/test/clevertap-dlr\",\n  \"rcsContent\": {\n    \"senderId\": \"{{bot_id}}\",\n    \"content\": {\n      \"type\": \"CARD\",\n      \"title\": \"Premium Smartphone\",\n      \"description\": \"The latest flagship with 200MP camera.\",\n      \"media\": {\n        \"type\": \"IMAGE\",\n        \"mediaUrl\": \"https://i.pinimg.com/736x/57/3a/57/573a573683e5a79390d021688a043048.jpg\",\n        \"height\": \"MEDIUM\"\n      },\n      \"suggestions\": [\n        { \"type\": \"REPLY\", \"text\": \"Buy Now\", \"postbackData\": \"BUY_CLICKED\" },\n        { \"type\": \"OPEN_URL\", \"text\": \"Spec Sheet\", \"url\": \"https://example.com/specs\" },\n        { \"type\": \"DIAL_PHONE\", \"text\": \"Call Sales\", \"phone\": \"+919999999999\" },\n        { \"type\": \"REPLY\", \"text\": \"Check Colors\", \"postbackData\": \"COLORS\" }\n      ]\n    }\n  },\n  \"smsContent\": {\n    \"senderId\": \"{{sms_sender}}\",\n    \"body\": \"Thanks for sharing your documents with Smartping. Our team is reviewing them as part of the verification process.\",\n    \"templateId\": \"{{sms_template_id}}\"\n  }\n}"
 						},
 						"url": {
 							"raw": "http://localhost:6001/integrations/clevertap/rcs/send",
@@ -150,7 +150,7 @@
 					"response": []
 				},
 				{
-					"name": "1.3 CAROUSEL: Ad-hoc (RCS + SMS Fallback)",
+					"name": "1.3 CAROUSEL: Products (RCS + SMS Fallback)",
 					"event": [
 						{
 							"listen": "test",
@@ -188,7 +188,7 @@
 						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"msgId\": \"caro_{{$timestamp}}\",\n  \"to\": \"{{test_destination}}\",\n  \"rcsContent\": {\n    \"senderId\": \"{{bot_id}}\",\n    \"content\": {\n      \"type\": \"CAROUSEL\",\n      \"cardWidth\": \"MEDIUM\",\n      \"cardContents\": [\n        {\n          \"title\": \"Product A\",\n          \"text\": \"Best for summer\",\n          \"mediaUrl\": \"https://i.pinimg.com/736x/57/3a/57/573a573683e5a79390d021688a043048.jpg\",\n          \"suggestions\": [{ \"type\": \"REPLY\", \"text\": \"Buy A\", \"postbackData\": \"BUY_A\" }]\n        },\n        {\n          \"title\": \"Product B\",\n          \"text\": \"Limited edition\",\n          \"mediaUrl\": \"https://i.pinimg.com/736x/57/3a/57/573a573683e5a79390d021688a043048.jpg\",\n          \"suggestions\": [{ \"type\": \"REPLY\", \"text\": \"Buy B\", \"postbackData\": \"BUY_B\" }]\n        }\n      ]\n    }\n  },\n  \"sms\": {\n    \"sender\": \"{{sms_sender}}\",\n    \"message\": \"Fallback SMS: Check our new carousel offers!\",\n    \"template_id\": \"{{sms_template_id}}\"\n  }\n}"
+							"raw": "{\n  \"msgId\": \"caro_{{$timestamp}}\",\n  \"to\": \"{{test_destination}}\",\n  \"callbackURL\": \"http://localhost:6001/api/test/clevertap-dlr\",\n  \"rcsContent\": {\n    \"senderId\": \"{{bot_id}}\",\n    \"content\": {\n      \"type\": \"CAROUSEL\",\n      \"cardWidth\": \"MEDIUM\",\n      \"cardContents\": [\n        {\n          \"title\": \"Product A\",\n          \"description\": \"Best for summer\",\n          \"media\": { \"type\": \"IMAGE\", \"mediaUrl\": \"https://i.pinimg.com/736x/57/3a/57/573a573683e5a79390d021688a043048.jpg\", \"height\": \"MEDIUM\" },\n          \"suggestions\": [{ \"type\": \"REPLY\", \"text\": \"Buy A\", \"postbackData\": \"BUY_A\" }]\n        },\n        {\n          \"title\": \"Product B\",\n          \"description\": \"Limited edition\",\n          \"media\": { \"type\": \"IMAGE\", \"mediaUrl\": \"https://i.pinimg.com/736x/57/3a/57/573a573683e5a79390d021688a043048.jpg\", \"height\": \"MEDIUM\" },\n          \"suggestions\": [{ \"type\": \"REPLY\", \"text\": \"Buy B\", \"postbackData\": \"BUY_B\" }]\n        }\n      ]\n    }\n  },\n  \"smsContent\": {\n    \"senderId\": \"{{sms_sender}}\",\n    \"body\": \"Fallback SMS: Check our new carousel offers!\",\n    \"templateId\": \"{{sms_template_id}}\"\n  }\n}"
 						},
 						"url": {
 							"raw": "http://localhost:6001/integrations/clevertap/rcs/send",
@@ -246,7 +246,7 @@
 						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"msgId\": \"tmpl_{{$timestamp}}\",\n  \"to\": \"{{test_destination}}\",\n  \"rcsContent\": {\n    \"senderId\": \"{{bot_id}}\",\n    \"content\": {\n      \"type\": \"TEMPLATE\",\n      \"templateId\": \"welcome_offer\",\n      \"parameters\": [\"John\", \"FirstOrder\"]\n    }\n  },\n  \"sms\": {\n    \"sender\": \"{{sms_sender}}\",\n    \"message\": \"Fallback SMS: Welcome John! use code FirstOrder.\",\n    \"template_id\": \"{{sms_template_id}}\"\n  }\n}"
+							"raw": "{\n  \"msgId\": \"tmpl_{{$timestamp}}\",\n  \"to\": \"{{test_destination}}\",\n  \"callbackURL\": \"http://localhost:6001/api/test/clevertap-dlr\",\n  \"rcsContent\": {\n    \"senderId\": \"{{bot_id}}\",\n    \"content\": {\n      \"type\": \"TEMPLATE\",\n      \"templateId\": \"welcome_offer\",\n      \"parameters\": [\"John\", \"FirstOrder\"]\n    }\n  },\n  \"smsContent\": {\n    \"senderId\": \"{{sms_sender}}\",\n    \"body\": \"Fallback SMS: Welcome John! use code FirstOrder.\",\n    \"templateId\": \"{{sms_template_id}}\"\n  }\n}"
 						},
 						"url": {
 							"raw": "http://localhost:6001/integrations/clevertap/rcs/send",
@@ -282,18 +282,19 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"eventData\": {\n    \"userPhoneNumber\": \"{{test_destination}}\",\n    \"entity\": {\n      \"eventType\": \"MESSAGE_DELIVERED\",\n      \"sendTime\": \"{{$isoTimestamp}}\"\n    }\n  },\n  \"seqId\": \"{{last_msg_id}}\"\n}"
+							"raw": "{\n  \"seqId\": \"{{last_msg_id}}\"\n}"
 						},
 						"url": {
-							"raw": "http://localhost:6001/sparc/webhook",
+							"raw": "http://localhost:6001/api/test/rcs-delivered",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
 							"port": "6001",
 							"path": [
-								"sparc",
-								"webhook"
+								"api",
+								"test",
+								"rcs-delivered"
 							]
 						}
 					},
@@ -311,25 +312,26 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"eventData\": {\n    \"userPhoneNumber\": \"{{test_destination}}\",\n    \"entity\": {\n      \"eventType\": \"READ\",\n      \"sendTime\": \"{{$isoTimestamp}}\"\n    }\n  },\n  \"seqId\": \"{{last_msg_id}}\"\n}"
+							"raw": "{\n  \"seqId\": \"{{last_msg_id}}\"\n}"
 						},
 						"url": {
-							"raw": "http://localhost:6001/sparc/webhook",
+							"raw": "http://localhost:6001/api/test/rcs-read",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
 							"port": "6001",
 							"path": [
-								"sparc",
-								"webhook"
+								"api",
+								"test",
+								"rcs-read"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "2.3 DLR: Failed (RCS) -> Triggers SMS",
+					"name": "2.3 DLR: Failed (RCS)",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -340,25 +342,26 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"eventData\": {\n    \"userPhoneNumber\": \"{{test_destination}}\",\n    \"entity\": {\n      \"eventType\": \"FAILED\",\n      \"error\": {\n        \"code\": \"2001\",\n        \"message\": \"User Not Found\"\n      }\n    }\n  },\n  \"seqId\": \"{{last_msg_id}}\"\n}"
+							"raw": "{\n  \"seqId\": \"{{last_msg_id}}\"\n}"
 						},
 						"url": {
-							"raw": "http://localhost:6001/sparc/webhook",
+							"raw": "http://localhost:6001/api/test/rcs-failed",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
 							"port": "6001",
 							"path": [
-								"sparc",
-								"webhook"
+								"api",
+								"test",
+								"rcs-failed"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "2.4 INTERACTION: Click",
+					"name": "2.4 DLR: Delivered (SMS)",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -369,18 +372,109 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"interactionType\": \"OPEN_URL\",\n  \"seq_id\": \"{{last_msg_id}}\",\n  \"url\": \"https://clevertap.com\",\n  \"timestamp\": \"{{$isoTimestamp}}\"\n}"
+							"raw": "{\n  \"seqId\": \"{{last_msg_id}}\"\n}"
 						},
 						"url": {
-							"raw": "http://localhost:6001/sparc/webhook",
+							"raw": "http://localhost:6001/api/test/sms-delivered",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
 							"port": "6001",
 							"path": [
-								"sparc",
-								"webhook"
+								"api",
+								"test",
+								"sms-delivered"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2.5 DLR: Failed (SMS)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"seqId\": \"{{last_msg_id}}\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:6001/api/test/sms-failed",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "6001",
+							"path": [
+								"api",
+								"test",
+								"sms-failed"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2.6 INTERACTION: Clicked (URL)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"seqId\": \"{{last_msg_id}}\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:6001/api/test/interaction-clicked",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "6001",
+							"path": [
+								"api",
+								"test",
+								"interaction-clicked"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2.7 INTERACTION: Replied (Text)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"seqId\": \"{{last_msg_id}}\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:6001/api/test/interaction-replied",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "6001",
+							"path": [
+								"api",
+								"test",
+								"interaction-replied"
 							]
 						}
 					},

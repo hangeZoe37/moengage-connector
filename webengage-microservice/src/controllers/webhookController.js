@@ -85,11 +85,28 @@ async function handleInteraction(sparcEvent) {
     return;
   }
 
-  // 1. Update DB
+  // 1. Update DB - Deep Scan with Interaction Fallbacks
+  console.log('📦 [RAW EVENT DATA]:', JSON.stringify(sparcEvent, null, 2));
+
+  const suggestionText = sparcEvent.suggestion_text || sparcEvent.text || sparcEvent.replyText || 
+                         sparcEvent.description || sparcEvent.url || sparcEvent.data?.text || 
+                         sparcEvent.payload?.text || (sparcEvent.eventData?.text) || 
+                         sparcEvent.interactionType || 'Unknown Action';
+
+  const postbackData = sparcEvent.postback_data || sparcEvent.postback || sparcEvent.data?.postbackData || 
+                       sparcEvent.data?.postback || sparcEvent.payload?.postback ||
+                       (sparcEvent.eventData?.postbackData) || sparcEvent.interactionType || 'N/A';
+
+  console.log('📡 [DEBUG] WebEngage Interaction (V3-DeepScan):', { 
+    callbackData, 
+    suggestionText, 
+    postbackData 
+  });
+
   const result = await suggestionRepo.create({
     callback_data: callbackData,
-    suggestion_text: sparcEvent.suggestion_text || sparcEvent.text,
-    postback_data: sparcEvent.postback_data || sparcEvent.postback,
+    suggestion_text: suggestionText,
+    postback_data: postbackData,
     event_timestamp: timestampSeconds,
   });
 
