@@ -21,6 +21,9 @@ app.get('/', (req, res) => {
   res.send('Sparc Dashboard Backend is running on Port 7001. Visit http://localhost:7000 for the UI.');
 });
 
+// Health check for K8s/Docker
+app.get('/health', (req, res) => res.status(200).json({ status: 'ok', service: 'sparc-dashboard-hub' }));
+
 // Database Pools
 const poolConfig = {
   host: process.env.DB_HOST || '127.0.0.1',
