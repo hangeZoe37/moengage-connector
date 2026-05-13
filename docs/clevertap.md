@@ -1,29 +1,52 @@
-Generic RCS API
-Learn how to configure RCS API
-Overview
+# Generic RCS API
+
+Learn how to configure RCS API.
+
+## Overview
+
 This document describes how messaging providers can integrate with CleverTap to send Rich Communication Services (RCS) messages. The API supports the following message types:
-•	Text messages
-•	Template Messages
-•	Rich media cards
-•	Carousels
+
+- **Text messages**
+- **Template Messages**
+- **Rich media cards**
+- **Carousels**
+
 SMS fallback is supported for all message types if the recipient is unreachable via RCS.
-Base Configuration
+
+## Base Configuration
+
 This section outlines the core API details required to integrate with CleverTap's RCS platform.
-Messaging API Endpoint
+
+### Messaging API Endpoint
+
 BSPs are requested to create an endpoint where CleverTap can send the notification payload for campaigns. Customers must ask BSPs to share the API endpoint that can accept the CleverTap Payload to save the provider in the CleverTap Dashboard.
-Authentication
+
+### Authentication
+
 Authentication details will be provided during provider setup. The process is similar to generic SMS integration.
-Headers
+
+### Headers
+
+```
 Content-Type: application/json
-Message Types
+```
+
+## Message Types
+
 CleverTap supports four RCS message formats, each with optional SMS fallback.
-Text Message
+
+### Text Message
+
 Used for sending simple messages with optional interactive buttons such as quick replies, links, or dialers.
-Supports:
-•	Suggestions: REPLY, DIAL_PHONE, OPEN_URL
-•	SMS fallback
-Example Payload:
-JSON
+
+**Supports:**
+
+- Suggestions: REPLY, DIAL_PHONE, OPEN_URL
+- SMS fallback
+
+**Example Payload:**
+
+```json
 {
   "payloadVersion": 0.1,
   "msgId": "CT_TXT_20240315_001_ABC123",
@@ -33,7 +56,7 @@ JSON
     "senderId": "BRAND_RCS_001",
     "customParam": [
       {
-        "name": "campaign_id", 
+        "name": "campaign_id",
         "value": "welcome_flow_2024"
       },
       {
@@ -51,7 +74,7 @@ JSON
           "postbackData": "explore_premium"
         },
         {
-          "type": "REPLY", 
+          "type": "REPLY",
           "text": "Maybe later",
           "postbackData": "remind_later"
         },
@@ -75,17 +98,24 @@ JSON
     ]
   }
 }
-TEMPLATE Message
+```
+
+### Template Message
+
 Used for sending structured, pre-approved messages with dynamic fields populated using parameters.
-Supports:
-•	Template IDs and personalization parameters
-•	SMS fallback
-Example Payload:
-JSON
+
+**Supports:**
+
+- Template IDs and personalization parameters
+- SMS fallback
+
+**Example Payload:**
+
+```json
 {
   "payloadVersion": 0.1,
   "msgId": "CT_TMPL_20240315_002_DEF456",
-  "to": "+911234567890", 
+  "to": "+911234567890",
   "callbackURL": "https://your-callback-endpoint.com/rcs/callback",
   "rcsContent": {
     "senderId": "BRAND_RCS_001",
@@ -108,7 +138,7 @@ JSON
           "value": "John Smith"
         },
         {
-          "name": "2", 
+          "name": "2",
           "value": "ORD789012"
         },
         {
@@ -127,31 +157,37 @@ JSON
     "body": "Hi John Smith, your order #ORD789012 for ₹2,499 is confirmed. Expected delivery: March 20, 2024",
     "customParam": [
       {
-        "name": "template_category", 
+        "name": "template_category",
         "value": "transactional"
       }
     ]
   }
 }
-CARD Message
+```
+
+### Card Message
+
 Used for sending rich media with one card, including:
-•	Title and description
-•	Media Types
-o	IMAGE: Static image content (JPG, PNG, GIF)
-o	VIDEO: Video content (MP4, MOV, AVI)
-•	Up to 10 suggestions
-o	Supports: REPLY, DIAL_PHONE, OPEN_URL
-•	Orientation: HORIZONTAL, VERTICAL
-•	Alignment: LEFT, RIGHT
-•	Media height settings: SHORT, MEDIUM, TALL
-•	SMS fallback
-Example Payload:
-JSON
+
+- Title and description
+- **Media Types**
+  - IMAGE: Static image content (JPG, PNG, GIF)
+  - VIDEO: Video content (MP4, MOV, AVI)
+- Up to 10 suggestions
+  - Supports: REPLY, DIAL_PHONE, OPEN_URL
+- Orientation: HORIZONTAL, VERTICAL
+- Alignment: LEFT, RIGHT
+- Media height settings: SHORT, MEDIUM, TALL
+- SMS fallback
+
+**Example Payload:**
+
+```json
 {
   "payloadVersion": 0.1,
   "msgId": "CT_CARD_20240315_003_GHI789",
   "to": "+911234567890",
-  "callbackURL": "https://your-callback-endpoint.com/rcs/callback", 
+  "callbackURL": "https://your-callback-endpoint.com/rcs/callback",
   "rcsContent": {
     "senderId": "BRAND_RCS_001",
     "customParam": [
@@ -169,15 +205,15 @@ JSON
       "orientation": "HORIZONTAL",
       "alignment": "LEFT",
       "cardContent": {
-        "title": "Latest Smartphone Model XYZ", //Max 200 characters
-        "description": "Experience cutting-edge technology with an advanced camera system, long-lasting battery, and premium design. Available in multiple colors.", //Max 2000 characters
+        "title": "Latest Smartphone Model XYZ",
+        "description": "Experience cutting-edge technology with an advanced camera system, long-lasting battery, and premium design. Available in multiple colors.",
         "media": {
           "type": "IMAGE",
           "mediaUrl": "https://cdn.example.com/products/smartphone-xyz-hero.jpg",
-          "thumbnailUrl": "https://cdn.example.com/products/smartphone-xyz-thumb.jpg", 
+          "thumbnailUrl": "https://cdn.example.com/products/smartphone-xyz-thumb.jpg",
           "height": "MEDIUM"
         },
-        "suggestions": [  //Max 10 suggestions
+        "suggestions": [
           {
             "type": "OPEN_URL",
             "text": "Buy Now - ₹49,999",
@@ -205,32 +241,39 @@ JSON
     "customParam": [
       {
         "name": "product_category",
-        "value": "electronics"  
+        "value": "electronics"
       }
     ]
   }
 }
-CAROUSEL Message
+```
+
+### Carousel Message
+
 Used for showcasing multiple cards in a horizontally scrollable format.
+
 Each card can include:
-•	Title and description
-•	Media Types
-o	IMAGE: Static image content (JPG, PNG, GIF)
-o	VIDEO: Video content (MP4, MOV, AVI)
-•	Up to 10 suggestions
-o	Supports: REPLY, DIAL_PHONE, OPEN_URL
-•	Card width: SMALL, MEDIUM
-•	Media height settings: SHORT, MEDIUM, TALL
-•	SMS fallback
-Example Payload:
-JSON
+
+- Title and description
+- **Media Types**
+  - IMAGE: Static image content (JPG, PNG, GIF)
+  - VIDEO: Video content (MP4, MOV, AVI)
+- Up to 10 suggestions
+  - Supports: REPLY, DIAL_PHONE, OPEN_URL
+- Card width: SMALL, MEDIUM
+- Media height settings: SHORT, MEDIUM, TALL
+- SMS fallback
+
+**Example Payload:**
+
+```json
 {
   "payloadVersion": 0.1,
   "msgId": "CT_CAROUSEL_20240315_004_JKL012",
   "to": "+911234567890",
   "callbackURL": "https://your-callback-endpoint.com/rcs/callback",
   "rcsContent": {
-    "senderId": "BRAND_RCS_001", 
+    "senderId": "BRAND_RCS_001",
     "customParam": [
       {
         "name": "catalog_type",
@@ -266,7 +309,7 @@ JSON
           "title": "Tablet Ultra",
           "description": "Versatile tablet with premium display, perfect for creativity and productivity tasks.",
           "media": {
-            "mediaUrl": "https://cdn.example.com/products/tablet-ultra-demo.mp4", 
+            "mediaUrl": "https://cdn.example.com/products/tablet-ultra-demo.mp4",
             "thumbnailUrl": "https://cdn.example.com/products/tablet-ultra-thumb.jpg",
             "height": "MEDIUM"
           },
@@ -284,7 +327,7 @@ JSON
           "description": "Advanced health monitoring, GPS, and smart features in a premium design.",
           "media": {
             "mediaUrl": "https://cdn.example.com/products/smartwatch-elite.jpg",
-            "thumbnailUrl": "https://cdn.example.com/products/smartwatch-thumb.jpg", 
+            "thumbnailUrl": "https://cdn.example.com/products/smartwatch-thumb.jpg",
             "height": "MEDIUM"
           },
           "suggestions": [
@@ -310,71 +353,111 @@ JSON
     ]
   }
 }
-Field Specifications
-The following fields are required or optional when constructing a valid RCS payload.
-Required Fields
-These fields must be included in every request:
-Field	Type	Description
-payloadVersion	Number	API version (currently 0.1)
-msgId	String	Message identifier provided by CleverTap (must be returned in callbacks as a meta field)
-to	String	Recipient phone number with country code (format: [number])
-callbackURL	String	Endpoint where CleverTap expects delivery status callbacks
-rcsContent.senderId	String	RCS Business Messaging sender ID provided by the messaging provider
-rcsContent.content.type	String	Message type: TEXT, TEMPLATE, CARD, CAROUSEL
-Optional Fields
-Include these fields to enhance message targeting or provide fallback support:
-Field	Type	Description
-rcsContent.customParam	Array	Custom key-value pairs configured during provider setup or campaign creation
-smsContent	Object	Fallback SMS content when RCS is unavailable
-rcsContent.content.suggestions	Array	Interactive buttons/actions (for TEXT CARD, and CAROUSEL messages)
-Supported Values
-The following values are supported for specific fields in the payload.
-Orientation (CARD only)
-Value	Description
-HORIZONTAL	Card content arranged horizontally with image and text side-by-side
-VERTICAL	Card content arranged vertically with image above text
-Alignment (CARD with HORIZONTAL orientation only)
-Value	Description
-LEFT	Media content aligned to the left side
-RIGHT	Media content aligned to the right side
-Card Width (CAROUSEL only)
-Value	Description
-SMALL	Narrow card width for compact display
-MEDIUM	Standard card width for optimal readability
-Media Height (all media types)
-Value	Description
-SHORT	Compact media height for minimal visual impact
-MEDIUM	Standard media height for balanced presentation
-TALL	Extended media height for prominent visual display
-Media Types
-Value	Description
-IMAGE	Static image content (JPG, PNG, GIF)
-VIDEO	Video content (MP4, MOV, AVI)
-Suggestion Types
-Value	Description
-REPLY	Quick reply button that sends predefined text back to the sender
-DIAL_PHONE	Call action button that initiates a phone call to the specified number
-OPEN_URL	Website/app link button that opens URL in browser or app
-Custom Parameters
-CleverTap supports metadata insertion using custom key-value pairs at two levels.
-Provider Setup (Global Parameters)
-Applied to all messages sent through the provider:
-•	Tracking identifiers
-•	Provider-specific metadata
-•	Default campaign attributes
-Campaign Creation (Campaign-Specific Parameters)
-Set in the CleverTap dashboard for specific campaigns:
-•	Campaign tracking codes
-•	Customer segments
-•	UTM parameters
-•	A/B test identifiers
-•	Business-specific metadata
-Common Use Cases
-Parameter	Description
-campaign_id	Campaign tracking identifier
-user_segment	Customer segment classification
-utm_source, utm_medium, utm_campaign	Marketing attribution
-a_b_test_variant	A/B testing group identification
-priority_level	Message priority classification
-	
+```
 
+## Field Specifications
+
+The following fields are required or optional when constructing a valid RCS payload.
+
+### Required Fields
+
+These fields must be included in every request:
+
+| Field | Type | Description |
+|---|---|---|
+| payloadVersion | Number | API version (currently 0.1) |
+| msgId | String | Message identifier provided by CleverTap (must be returned in callbacks as a meta field) |
+| to | String | Recipient phone number with country code (format: [number]) |
+| callbackURL | String | Endpoint where CleverTap expects delivery status callbacks |
+| rcsContent.senderId | String | RCS Business Messaging sender ID provided by the messaging provider |
+| rcsContent.content.type | String | Message type: TEXT, TEMPLATE, CARD, CAROUSEL |
+
+### Optional Fields
+
+Include these fields to enhance message targeting or provide fallback support:
+
+| Field | Type | Description |
+|---|---|---|
+| rcsContent.customParam | Array | Custom key-value pairs configured during provider setup or campaign creation |
+| smsContent | Object | Fallback SMS content when RCS is unavailable |
+| rcsContent.content.suggestions | Array | Interactive buttons/actions (for TEXT, CARD, and CAROUSEL messages) |
+
+### Supported Values
+
+The following values are supported for specific fields in the payload.
+
+#### Orientation (CARD only)
+
+| Value | Description |
+|---|---|
+| HORIZONTAL | Card content arranged horizontally with image and text side-by-side |
+| VERTICAL | Card content arranged vertically with image above text |
+
+#### Alignment (CARD with HORIZONTAL orientation only)
+
+| Value | Description |
+|---|---|
+| LEFT | Media content aligned to the left side |
+| RIGHT | Media content aligned to the right side |
+
+#### Card Width (CAROUSEL only)
+
+| Value | Description |
+|---|---|
+| SMALL | Narrow card width for compact display |
+| MEDIUM | Standard card width for optimal readability |
+
+#### Media Height (all media types)
+
+| Value | Description |
+|---|---|
+| SHORT | Compact media height for minimal visual impact |
+| MEDIUM | Standard media height for balanced presentation |
+| TALL | Extended media height for prominent visual display |
+
+#### Media Types
+
+| Value | Description |
+|---|---|
+| IMAGE | Static image content (JPG, PNG, GIF) |
+| VIDEO | Video content (MP4, MOV, AVI) |
+
+#### Suggestion Types
+
+| Value | Description |
+|---|---|
+| REPLY | Quick reply button that sends predefined text back to the sender |
+| DIAL_PHONE | Call action button that initiates a phone call to the specified number |
+| OPEN_URL | Website/app link button that opens URL in browser or app |
+
+## Custom Parameters
+
+CleverTap supports metadata insertion using custom key-value pairs at two levels.
+
+### Provider Setup (Global Parameters)
+
+Applied to all messages sent through the provider:
+
+- Tracking identifiers
+- Provider-specific metadata
+- Default campaign attributes
+
+### Campaign Creation (Campaign-Specific Parameters)
+
+Set in the CleverTap dashboard for specific campaigns:
+
+- Campaign tracking codes
+- Customer segments
+- UTM parameters
+- A/B test identifiers
+- Business-specific metadata
+
+### Common Use Cases
+
+| Parameter | Description |
+|---|---|
+| campaign_id | Campaign tracking identifier |
+| user_segment | Customer segment classification |
+| utm_source, utm_medium, utm_campaign | Marketing attribution |
+| a_b_test_variant | A/B testing group identification |
+| priority_level | Message priority classification |
