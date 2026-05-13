@@ -8,7 +8,13 @@ const logger = require('../config/logger');
  * Attaches the client object to the request.
  */
 async function authenticateClient(req, res, next) {
-  const apiKey = req.headers['x-api-key'] || req.query.apiKey;
+  let apiKey = req.headers['x-api-key'] || req.query.apiKey;
+
+  // Support for official WebEngage format: Authorization: Bearer <API_KEY>
+  const authHeader = req.headers['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    apiKey = authHeader.split(' ')[1];
+  }
 
   if (!apiKey) {
     return res.status(401).json({ status: 'Error', message: 'Missing API Key' });
